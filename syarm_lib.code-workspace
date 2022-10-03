@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../stepper_lib"
+		}
+	],
+	"settings": {}
+}
