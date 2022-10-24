@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, f32::consts::PI};
 
 use glam::Vec3;
 use serde::{Serialize, Deserialize, ser::SerializeTuple, de::Visitor};
@@ -48,6 +48,11 @@ use serde_json::{Value, json};
         pub delta_a1 : f32,
         pub delta_a2 : f32,
         pub delta_a3 : f32
+    }
+
+    pub struct PinTable 
+    {
+
     }
 
     #[derive(Serialize, Deserialize)]
@@ -113,12 +118,30 @@ impl AngTable
         let vsub_1 = PVec3::new(vt.a_1.v + vt.c_m1b.v);
         let vsub_2 = PVec3::new(vt.a_1.v - vt.c_m2a.v);
         let vsub_3 = PVec3::new(vt.a_2.v + vt.c_m2b.v);
+        let vsub_4 = PVec3::new(vt.a_2.v + vt.a_3.v);
 
         let delta_a1 = vt.c_m1b.angle_for_tri(&vt.a_1, &vsub_1);
         let delta_a2 = vt.c_m2a.angle_for_tri(&vt.a_1, &vsub_2);
         let delta_a3 = vt.c_m2b.angle_for_tri(&vt.a_2, &vsub_3);
 
-        
+        let gamma_1_ = vt.c_1.angle_for_tri(&vt.c_m1a, &vsub_1);
+        let gamma_1 = PI - gamma_1_;
+
+        let gamma_2_ = vt.c_2.angle_for_tri(&vsub_2, &vsub_3);
+        let gamma_2 = gamma_2_ - PI;
+
+        let gamma_3_ = vsub_4.angle_for_tri(&vt.a_2, &vt.a_3);
+        let gamma_3 = PI - gamma_3_; 
+
+        return Self {
+            gamma_1: gamma_1,
+            gamma_2: gamma_2,
+            gamma_3: gamma_3,
+
+            delta_a1: delta_a1,
+            delta_a2: delta_a2,
+            delta_a3: delta_a3
+        }; 
     }
 }
 
@@ -126,7 +149,7 @@ impl SyArm
 {
     pub fn from_dim(vec_0 : VecTable) -> Self
     {
-
+        
     }
 
     pub fn load_0(p : &str) -> Self
@@ -135,7 +158,7 @@ impl SyArm
             fs::read_to_string(p).unwrap().as_str()
         ).unwrap();
 
-
+        return Self::from_dim(vecs_0);
     }   
 
     pub fn save_0(&self, p : &str) 
