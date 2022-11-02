@@ -50,15 +50,9 @@ use serde_json::{Value, json};
         pub delta_a3 : f32
     }
 
-<<<<<<< HEAD
     pub struct PinTable
     {
         
-=======
-    pub struct PinTable 
-    {
-
->>>>>>> d6d9033f66e0f8cc4b5e409f73e4b6fd54efe8f0
     }
 
     #[derive(Serialize, Deserialize)]
