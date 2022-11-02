@@ -4,6 +4,8 @@ use glam::Vec3;
 use serde::{Serialize, Deserialize, ser::SerializeTuple, de::Visitor};
 use serde_json::{Value, json};
 
+use stepper_lib::controller::PwmStepperCtrl;
+
 // Structures
     #[derive(Clone)]
     pub struct PVec3
@@ -48,11 +50,6 @@ use serde_json::{Value, json};
         pub delta_a1 : f32,
         pub delta_a2 : f32,
         pub delta_a3 : f32
-    }
-
-    pub struct PinTable
-    {
-        
     }
 
     #[derive(Serialize, Deserialize)]
