@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../stepper_lib"
+		},
+		{
+			"path": "../syomat_lib"
 		}
 	],
 	"settings": {}
