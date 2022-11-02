@@ -50,6 +50,11 @@ use serde_json::{Value, json};
         pub delta_a3 : f32
     }
 
+    pub struct PinTable
+    {
+        
+    }
+
     #[derive(Serialize, Deserialize)]
     pub struct SyArm
     {
