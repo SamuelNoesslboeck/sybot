@@ -1,12 +1,18 @@
+#![crate_name = "syarm_lib"]
+//! # SyArm library
+//! 
+//! Control and calculation library for the SyArm robot
+
 use std::{fs, f32::consts::PI};
 
 use glam::Vec3;
-use serde::{Serialize, Deserialize, ser::SerializeTuple, de::Visitor};
-use serde_json::{Value, json};
+use serde::{Serialize, Deserialize, ser::SerializeTuple};
+// use serde_json::{Value, json};
 
-use stepper_lib::controller::PwmStepperCtrl;
+use stepper_lib::controller::{PwmStepperCtrl, Cylinder};
 
 // Structures
+    /// A wrapper struct for vector calculations with constant-length vectors
     #[derive(Clone)]
     pub struct PVec3
     {
@@ -14,6 +20,7 @@ use stepper_lib::controller::PwmStepperCtrl;
         pub l : f32
     }
     
+    /// Helper struct for JSON-Parsing
     #[derive(Serialize, Deserialize)]
     struct PVec3Helper
     {
@@ -22,24 +29,33 @@ use stepper_lib::controller::PwmStepperCtrl;
         pub z : f32
     }
 
+    /// Stores all vectors required for SyArm calculations
     #[derive(Serialize, Deserialize, Clone)]
     pub struct VecTable
     {
+        /// Base vector (ref point to base point)
         pub a_b : PVec3,
+        /// Vector of first arm (base point to first arm joint)
         pub a_1 : PVec3,
+        /// Vector for second arm (first to second arm joint)
         pub a_2 : PVec3,
+        /// Vector for third arm (second to third arm joint)
         pub a_3 : PVec3,
-        pub a_t : PVec3,
+        /// Vector for tool positioning (extension for third arm)
+        pub a_t : PVec3,    
 
+        /// Vector for first cylinder
         pub c_1 : PVec3,
+        /// Vector for second cylinder
         pub c_2 : PVec3,
 
         pub c_m1a : PVec3,
         pub c_m1b : PVec3,
         pub c_m2a : PVec3,
         pub c_m2b : PVec3
-    }   
+    }      
 
+    /// Stores all angles required for SyArm calculations
     #[derive(Serialize, Deserialize, Clone)]
     pub struct AngTable
     {
@@ -50,16 +66,25 @@ use stepper_lib::controller::PwmStepperCtrl;
         pub delta_a1 : f32,
         pub delta_a2 : f32,
         pub delta_a3 : f32
+    }   
+
+    /// Calculation struct for the SyArm robot
+    #[derive(Serialize, Deserialize)]
+    pub struct SyArmCalc
+    {
+        /// Current vectors
+        pub vecs : VecTable,
+        /// Current angles
+        pub angles : AngTable
     }
 
-    #[derive(Serialize, Deserialize)]
-    pub struct SyArm
+    /// Control struct for the SyArm robot
+    pub struct SyArmCtrl
     {
-        pub vecs_0 : VecTable,
-        pub vecs : VecTable,
-        
-        pub angles_0 : AngTable,
-        pub angles : AngTable
+        pub base : PwmStepperCtrl,
+        pub a1 : Cylinder,
+        pub a2 : Cylinder,
+        pub a3 : PwmStepperCtrl
     }
 //
 
@@ -142,11 +167,16 @@ impl AngTable
     }
 }
 
-impl SyArm
+impl SyArmCalc
 {
-    pub fn from_dim(vec_0 : VecTable) -> Self
+    pub fn from_dim(vecs_0 : &VecTable) -> Self
     {
-        
+        let angles = AngTable::from_vecs(&vecs_0);
+
+        Self { 
+            vecs: vecs_0.clone(), 
+            angles: angles.clone()
+        }
     }
 
     pub fn load_0(p : &str) -> Self
@@ -155,19 +185,13 @@ impl SyArm
             fs::read_to_string(p).unwrap().as_str()
         ).unwrap();
 
-        return Self::from_dim(vecs_0);
+        return Self::from_dim(&vecs_0);
     }   
 
     pub fn save_0(&self, p : &str) 
     {
         fs::write(p, 
-            serde_json::to_string(&self.angles_0).unwrap()
+            serde_json::to_string(&self.vecs).unwrap()
         ).unwrap();
-    }
-
-    pub fn reset(&mut self)
-    {
-        self.vecs = self.vecs_0.clone();
-        self.angles = self.angles_0.clone();
     }
 }

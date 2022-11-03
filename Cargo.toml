@@ -9,8 +9,12 @@ edition = "2021"
 name = "syarm_lib"
 path = "src/lib.rs"
 
+[[bin]]
+name = "test_arm"
+path = "bin/test_arm.rs"
+
 [dependencies]
 glam = "0.21.3"
 serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.48"
-stepper_lib = { version = "0.1.0", git = "https://github.com/SamuelNoesslboeck/stepper_lib" }
+stepper_lib = { version = "0.2.0", git = "https://github.com/SamuelNoesslboeck/stepper_lib" }
