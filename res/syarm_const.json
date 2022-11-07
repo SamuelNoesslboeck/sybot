@@ -1,0 +1,52 @@
+{
+    "u": 12.0,                    
+
+    "pin_dir_b": 0,         
+    "pin_step_b": 0,          
+
+    "pin_dir_1": 0, 
+
+    "pin_step_1": 0, 
+
+    "pin_dir_2": 0,
+    "pin_step_2": 0,
+
+    "pin_dir_3": 0,
+    "pin_step_3": 0,
+
+
+    "a_b": [ 0.0, 0.0, 100.0 ],
+
+    "l_a1": 200.0,
+    "l_a2": 200.0,
+    "l_a3": 150.0,
+
+    "l_c1a": 50.0,
+    "l_c1b": 200.0, 
+    "l_c2a": 0.0,
+    "l_c2b": 0.0,
+
+    "delta_1a": 0.1,
+    "delta_2a": 0.1,
+    "delta_2b": 0.1,
+
+    "phib_min": 0.0,
+    "phib_max": 0.0,
+    "omega_b": 0.0,
+    "ratio_b": 0.0,
+
+    "c1_min": 0.0, 
+    "c1_max": 0.0,
+    "c1_v": 0.0,
+    "ratio_1": 0.0,
+
+    "c2_min": 0.0, 
+    "c2_max": 0.0,
+    "c2_v": 0.0,
+    "ratio_2": 0.0,
+
+    "phi3_min": 0.0,
+    "phi3_max": 0.0,
+    "omega_3": 0.0,
+    "ratio_3": 0.0
+}

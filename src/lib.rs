@@ -3,195 +3,261 @@
 //! 
 //! Control and calculation library for the SyArm robot
 
+mod pvec;
+
 use std::{fs, f32::consts::PI};
 
-use glam::Vec3;
-use serde::{Serialize, Deserialize, ser::SerializeTuple};
+use glam::{Mat3, Vec3};
+use serde::{Serialize, Deserialize};
 // use serde_json::{Value, json};
 
-use stepper_lib::controller::{PwmStepperCtrl, Cylinder};
+use stepper_lib::{controller::{PwmStepperCtrl, Cylinder, GearBearing, CylinderTriangle}, data::StepperData};
+use pvec::PVec3;
+
+// Types
+pub type MainAngles = (f32, f32, f32, f32);
+pub type MainPoints = (Vec3, Vec3, Vec3, Vec3);
+pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
 
 // Structures
-    /// A wrapper struct for vector calculations with constant-length vectors
-    #[derive(Clone)]
-    pub struct PVec3
-    {
-        pub v : Vec3,
-        pub l : f32
-    }
-    
-    /// Helper struct for JSON-Parsing
-    #[derive(Serialize, Deserialize)]
-    struct PVec3Helper
-    {
-        pub x : f32,
-        pub y : f32,
-        pub z : f32
-    }
-
-    /// Stores all vectors required for SyArm calculations
+    /// All construction constants for the syarm
     #[derive(Serialize, Deserialize, Clone)]
-    pub struct VecTable
+    pub struct Constants 
     {
-        /// Base vector (ref point to base point)
+        // Circuit
+        /// Circuit voltage
+        pub u : f32,                    
+
+        /// Direction ctrl pin for the base controller
+        pub pin_dir_b : u16,         
+        /// Step ctrl pin for the base controller
+        pub pin_step_b : u16,          
+
+        /// Direction ctrl pin for the first cylinder
+        pub pin_dir_1 : u16, 
+        /// Step ctrl pin for the first cylinder
+        pub pin_step_1 : u16, 
+
+        pub pin_dir_2 : u16,
+        pub pin_step_2 : u16,
+
+        pub pin_dir_3 : u16,
+        pub pin_step_3 : u16,
+
+        // Construction
         pub a_b : PVec3,
-        /// Vector of first arm (base point to first arm joint)
-        pub a_1 : PVec3,
-        /// Vector for second arm (first to second arm joint)
-        pub a_2 : PVec3,
-        /// Vector for third arm (second to third arm joint)
-        pub a_3 : PVec3,
-        /// Vector for tool positioning (extension for third arm)
-        pub a_t : PVec3,    
 
-        /// Vector for first cylinder
-        pub c_1 : PVec3,
-        /// Vector for second cylinder
-        pub c_2 : PVec3,
+        pub l_a1 : f32,
+        pub l_a2 : f32,
+        pub l_a3 : f32,
 
-        pub c_m1a : PVec3,
-        pub c_m1b : PVec3,
-        pub c_m2a : PVec3,
-        pub c_m2b : PVec3
-    }      
+        pub l_c1a : f32,
+        pub l_c1b : f32, 
+        pub l_c2a : f32,
+        pub l_c2b : f32,
 
-    /// Stores all angles required for SyArm calculations
-    #[derive(Serialize, Deserialize, Clone)]
-    pub struct AngTable
-    {
-        pub gamma_1 : f32,
-        pub gamma_2 : f32,
-        pub gamma_3 : f32,
+        pub delta_1a : f32,
+        pub delta_2a : f32,
+        pub delta_2b : f32,
 
-        pub delta_a1 : f32,
-        pub delta_a2 : f32,
-        pub delta_a3 : f32
-    }   
+        pub phib_min : f32,
+        pub phib_max : f32,
+        pub omega_b : f32,
+        pub ratio_b : f32,
 
-    /// Calculation struct for the SyArm robot
-    #[derive(Serialize, Deserialize)]
-    pub struct SyArmCalc
-    {
-        /// Current vectors
-        pub vecs : VecTable,
-        /// Current angles
-        pub angles : AngTable
+        pub c1_min : f32, 
+        pub c1_max : f32,
+        pub c1_v : f32,
+        pub ratio_1 : f32,
+
+        pub c2_min : f32, 
+        pub c2_max : f32,
+        pub c2_v : f32,
+        pub ratio_2 : f32,
+
+        pub phi3_min : f32,
+        pub phi3_max : f32,
+        pub omega_3 : f32,
+        pub ratio_3 : f32
     }
 
-    /// Control struct for the SyArm robot
-    pub struct SyArmCtrl
+    /// Calculation and control struct for the SyArm robot
+    pub struct SyArm
     {
-        pub base : PwmStepperCtrl,
-        pub a1 : Cylinder,
-        pub a2 : Cylinder,
-        pub a3 : PwmStepperCtrl
+        pub cons : Constants,
+        pub tool : Vec3,
+
+        // Controls
+        pub ctrl_base : GearBearing,
+        pub ctrl_a1 : CylinderTriangle,
+        pub ctrl_a2 : CylinderTriangle,
+        pub ctrl_a3 : GearBearing
     }
 //
 
-impl Serialize for PVec3 
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer 
-    {
-        let mut tup = serializer.serialize_tuple(3)?;
-        tup.serialize_element(&self.v.x)?;
-        tup.serialize_element(&self.v.y)?;
-        tup.serialize_element(&self.v.z)?;
-        return tup.end();
-    }
+/// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
+pub fn top_down_angle(point : Vec3) -> f32 {
+    Vec3::new(point.x, point.y, 0.0).angle_between(Vec3::X)
 }
 
-impl<'de> Deserialize<'de> for PVec3
+pub fn main_angle_to_deg(angles : MainAngles) -> MainAngles {
+    return ( 
+        angles.0 * 180.0 / PI,
+        angles.1 * 180.0 / PI,
+        angles.2 * 180.0 / PI,
+        angles.3 * 180.0 / PI
+    ); 
+}
+
+pub fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
+    ((c.powi(2) - a.powi(2) - b.powi(2)) / 2.0 / a / b).acos()
+}
+
+impl SyArm
 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de> 
-    {
-        return Deserialize::deserialize(deserializer).map(|PVec3Helper {x, y, z}| { 
-            PVec3 { 
-                v: Vec3::new(x, y, z),
-                l: (x.powi(2) + y.powi(2) + z.powi(2)).powf(0.5)
+    // IO
+        pub fn from_const(cons : Constants) -> Self {
+            Self { 
+                tool: Vec3::new(0.0, 0.0, 0.0),     // TODO: Add proper tool
+                ctrl_base: GearBearing { 
+                    ctrl: Box::new(PwmStepperCtrl::new(
+                        StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_b, cons.pin_step_b
+                    )), 
+                    ratio: cons.ratio_b
+                }, 
+                ctrl_a1: CylinderTriangle { 
+                    l_a: cons.l_c1a, 
+                    l_b: cons.l_c1b, 
+                    cylinder: Cylinder { 
+                        ctrl: Box::new(PwmStepperCtrl::new(
+                            StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_1, cons.pin_step_1
+                        )), 
+                        rte_ratio: cons.ratio_1,
+                        pos_min: cons.c1_min, 
+                        pos_max: cons.c1_max
+                    }
+                }, 
+                ctrl_a2: CylinderTriangle { 
+                    l_a: cons.l_c2a, 
+                    l_b: cons.l_c2b, 
+                    cylinder: Cylinder { 
+                        ctrl: Box::new(PwmStepperCtrl::new(
+                            StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_2, cons.pin_step_2
+                        )), 
+                        rte_ratio: cons.ratio_2,
+                        pos_min: cons.c2_min, 
+                        pos_max: cons.c2_max
+                    }
+                }, 
+                ctrl_a3: GearBearing { 
+                    ctrl: Box::new(PwmStepperCtrl::new(
+                        StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_3, cons.pin_step_3
+                    )), 
+                    ratio: cons.ratio_3
+                }, 
+                cons, 
             }
-        });
-    }
-}
-
-impl PVec3 
-{
-    pub fn new(v : Vec3) -> Self
-    {
-        return PVec3 {
-            v: v,
-            l: v.length()
-        };
-    }
-
-    pub fn angle_for_tri(&self, a : &PVec3, b : &PVec3) -> f32
-    {
-        return ((a.l.powi(2) + b.l.powi(2) - self.l.powi(2)) / (2.0 * a.l * b.l)).acos()
-    }
-}
-
-impl AngTable 
-{
-    pub fn from_vecs(vt : &VecTable) -> Self 
-    {
-        let vsub_1 = PVec3::new(vt.a_1.v + vt.c_m1b.v);
-        let vsub_2 = PVec3::new(vt.a_1.v - vt.c_m2a.v);
-        let vsub_3 = PVec3::new(vt.a_2.v + vt.c_m2b.v);
-        let vsub_4 = PVec3::new(vt.a_2.v + vt.a_3.v);
-
-        let delta_a1 = vt.c_m1b.angle_for_tri(&vt.a_1, &vsub_1);
-        let delta_a2 = vt.c_m2a.angle_for_tri(&vt.a_1, &vsub_2);
-        let delta_a3 = vt.c_m2b.angle_for_tri(&vt.a_2, &vsub_3);
-
-        let gamma_1_ = vt.c_1.angle_for_tri(&vt.c_m1a, &vsub_1);
-        let gamma_1 = PI - gamma_1_;
-
-        let gamma_2_ = vt.c_2.angle_for_tri(&vsub_2, &vsub_3);
-        let gamma_2 = gamma_2_ - PI;
-
-        let gamma_3_ = vsub_4.angle_for_tri(&vt.a_2, &vt.a_3);
-        let gamma_3 = PI - gamma_3_; 
-
-        return Self {
-            gamma_1: gamma_1,
-            gamma_2: gamma_2,
-            gamma_3: gamma_3,
-
-            delta_a1: delta_a1,
-            delta_a2: delta_a2,
-            delta_a3: delta_a3
-        }; 
-    }
-}
-
-impl SyArmCalc
-{
-    pub fn from_dim(vecs_0 : &VecTable) -> Self
-    {
-        let angles = AngTable::from_vecs(&vecs_0);
-
-        Self { 
-            vecs: vecs_0.clone(), 
-            angles: angles.clone()
         }
-    }
 
-    pub fn load_0(p : &str) -> Self
-    {
-        let vecs_0 : VecTable = serde_json::from_str(
-            fs::read_to_string(p).unwrap().as_str()
-        ).unwrap();
+        pub fn load(path : &str) -> Self {
+            let json_content  = fs::read_to_string(path).unwrap();
+            return Self::from_const(serde_json::from_str(json_content.as_str()).unwrap());
+        }
 
-        return Self::from_dim(&vecs_0);
-    }   
+        pub fn load_var(&mut self, path : &str) {
 
-    pub fn save_0(&self, p : &str) 
-    {
-        fs::write(p, 
-            serde_json::to_string(&self.vecs).unwrap()
-        ).unwrap();
-    }
+        }
+
+        pub fn save_var(&self, path : &str) {
+            
+        }
+    // 
+
+    // Angles
+        pub fn phi_b(&self) -> f32 {
+            self.ctrl_base.get_pos()
+        }
+
+        pub fn phi_a1(&self) -> f32 {
+            self.ctrl_a1.gamma() + self.cons.delta_1a
+        }
+
+        pub fn phi_a2(&self) -> f32 {
+            self.ctrl_a2.gamma() + self.cons.delta_2a + self.cons.delta_2b
+        }
+
+        pub fn phi_a3(&self) -> f32 {
+            self.ctrl_a3.get_pos()
+        }
+    //
+
+    // Position calculation
+        pub fn a_dec(&self) -> PVec3 {
+            PVec3::new(Vec3::new(self.cons.l_a3, 0.0, 0.0) + self.tool)
+        }
+
+        pub fn points_by_angles(&self, angles : &MainAngles) -> MainPoints {
+            let (a_b, a_1, a_2, a_3) = self.vectors_by_angles(angles);
+            ( 
+                a_b,
+                a_b + a_1,
+                a_b + a_1 + a_2,
+                a_b + a_1 + a_2 + a_3
+            )
+        }
+
+        pub fn vectors_by_angles(&self, angles : &MainAngles) -> MainVectors {
+            let base_rot = Mat3::from_rotation_z(angles.0);
+            let a1_rot = Mat3::from_rotation_y(angles.1);
+            let a2_rot = Mat3::from_rotation_y(angles.2);
+            let a3_rot = Mat3::from_rotation_y(angles.3);
+
+            let a_b = self.cons.a_b.v;
+            let a_1 = Vec3::new(self.cons.l_a1, 0.0, 0.0);
+            let a_2 = Vec3::new(self.cons.l_a2, 0.0, 0.0);
+            let a_3 = Vec3::new(self.cons.l_a3, 0.0, 0.0);
+
+            ( 
+                base_rot * a_b,
+                base_rot * a1_rot * a_1,
+                base_rot * a1_rot * a2_rot * a_2,
+                base_rot * a1_rot * a2_rot * a3_rot * a_3
+            )
+        }
+
+        /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
+        pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> MainAngles {
+            let top_angle = top_down_angle(point);
+            let r_point = Mat3::from_rotation_z(-top_angle) * point;
+
+            let dec = self.a_dec().into_x();
+            let dec_rot = Mat3::from_rotation_y(-dec_angle) * dec.v;
+
+            let d_point = r_point - dec_rot - self.cons.a_b.v;
+            
+            let gamma_1_ = law_of_cosines(d_point.length(), self.cons.l_a1, self.cons.l_a2);
+            let gamma_2 = law_of_cosines(self.cons.l_a1, self.cons.l_a2, d_point.length());
+            let mut phi_h = Vec3::X.angle_between(d_point);
+
+            if self.cons.a_b.v.z > d_point.z {
+                phi_h = -phi_h;
+            }
+
+            (
+                top_angle,                                          // Base angle
+                -(phi_h + gamma_1_),                                   // First arm
+                PI - gamma_2,                                            // Second arm
+                - (PI - gamma_2) + (phi_h + gamma_1_) - dec_angle     // Third angle
+            )         
+        }
+    //
+
+    // Control
+        pub fn drive_to_angles(&mut self, angles : MainAngles) {
+            self.ctrl_base.set_pos(angles.0, self.cons.omega_b);
+            self.ctrl_a1.set_gamma(angles.1 - self.cons.delta_1a, self.cons.c1_v);
+            self.ctrl_a2.set_gamma(angles.2 - self.cons.delta_2a - self.cons.delta_2b, self.cons.c2_v);
+            self.ctrl_a3.set_pos(angles.3, self.cons.omega_3);
+        }
+    //
 }
