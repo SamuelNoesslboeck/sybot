@@ -4,6 +4,7 @@
 //! Control and calculation library for the SyArm robot
 
 mod pvec;
+pub mod interpreter;
 
 use std::{fs, f32::consts::PI};
 
@@ -110,7 +111,7 @@ pub fn main_angle_to_deg(angles : MainAngles) -> MainAngles {
 }
 
 pub fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
-    ((c.powi(2) - a.powi(2) - b.powi(2)) / 2.0 / a / b).acos()
+    ((a.powi(2) + b.powi(2) - c.powi(2)) / 2.0 / a / b).acos()
 }
 
 impl SyArm
@@ -165,7 +166,7 @@ impl SyArm
         }
 
         pub fn load_var(&mut self, path : &str) {
-
+            
         }
 
         pub fn save_var(&self, path : &str) {
@@ -179,7 +180,7 @@ impl SyArm
         }
 
         pub fn phi_a1(&self) -> f32 {
-            self.ctrl_a1.gamma() + self.cons.delta_1a
+            PI - self.ctrl_a1.gamma() + self.cons.delta_1a
         }
 
         pub fn phi_a2(&self) -> f32 {
@@ -215,7 +216,7 @@ impl SyArm
             let a_b = self.cons.a_b.v;
             let a_1 = Vec3::new(self.cons.l_a1, 0.0, 0.0);
             let a_2 = Vec3::new(self.cons.l_a2, 0.0, 0.0);
-            let a_3 = Vec3::new(self.cons.l_a3, 0.0, 0.0);
+            let a_3 = self.a_dec().v;
 
             ( 
                 base_rot * a_b,
@@ -236,10 +237,10 @@ impl SyArm
             let d_point = r_point - dec_rot - self.cons.a_b.v;
             
             let gamma_1_ = law_of_cosines(d_point.length(), self.cons.l_a1, self.cons.l_a2);
-            let gamma_2 = law_of_cosines(self.cons.l_a1, self.cons.l_a2, d_point.length());
+            let gamma_2 = law_of_cosines(self.cons.l_a2, self.cons.l_a1, d_point.length());
             let mut phi_h = Vec3::X.angle_between(d_point);
 
-            if self.cons.a_b.v.z > d_point.z {
+            if 0.0 > d_point.z {
                 phi_h = -phi_h;
             }
 
@@ -255,7 +256,7 @@ impl SyArm
     // Control
         pub fn drive_to_angles(&mut self, angles : MainAngles) {
             self.ctrl_base.set_pos(angles.0, self.cons.omega_b);
-            self.ctrl_a1.set_gamma(angles.1 - self.cons.delta_1a, self.cons.c1_v);
+            self.ctrl_a1.set_gamma(PI - angles.1 - self.cons.delta_1a, self.cons.c1_v);
             self.ctrl_a2.set_gamma(angles.2 - self.cons.delta_2a - self.cons.delta_2b, self.cons.c2_v);
             self.ctrl_a3.set_pos(angles.3, self.cons.omega_3);
         }
