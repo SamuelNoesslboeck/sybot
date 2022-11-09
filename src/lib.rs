@@ -254,6 +254,22 @@ impl SyArm
     //
 
     // Control
+        pub fn drive_base_rel(&mut self, angle : f32) {
+            self.ctrl_base.set_pos(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
+        }
+
+        pub fn drive_a1_rel(&mut self, angle : f32) {
+            self.ctrl_a1.set_gamma(self.ctrl_a1.gamma() + angle, self.cons.c1_v);
+        }
+
+        pub fn drive_a2_rel(&mut self, angle : f32) {
+            self.ctrl_a2.set_gamma(self.ctrl_a2.gamma() + angle, self.cons.c2_v);
+        }
+
+        pub fn drive_a3_rel(&mut self, angle : f32) {
+            self.ctrl_a3.set_pos(self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
+        }
+
         pub fn drive_to_angles(&mut self, angles : MainAngles) {
             self.ctrl_base.set_pos(angles.0, self.cons.omega_b);
             self.ctrl_a1.set_gamma(PI - angles.1 - self.cons.delta_1a, self.cons.c1_v);

@@ -13,6 +13,10 @@ path = "src/lib.rs"
 name = "test_arm"
 path = "bin/test_arm.rs"
 
+[[bin]]
+name = "test_deg"
+path = "bin/test_deg.rs"
+
 [dependencies]
 glam = "0.21.3"
 serde = { version = "1.0.104", features = ["derive"] }
