@@ -254,6 +254,7 @@ impl SyArm
     //
 
     // Control
+        /// 
         pub fn drive_base_rel(&mut self, angle : f32) {
             self.ctrl_base.set_pos(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
         }
@@ -277,4 +278,13 @@ impl SyArm
             self.ctrl_a3.set_pos(angles.3, self.cons.omega_3);
         }
     //
+
+    // Debug
+        pub fn debug_pins(&self) {
+            self.ctrl_base.ctrl.debug_pins();
+            self.ctrl_a1.cylinder.ctrl.debug_pins();
+            self.ctrl_a2.cylinder.ctrl.debug_pins();
+            self.ctrl_base.ctrl.debug_pins();
+        }
+    // 
 }
