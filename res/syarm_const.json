@@ -1,17 +1,17 @@
 {
     "u": 12.0,                    
 
-    "pin_dir_b": 11,         
-    "pin_step_b": 37,          
+    "pin_dir_b": 17,         
+    "pin_step_b": 26,          
 
-    "pin_dir_1": 13,
-    "pin_step_1": 35, 
+    "pin_dir_1": 27,
+    "pin_step_1": 19, 
 
-    "pin_dir_2": 15,
-    "pin_step_2": 23,
+    "pin_dir_2": 22,
+    "pin_step_2": 11,
 
-    "pin_dir_3": 29,
-    "pin_step_3": 21,
+    "pin_dir_3": 5,
+    "pin_step_3": 9,
 
 
     "a_b": [ 0.0, 0.0, 100.0 ],
