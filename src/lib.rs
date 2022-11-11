@@ -180,11 +180,11 @@ impl SyArm
         }
 
         pub fn phi_a1(&self) -> f32 {
-            PI - self.ctrl_a1.gamma() + self.cons.delta_1a
+            PI - self.ctrl_a1.get_gamma() + self.cons.delta_1a
         }
 
         pub fn phi_a2(&self) -> f32 {
-            self.ctrl_a2.gamma() + self.cons.delta_2a + self.cons.delta_2b
+            self.ctrl_a2.get_gamma() + self.cons.delta_2a + self.cons.delta_2b
         }
 
         pub fn phi_a3(&self) -> f32 {
@@ -260,11 +260,11 @@ impl SyArm
         }
 
         pub fn drive_a1_rel(&mut self, angle : f32) {
-            self.ctrl_a1.set_gamma(self.ctrl_a1.gamma() + angle, self.cons.c1_v);
+            self.ctrl_a1.set_gamma(self.ctrl_a1.get_gamma() + angle, self.cons.c1_v);
         }
 
         pub fn drive_a2_rel(&mut self, angle : f32) {
-            self.ctrl_a2.set_gamma(self.ctrl_a2.gamma() + angle, self.cons.c2_v);
+            self.ctrl_a2.set_gamma(self.ctrl_a2.get_gamma() + angle, self.cons.c2_v);
         }
 
         pub fn drive_a3_rel(&mut self, angle : f32) {
