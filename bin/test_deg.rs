@@ -7,7 +7,7 @@ fn main() {
     let dur = Duration::from_secs_f32(0.5);
     let angle = PI / 4.0;
 
-    // syarm.debug_pins();
+    syarm.debug_pins();
 
     println!("Running movement tests ... ");
 

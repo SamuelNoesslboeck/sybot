@@ -4,14 +4,14 @@
     "pin_dir_b": 17,         
     "pin_step_b": 26,          
 
-    "pin_dir_1": 22,
-    "pin_step_1": 11, 
+    "pin_dir_1": 5,
+    "pin_step_1": 9, 
 
     "pin_dir_2": 27,
     "pin_step_2": 19,
 
-    "pin_dir_3": 5,
-    "pin_step_3": 9,
+    "pin_dir_3": 22,
+    "pin_step_3": 11,
 
 
     "a_b": [ 0.0, 0.0, 100.0 ],
