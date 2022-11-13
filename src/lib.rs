@@ -30,20 +30,20 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
         pub u : f32,                    
 
         /// Direction ctrl pin for the base controller
-        pub pin_dir_b : u8,         
+        pub pin_dir_b : u16,         
         /// Step ctrl pin for the base controller
-        pub pin_step_b : u8,          
+        pub pin_step_b : u16,          
 
         /// Direction ctrl pin for the first cylinder
-        pub pin_dir_1 : u8, 
+        pub pin_dir_1 : u16, 
         /// Step ctrl pin for the first cylinder
-        pub pin_step_1 : u8, 
+        pub pin_step_1 : u16, 
 
-        pub pin_dir_2 : u8,
-        pub pin_step_2 : u8,
+        pub pin_dir_2 : u16,
+        pub pin_step_2 : u16,
 
-        pub pin_dir_3 : u8,
-        pub pin_step_3 : u8,
+        pub pin_dir_3 : u16,
+        pub pin_step_3 : u16,
 
         // Construction
         pub a_b : PVec3,
