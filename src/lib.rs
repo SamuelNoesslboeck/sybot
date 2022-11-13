@@ -284,7 +284,7 @@ impl SyArm
             self.ctrl_base.ctrl.debug_pins();
             self.ctrl_a1.cylinder.ctrl.debug_pins();
             self.ctrl_a2.cylinder.ctrl.debug_pins();
-            self.ctrl_base.ctrl.debug_pins();
+            self.ctrl_a3.ctrl.debug_pins();
         }
     // 
 }
