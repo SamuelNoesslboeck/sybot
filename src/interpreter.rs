@@ -7,12 +7,17 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm> {
         None
     };
 
+    let m1 : GCodeFunc<SyArm> = |arm : &mut SyArm, code : &GCode| { 
+        arm.debug_pins(); 
+        None
+    };
+
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
-            (0, m0)
+            
         ])),
         (Letter::Miscellaneous, NumEntries::from([
-            
+            (0, m0)
         ]))
     ]);
 
