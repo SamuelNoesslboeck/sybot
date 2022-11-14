@@ -131,30 +131,30 @@ impl SyArm
                     )), 
                     ratio: cons.ratio_b
                 }, 
-                ctrl_a1: CylinderTriangle { 
-                    l_a: cons.l_c1a, 
-                    l_b: cons.l_c1b, 
-                    cylinder: Cylinder { 
+                ctrl_a1: CylinderTriangle::new(
+                    Cylinder { 
                         ctrl: Box::new(PwmStepperCtrl::new(
                             StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_1, cons.pin_step_1
                         )), 
                         rte_ratio: cons.ratio_1,
                         pos_min: cons.c1_min, 
                         pos_max: cons.c1_max
-                    }
-                }, 
-                ctrl_a2: CylinderTriangle { 
-                    l_a: cons.l_c2a, 
-                    l_b: cons.l_c2b, 
-                    cylinder: Cylinder { 
+                    },
+                    cons.l_c1a, 
+                    cons.l_c1b
+                ), 
+                ctrl_a2: CylinderTriangle::new(
+                    Cylinder { 
                         ctrl: Box::new(PwmStepperCtrl::new(
                             StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_2, cons.pin_step_2
                         )), 
                         rte_ratio: cons.ratio_2,
                         pos_min: cons.c2_min, 
                         pos_max: cons.c2_max
-                    }
-                }, 
+                    },
+                    cons.l_c2a,
+                    cons.l_c2b
+                ), 
                 ctrl_a3: GearBearing { 
                     ctrl: Box::new(PwmStepperCtrl::new(
                         StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_3, cons.pin_step_3
