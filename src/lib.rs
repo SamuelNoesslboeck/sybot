@@ -240,16 +240,19 @@ impl SyArm
 
         /// Get main (most relevant, characteristic) vectors of the robot by the main angles
         pub fn vectors_by_angles(&self, angles : &MainAngles) -> MainVectors {
+            // Rotation matrices used multiple times
             let base_rot = Mat3::from_rotation_z(angles.0);
             let a1_rot = Mat3::from_rotation_y(angles.1);
             let a2_rot = Mat3::from_rotation_y(angles.2);
             let a3_rot = Mat3::from_rotation_y(angles.3);
 
+            // Create vectors in default position (Pointing along X-Axis) except base
             let a_b = self.cons.a_b.v;
             let a_1 = Vec3::new(self.cons.l_a1, 0.0, 0.0);
             let a_2 = Vec3::new(self.cons.l_a2, 0.0, 0.0);
             let a_3 = self.a_dec().v;
 
+            // Multiply up
             ( 
                 base_rot * a_b,
                 base_rot * a1_rot * a_1,
@@ -260,6 +263,7 @@ impl SyArm
 
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
         pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> MainAngles {
+            // Rotate onto X-Z plane
             let top_angle = top_down_angle(point);
             let r_point = Mat3::from_rotation_z(-top_angle) * point;
 
