@@ -18,15 +18,15 @@ fn main() {
     println!("Done!");
 
     print!(" -> Moving A1 ... ");
-    syarm.drive_a1_rel(angle / 4.0);
+    syarm.ctrl_a1.cylinder.extend(10.0, 5.0);
     sleep(dur);
-    syarm.drive_a1_rel(-angle / 4.0);
+    syarm.ctrl_a1.cylinder.extend(-10.0, 5.0);
     println!("Done!");
 
     print!(" -> Moving A2 ... ");
-    syarm.drive_a2_rel(angle / 4.0);
+    syarm.ctrl_a2.cylinder.extend(10.0, 5.0);
     sleep(dur);
-    syarm.drive_a2_rel(-angle / 4.0);
+    syarm.ctrl_a2.cylinder.extend(-10.0, 5.0);
     println!("Done!");
 
     print!(" -> Moving A3 ... ");
