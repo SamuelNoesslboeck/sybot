@@ -16,6 +16,8 @@ use stepper_lib::{controller::{PwmStepperCtrl, Cylinder, GearBearing, CylinderTr
 use pvec::PVec3;
 
 // Types
+/// Angles of all the kinematic axis of the robot  \
+/// (Base, A1, A2, A3)
 pub type MainAngles = (f32, f32, f32, f32);
 pub type MainPoints = (Vec3, Vec3, Vec3, Vec3);
 pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
@@ -26,7 +28,7 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
     pub struct Constants 
     {
         // Circuit
-        /// Circuit voltage
+        /// Voltage supplied to the motors
         pub u : f32,                    
 
         /// Direction ctrl pin for the base controller
@@ -48,8 +50,11 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
         // Construction
         pub a_b : PVec3,
 
+        /// Length of the first arm segment
         pub l_a1 : f32,
+        /// Length of the second arm segment
         pub l_a2 : f32,
+        /// Length of the third arm segment
         pub l_a3 : f32,
 
         pub l_c1a : f32,
@@ -165,38 +170,64 @@ impl SyArm
             return Self::from_const(serde_json::from_str(json_content.as_str()).unwrap());
         }
 
-        pub fn load_var(&mut self, path : &str) {
+        // pub fn load_var(&mut self, path : &str) {
             
-        }
+        // }
 
-        pub fn save_var(&self, path : &str) {
+        // pub fn save_var(&self, path : &str) {
             
-        }
+        // }
     // 
 
     // Angles
-        pub fn phi_b(&self) -> f32 {
-            self.ctrl_base.get_pos()
-        }
+        // Base
+            pub fn phi_b(&self) -> f32 {
+                self.ctrl_base.get_pos()
+            }
 
-        pub fn phi_a1(&self) -> f32 {
-            PI - self.ctrl_a1.get_gamma() + self.cons.delta_1a
-        }
+            pub fn gamma_b(&self, phi_b : f32) -> f32 {
+                phi_b
+            }
+        //
+        
+        // First arm segment
+            pub fn phi_a1(&self) -> f32 {
+                PI - self.ctrl_a1.get_gamma() + self.cons.delta_1a
+            }
 
-        pub fn phi_a2(&self) -> f32 {
-            self.ctrl_a2.get_gamma() + self.cons.delta_2a + self.cons.delta_2b
-        }
+            pub fn gamma_a1(&self, phi_a1 : f32) -> f32 {
+                PI - phi_a1 + self.cons.delta_1a
+            }
+        //
+        
+        // Second arm segment
+            pub fn phi_a2(&self) -> f32 {
+                self.ctrl_a2.get_gamma() + self.cons.delta_2a + self.cons.delta_2b
+            }
 
-        pub fn phi_a3(&self) -> f32 {
-            self.ctrl_a3.get_pos()
-        }
+            pub fn gamma_a2(&self, phi_a2 : f32) -> f32 {
+                phi_a2 - self.cons.delta_2a - self.cons.delta_2b
+            }
+        //
+        
+        // Third arm segment
+            pub fn phi_a3(&self) -> f32 {
+                self.ctrl_a3.get_pos()
+            }
+
+            pub fn gamma_a3(&self, phi_a3 : f32) -> f32 {
+                phi_a3
+            }
+        //
     //
 
     // Position calculation
+        /// Get the vector of the decoration axis
         pub fn a_dec(&self) -> PVec3 {
             PVec3::new(Vec3::new(self.cons.l_a3, 0.0, 0.0) + self.tool)
         }
 
+        /// Returns the main points by the given main angles
         pub fn points_by_angles(&self, angles : &MainAngles) -> MainPoints {
             let (a_b, a_1, a_2, a_3) = self.vectors_by_angles(angles);
             ( 
@@ -207,6 +238,7 @@ impl SyArm
             )
         }
 
+        /// Get main (most relevant, characteristic) vectors of the robot by the main angles
         pub fn vectors_by_angles(&self, angles : &MainAngles) -> MainVectors {
             let base_rot = Mat3::from_rotation_z(angles.0);
             let a1_rot = Mat3::from_rotation_y(angles.1);
@@ -254,7 +286,6 @@ impl SyArm
     //
 
     // Control
-        /// 
         pub fn drive_base_rel(&mut self, angle : f32) {
             self.ctrl_base.set_pos(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
         }
