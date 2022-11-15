@@ -12,7 +12,7 @@ use glam::{Mat3, Vec3};
 use serde::{Serialize, Deserialize};
 // use serde_json::{Value, json};
 
-use stepper_lib::{controller::{PwmStepperCtrl, Cylinder, GearBearing, CylinderTriangle}, data::StepperData};
+use stepper_lib::{controller::{PwmStepperCtrl}, comp::{Cylinder, GearBearing, CylinderTriangle}, data::StepperData};
 use pvec::PVec3;
 
 // Types
