@@ -8,14 +8,17 @@ pub mod interpreter;
 
 use std::{fs, f32::consts::PI};
 
-use glam::{Mat3, Vec3};
 use serde::{Serialize, Deserialize};
 // use serde_json::{Value, json};
 
-use stepper_lib::{controller::{PwmStepperCtrl}, comp::{Cylinder, GearBearing, CylinderTriangle}, data::StepperData};
+use stepper_lib::{controller::PwmStepperCtrl, comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, data::StepperData};
 use pvec::PVec3;
 
 // Types
+// Library Types
+pub type Vec3 = glam::Vec3;
+pub type Mat3 = glam::Mat3;
+
 /// Angles of all the kinematic axis of the robot  \
 /// (Base, A1, A2, A3)
 pub type MainAngles = (f32, f32, f32, f32);
@@ -35,17 +38,27 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
         pub pin_dir_b : u16,         
         /// Step ctrl pin for the base controller
         pub pin_step_b : u16,          
+        pub pin_meas_b : u16,
 
         /// Direction ctrl pin for the first cylinder
         pub pin_dir_1 : u16, 
         /// Step ctrl pin for the first cylinder
         pub pin_step_1 : u16, 
+        pub pin_meas_1 : u16,
 
         pub pin_dir_2 : u16,
         pub pin_step_2 : u16,
+        pub pin_meas_2 : u16,
 
         pub pin_dir_3 : u16,
         pub pin_step_3 : u16,
+        pub pin_meas_3 : u16,
+
+        // Measured
+        pub meas_b : f32,
+        pub meas_a1 : f32,
+        pub meas_a2 : f32,
+        pub meas_a3 : f32,
 
         // Construction
         pub a_b : PVec3,
@@ -63,6 +76,7 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
         pub l_c2b : f32,
 
         pub delta_1a : f32,
+        pub delta_1b : f32,
         pub delta_2a : f32,
         pub delta_2b : f32,
 
@@ -87,11 +101,17 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
         pub ratio_3 : f32
     }
 
+    #[derive(Deserialize, Serialize, Clone)]
+    pub struct Variables
+    {
+        pub load : f32
+    }
+
     /// Calculation and control struct for the SyArm robot
     pub struct SyArm
     {
         pub cons : Constants,
-        pub tool : Vec3,
+        pub tool : Box<dyn Tool>,
 
         // Controls
         pub ctrl_base : GearBearing,
@@ -124,7 +144,7 @@ impl SyArm
     // IO
         pub fn from_const(cons : Constants) -> Self {
             Self { 
-                tool: Vec3::new(0.0, 0.0, 0.0),     // TODO: Add proper tool
+                tool: Box::new(NoTool::new()),    
                 ctrl_base: GearBearing { 
                     ctrl: Box::new(PwmStepperCtrl::new(
                         StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_b, cons.pin_step_b
@@ -177,6 +197,13 @@ impl SyArm
         // pub fn save_var(&self, path : &str) {
             
         // }
+
+        pub fn init_meas(&mut self) {
+            self.ctrl_base.ctrl.init_meas(self.cons.pin_meas_b);
+            self.ctrl_a1.cylinder.ctrl.init_meas(self.cons.pin_meas_1);
+            self.ctrl_a2.cylinder.ctrl.init_meas(self.cons.pin_meas_2);
+            self.ctrl_a3.ctrl.init_meas(self.cons.pin_meas_3);
+        }
     // 
 
     // Angles
@@ -224,7 +251,7 @@ impl SyArm
     // Position calculation
         /// Get the vector of the decoration axis
         pub fn a_dec(&self) -> PVec3 {
-            PVec3::new(Vec3::new(self.cons.l_a3, 0.0, 0.0) + self.tool)
+            PVec3::new(Vec3::new(self.cons.l_a3, 0.0, 0.0) + self.tool.get_vec())
         }
 
         /// Returns the main points by the given main angles
@@ -311,6 +338,13 @@ impl SyArm
             self.ctrl_a1.set_gamma(PI - angles.1 - self.cons.delta_1a, self.cons.c1_v);
             self.ctrl_a2.set_gamma(angles.2 - self.cons.delta_2a - self.cons.delta_2b, self.cons.c2_v);
             self.ctrl_a3.set_pos(angles.3, self.cons.omega_3);
+        }
+
+        pub fn measure(&mut self, accuracy : u64) {
+            // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
+            self.ctrl_a1.cylinder.measure(self.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, 0.0, accuracy);
+            self.ctrl_a2.cylinder.measure(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, 0.0, accuracy);
+            self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, true, 0.0, accuracy);
         }
     //
 
