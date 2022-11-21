@@ -17,6 +17,10 @@ path = "bin/test_arm.rs"
 name = "test_deg"
 path = "bin/test_deg.rs"
 
+[[bin]]
+name = "test_meas"
+path = "bin/test_meas.rs"
+
 [dependencies]
 gcode = "0.6.1"
 glam = "0.21.3"
