@@ -142,6 +142,7 @@ pub fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
 impl SyArm
 {
     // IO
+        /// Creates a new syarm instance by a constants table
         pub fn from_const(cons : Constants) -> Self {
             Self { 
                 tool: Box::new(NoTool::new()),    
@@ -183,9 +184,10 @@ impl SyArm
                 }, 
                 cons, 
             }
-        }
+        }  
 
-        pub fn load(path : &str) -> Self {
+        /// Loads a new SyArm instance by creating a constants table out of the json file content at the given path
+        pub fn load_json(path : &str) -> Self {
             let json_content  = fs::read_to_string(path).unwrap();
             return Self::from_const(serde_json::from_str(json_content.as_str()).unwrap());
         }
@@ -198,6 +200,7 @@ impl SyArm
             
         // }
 
+        /// Initializes measurement systems
         pub fn init_meas(&mut self) {
             self.ctrl_base.ctrl.init_meas(self.cons.pin_meas_b);
             self.ctrl_a1.cylinder.ctrl.init_meas(self.cons.pin_meas_1);
@@ -207,21 +210,28 @@ impl SyArm
     // 
 
     // Angles
+        // Phi: Used by calculation (rotation matrix)
+        // Gamma: Used for controls (motor positioning)
+
         // Base
+            /// Get the angles used by the calculations for the base
             pub fn phi_b(&self) -> f32 {
                 self.ctrl_base.get_pos()
             }
 
+            /// Get the angle used by the controls for the base
             pub fn gamma_b(&self, phi_b : f32) -> f32 {
                 phi_b
             }
         //
         
         // First arm segment
+            /// Get the angles 
             pub fn phi_a1(&self) -> f32 {
                 PI - self.ctrl_a1.get_gamma() + self.cons.delta_1a
             }
 
+            /// Get the angle used by the controls for the first arm segment
             pub fn gamma_a1(&self, phi_a1 : f32) -> f32 {
                 PI - phi_a1 + self.cons.delta_1a
             }
@@ -253,6 +263,10 @@ impl SyArm
         pub fn a_dec(&self) -> PVec3 {
             PVec3::new(Vec3::new(self.cons.l_a3, 0.0, 0.0) + self.tool.get_vec())
         }
+
+        // pub fn current_angles(&self, angles : &MainAngles) -> MainPoints {
+
+        // }
 
         /// Returns the main points by the given main angles
         pub fn points_by_angles(&self, angles : &MainAngles) -> MainPoints {
