@@ -10,5 +10,7 @@ fn main() {
 
     println!("Running measurement tests ... ");
 
+    sleep(Duration::from_secs(1));
+
     syarm.measure(5);
 }
