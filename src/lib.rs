@@ -21,7 +21,9 @@ pub type Mat3 = glam::Mat3;
 
 /// Angles of all the kinematic axis of the robot  \
 /// (Base, A1, A2, A3)
-pub type MainAngles = (f32, f32, f32, f32);
+pub type Inertias = (f32, f32, f32, f32);
+pub type MainGamma = (f32, f32, f32, f32);
+pub type MainPhis = (f32, f32, f32, f32);
 pub type MainPoints = (Vec3, Vec3, Vec3, Vec3);
 pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
 
@@ -98,7 +100,13 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
         pub phi3_min : f32,
         pub phi3_max : f32,
         pub omega_3 : f32,
-        pub ratio_3 : f32
+        pub ratio_3 : f32,
+
+        // Load calculation
+        pub m_b : f32,
+        pub m_a1 : f32,
+        pub m_a2 : f32,
+        pub m_a3 : f32
     }
 
     #[derive(Deserialize, Serialize, Clone)]
@@ -110,6 +118,7 @@ pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
     /// Calculation and control struct for the SyArm robot
     pub struct SyArm
     {
+        // Values
         pub cons : Constants,
         pub tool : Box<dyn Tool>,
 
@@ -126,7 +135,7 @@ pub fn top_down_angle(point : Vec3) -> f32 {
     Vec3::new(point.x, point.y, 0.0).angle_between(Vec3::X)
 }
 
-pub fn main_angle_to_deg(angles : MainAngles) -> MainAngles {
+pub fn main_angle_to_deg(angles : MainPhis) -> MainPhis {
     return ( 
         angles.0 * 180.0 / PI,
         angles.1 * 180.0 / PI,
@@ -269,7 +278,7 @@ impl SyArm
         // }
 
         /// Returns the main points by the given main angles
-        pub fn points_by_angles(&self, angles : &MainAngles) -> MainPoints {
+        pub fn points_by_angles(&self, angles : &MainPhis) -> MainPoints {
             let (a_b, a_1, a_2, a_3) = self.vectors_by_angles(angles);
             ( 
                 a_b,
@@ -280,7 +289,7 @@ impl SyArm
         }
 
         /// Get main (most relevant, characteristic) vectors of the robot by the main angles
-        pub fn vectors_by_angles(&self, angles : &MainAngles) -> MainVectors {
+        pub fn vectors_by_angles(&self, angles : &MainPhis) -> MainVectors {
             // Rotation matrices used multiple times
             let base_rot = Mat3::from_rotation_z(angles.0);
             let a1_rot = Mat3::from_rotation_y(angles.1);
@@ -303,7 +312,7 @@ impl SyArm
         }
 
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
-        pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> MainAngles {
+        pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> MainPhis {
             // Rotate onto X-Z plane
             let top_angle = top_down_angle(point);
             let r_point = Mat3::from_rotation_z(-top_angle) * point;
@@ -330,6 +339,12 @@ impl SyArm
         }
     //
 
+    // Load / Inertia calculation
+        pub fn get_inhertias(&self) {
+
+        }
+    // 
+
     // Control
         pub fn drive_base_rel(&mut self, angle : f32) {
             self.ctrl_base.set_pos(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
@@ -347,7 +362,7 @@ impl SyArm
             self.ctrl_a3.set_pos(self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
         }
 
-        pub fn drive_to_angles(&mut self, angles : MainAngles) {
+        pub fn drive_to_angles(&mut self, angles : MainPhis) {
             self.ctrl_base.set_pos(angles.0, self.cons.omega_b);
             self.ctrl_a1.set_gamma(PI - angles.1 - self.cons.delta_1a, self.cons.c1_v);
             self.ctrl_a2.set_gamma(angles.2 - self.cons.delta_2a - self.cons.delta_2b, self.cons.c2_v);
