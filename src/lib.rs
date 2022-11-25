@@ -11,7 +11,7 @@ use std::{fs, f32::consts::PI};
 use serde::{Serialize, Deserialize};
 // use serde_json::{Value, json};
 
-use stepper_lib::{controller::PwmStepperCtrl, comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, data::StepperData};
+use stepper_lib::{ctrl::PwmStepperCtrl, comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, data::StepperData};
 use pvec::PVec3;
 
 // Types
@@ -22,10 +22,10 @@ pub type Mat3 = glam::Mat3;
 /// Angles of all the kinematic axis of the robot  \
 /// (Base, A1, A2, A3)
 pub type Inertias = (f32, f32, f32, f32);
-pub type MainGamma = (f32, f32, f32, f32);
-pub type MainPhis = (f32, f32, f32, f32);
-pub type MainPoints = (Vec3, Vec3, Vec3, Vec3);
-pub type MainVectors = (Vec3, Vec3, Vec3, Vec3);
+pub type Gammas = (f32, f32, f32, f32);
+pub type Phis = (f32, f32, f32, f32);
+pub type Points = (Vec3, Vec3, Vec3, Vec3);
+pub type Vectors = (Vec3, Vec3, Vec3, Vec3);
 
 // Structures
     /// All construction constants for the syarm
@@ -135,7 +135,7 @@ pub fn top_down_angle(point : Vec3) -> f32 {
     Vec3::new(point.x, point.y, 0.0).angle_between(Vec3::X)
 }
 
-pub fn main_angle_to_deg(angles : MainPhis) -> MainPhis {
+pub fn _angle_to_deg(angles : Phis) -> Phis {
     return ( 
         angles.0 * 180.0 / PI,
         angles.1 * 180.0 / PI,
@@ -224,8 +224,8 @@ impl SyArm
 
         // Base
             /// Get the angles used by the calculations for the base
-            pub fn phi_b(&self) -> f32 {
-                self.ctrl_base.get_pos()
+            pub fn phi_b(&self, gamma_b : f32) -> f32 {
+                gamma_b
             }
 
             /// Get the angle used by the controls for the base
@@ -236,35 +236,56 @@ impl SyArm
         
         // First arm segment
             /// Get the angles 
-            pub fn phi_a1(&self) -> f32 {
-                PI - self.ctrl_a1.get_gamma() + self.cons.delta_1a
+            pub fn phi_a1(&self, gamma_a1 : f32) -> f32 {
+                PI - gamma_a1 - self.cons.delta_1a - self.cons.delta_1b
             }
 
             /// Get the angle used by the controls for the first arm segment
             pub fn gamma_a1(&self, phi_a1 : f32) -> f32 {
-                PI - phi_a1 + self.cons.delta_1a
+                PI - phi_a1 - self.cons.delta_1a - self.cons.delta_2b
             }
         //
         
         // Second arm segment
-            pub fn phi_a2(&self) -> f32 {
-                self.ctrl_a2.get_gamma() + self.cons.delta_2a + self.cons.delta_2b
+            pub fn phi_a2(&self, gamma_a2 : f32) -> f32 {
+                gamma_a2 + self.cons.delta_2a + self.cons.delta_2b - PI
             }
 
             pub fn gamma_a2(&self, phi_a2 : f32) -> f32 {
-                phi_a2 - self.cons.delta_2a - self.cons.delta_2b
+                PI + phi_a2 - self.cons.delta_2a - self.cons.delta_2b
             }
         //
         
         // Third arm segment
-            pub fn phi_a3(&self) -> f32 {
-                self.ctrl_a3.get_pos()
+            pub fn phi_a3(&self, gamma_a3 : f32) -> f32 {
+                gamma_a3
             }
 
             pub fn gamma_a3(&self, phi_a3 : f32) -> f32 {
                 phi_a3
             }
         //
+
+        pub fn get_all_gamma(&self) -> Gammas {
+            ( self.ctrl_base.get_pos(), self.ctrl_a1.get_gamma(), self.ctrl_a2.get_gamma(), self.ctrl_a3.get_pos() )
+        }
+
+        pub fn gammas_for_phis(&self, phis : &Phis) -> Gammas {
+            ( self.gamma_b(phis.0), self.gamma_a1(phis.1), self.gamma_a2(phis.2), self.gamma_a3(phis.3) )
+        } 
+
+        pub fn get_all_phis(&self) -> Phis {
+            ( 
+                self.phi_b(self.ctrl_base.get_pos()), 
+                self.phi_a1(self.ctrl_a1.get_gamma()), 
+                self.phi_a2(self.ctrl_a2.get_gamma()), 
+                self.phi_a3(self.ctrl_a3.get_pos())
+            )
+        }
+
+        pub fn phis_for_gammas(&self, gammas : &Gammas) -> Phis {
+            ( self.phi_a1(gammas.0), self.phi_a1(gammas.1), self.phi_a2(gammas.2), self.phi_a3(gammas.3) )
+        }
     //
 
     // Position calculation
@@ -273,12 +294,8 @@ impl SyArm
             PVec3::new(Vec3::new(self.cons.l_a3, 0.0, 0.0) + self.tool.get_vec())
         }
 
-        // pub fn current_angles(&self, angles : &MainAngles) -> MainPoints {
-
-        // }
-
-        /// Returns the main points by the given main angles
-        pub fn points_by_angles(&self, angles : &MainPhis) -> MainPoints {
+        /// Returns the  points by the given  angles
+        pub fn points_by_angles(&self, angles : &Phis) -> Points {
             let (a_b, a_1, a_2, a_3) = self.vectors_by_angles(angles);
             ( 
                 a_b,
@@ -288,8 +305,8 @@ impl SyArm
             )
         }
 
-        /// Get main (most relevant, characteristic) vectors of the robot by the main angles
-        pub fn vectors_by_angles(&self, angles : &MainPhis) -> MainVectors {
+        /// Get the (most relevant, characteristic) vectors of the robot by the  angles
+        pub fn vectors_by_angles(&self, angles : &Phis) -> Vectors {
             // Rotation matrices used multiple times
             let base_rot = Mat3::from_rotation_z(angles.0);
             let a1_rot = Mat3::from_rotation_y(angles.1);
@@ -312,18 +329,18 @@ impl SyArm
         }
 
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
-        pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> MainPhis {
+        pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> Gammas {
             // Rotate onto X-Z plane
-            let top_angle = top_down_angle(point);
-            let r_point = Mat3::from_rotation_z(-top_angle) * point;
+            let phi_b = top_down_angle(point);
+            let rot_point = Mat3::from_rotation_z(-phi_b) * point;
 
             let dec = self.a_dec().into_x();
-            let dec_rot = Mat3::from_rotation_y(-dec_angle) * dec.v;
+            let dec_rot = Mat3::from_rotation_y(dec_angle) * dec.v;
 
-            let d_point = r_point - dec_rot - self.cons.a_b.v;
+            let d_point = rot_point - dec_rot - Mat3::from_rotation_z(phi_b) * self.cons.a_b.v;
             
             let gamma_1_ = law_of_cosines(d_point.length(), self.cons.l_a1, self.cons.l_a2);
-            let gamma_2 = law_of_cosines(self.cons.l_a2, self.cons.l_a1, d_point.length());
+            let gamma_2_ = law_of_cosines(self.cons.l_a2, self.cons.l_a1, d_point.length());
             let mut phi_h = Vec3::X.angle_between(d_point);
 
             if 0.0 > d_point.z {
@@ -331,9 +348,9 @@ impl SyArm
             }
 
             (
-                top_angle,                                          // Base angle
-                -(phi_h + gamma_1_),                                   // First arm
-                PI - gamma_2,                                            // Second arm
+                phi_b,                                          // Base angle
+                gamma_1_,                                   // First arm
+                gamma_2_ - self.cons.delta_2a - self.cons.delta_2b,              // Second arm
                 - (PI - gamma_2) + (phi_h + gamma_1_) - dec_angle     // Third angle
             )         
         }
@@ -362,7 +379,7 @@ impl SyArm
             self.ctrl_a3.set_pos(self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
         }
 
-        pub fn drive_to_angles(&mut self, angles : MainPhis) {
+        pub fn drive_to_angles(&mut self, angles : Phis) {
             self.ctrl_base.set_pos(angles.0, self.cons.omega_b);
             self.ctrl_a1.set_gamma(PI - angles.1 - self.cons.delta_1a, self.cons.c1_v);
             self.ctrl_a2.set_gamma(angles.2 - self.cons.delta_2a - self.cons.delta_2b, self.cons.c2_v);
