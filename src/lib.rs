@@ -11,7 +11,13 @@ use std::{fs, f32::consts::PI};
 use serde::{Serialize, Deserialize};
 // use serde_json::{Value, json};
 
-use stepper_lib::{ctrl::PwmStepperCtrl, comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, data::StepperData};
+use stepper_lib::{
+    ctrl::PwmStepperCtrl, 
+    comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, 
+    data::StepperData, 
+    math::{inertia_rod, inertia_rod_end, inertia_point}
+};
+
 use pvec::PVec3;
 
 // Types
@@ -358,12 +364,14 @@ impl SyArm
     //
 
     // Load / Inertia calculation
-        // pub fn get_inertias(&self) -> Inertias {
-
-        // }
+        pub fn get_inertias(&self) -> Inertias {
+            let ( a_b, a_1, a_2, a_3 ) = self.vectors_by_angles(&self.get_all_phis());
+            
+            let j_3 = inertia_rod_end(self.cons.l_a3, self.cons.m_a3) + self.tool.get_inertia() + inertia_point(self.cons.l_a3, self.tool.get_mass());
+        }
 
         pub fn apply_inertias(&mut self, inertias : &Inertias) {
-
+            
         }
     // 
 
