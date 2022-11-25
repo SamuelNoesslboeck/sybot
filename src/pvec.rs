@@ -71,4 +71,11 @@ impl PVec3
             l: self.l 
         };
     }
+
+    pub fn into_y(&self) -> Self {
+        return PVec3 { 
+            v: Vec3::new(0.0, self.l, 0.0), 
+            l: self.l 
+        };
+    }
 }

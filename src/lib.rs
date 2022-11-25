@@ -291,7 +291,7 @@ impl SyArm
     // Position calculation
         /// Get the vector of the decoration axis
         pub fn a_dec(&self) -> PVec3 {
-            PVec3::new(Vec3::new(self.cons.l_a3, 0.0, 0.0) + self.tool.get_vec())
+            PVec3::new(Vec3::new(0.0, self.cons.l_a3, 0.0) + self.tool.get_vec())
         }
 
         /// Returns the  points by the given  angles
@@ -309,14 +309,14 @@ impl SyArm
         pub fn vectors_by_angles(&self, angles : &Phis) -> Vectors {
             // Rotation matrices used multiple times
             let base_rot = Mat3::from_rotation_z(angles.0);
-            let a1_rot = Mat3::from_rotation_y(angles.1);
-            let a2_rot = Mat3::from_rotation_y(angles.2);
-            let a3_rot = Mat3::from_rotation_y(angles.3);
+            let a1_rot = Mat3::from_rotation_x(angles.1);
+            let a2_rot = Mat3::from_rotation_x(angles.2);
+            let a3_rot = Mat3::from_rotation_x(angles.3);
 
             // Create vectors in default position (Pointing along X-Axis) except base
             let a_b = self.cons.a_b.v;
-            let a_1 = Vec3::new(self.cons.l_a1, 0.0, 0.0);
-            let a_2 = Vec3::new(self.cons.l_a2, 0.0, 0.0);
+            let a_1 = Vec3::new(0.0, self.cons.l_a1,  0.0);
+            let a_2 = Vec3::new(0.0, self.cons.l_a2, 0.0);
             let a_3 = self.a_dec().v;
 
             // Multiply up
@@ -329,35 +329,40 @@ impl SyArm
         }
 
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
-        pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> Gammas {
-            // Rotate onto X-Z plane
-            let phi_b = top_down_angle(point);
+        pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> Phis {
+            // Rotate onto Y-Z plane
+            let phi_b = top_down_angle(point) - PI/2.0;
             let rot_point = Mat3::from_rotation_z(-phi_b) * point;
 
-            let dec = self.a_dec().into_x();
-            let dec_rot = Mat3::from_rotation_y(dec_angle) * dec.v;
+            // Calculate the decoration vector
+            let dec = self.a_dec().into_y();
+            let dec_rot = Mat3::from_rotation_x(dec_angle) * dec.v;
 
+            // Triganlge point
             let d_point = rot_point - dec_rot - Mat3::from_rotation_z(phi_b) * self.cons.a_b.v;
             
-            let gamma_1_ = law_of_cosines(d_point.length(), self.cons.l_a1, self.cons.l_a2);
-            let gamma_2_ = law_of_cosines(self.cons.l_a2, self.cons.l_a1, d_point.length());
-            let mut phi_h = Vec3::X.angle_between(d_point);
+            let phi_h1 = law_of_cosines(d_point.length(), self.cons.l_a1, self.cons.l_a2);      // Helper angle for phi_1 calc
+            let gamma_2_ = law_of_cosines(self.cons.l_a2, self.cons.l_a1, d_point.length());    // Gamma 2 with side angles
+            let mut phi_h = Vec3::Y.angle_between(d_point);                                             // Direct angle towards point
 
             if 0.0 > d_point.z {
                 phi_h = -phi_h;
             }
 
-            (
-                phi_b,                                          // Base angle
-                gamma_1_,                                   // First arm
-                gamma_2_ - self.cons.delta_2a - self.cons.delta_2b,              // Second arm
-                - (PI - gamma_2) + (phi_h + gamma_1_) - dec_angle     // Third angle
-            )         
+            let phi_1 = phi_h + phi_h1;
+            let phi_2 = gamma_2_ - PI;
+            let phi_3 = dec_angle - (phi_1 + phi_2);
+
+            ( phi_b, phi_1, phi_2, phi_3 )         
         }
     //
 
     // Load / Inertia calculation
-        pub fn get_inhertias(&self) {
+        // pub fn get_inertias(&self) -> Inertias {
+
+        // }
+
+        pub fn apply_inertias(&mut self, inertias : &Inertias) {
 
         }
     // 
