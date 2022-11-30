@@ -15,7 +15,7 @@ use stepper_lib::{
     ctrl::PwmStepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, 
     data::StepperData, 
-    math::{inertia_point, inertia_rod_constr, forces_segment}
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass}
 };
 
 use pvec::PVec3;
@@ -34,7 +34,7 @@ pub type CylVectors = (
     (Vec3, Vec3)        // C2 (direction, position)
 );
 
-pub type Inertias = (f32, f32, f32, f32);
+pub type Inertias = (f32, f32, f32, f32);       // (kg*mm^2, kg, kg, kg*mm^2)
 pub type Gammas = (f32, f32, f32, f32);
 pub type Phis = (f32, f32, f32, f32);
 pub type Points = (Vec3, Vec3, Vec3, Vec3);
@@ -372,17 +372,20 @@ impl SyArm
 
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {
-            let ( a_b, a_1, a_2, a_3 ) = vecs;
+            let ( _, a_1, a_2, _ ) = *vecs;
+
+            let base_helper = Mat3::from_rotation_z(-self.ctrl_base.get_pos()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
 
             (
-                (),
-                (),
-                ()
+                (a_1 / 2.0 - base_helper, base_helper),
+                (a_1 / 2.0 + a_2 / 2.0, a_1 / 2.0),
+                (a_1 / 2.0 + a_2 / 2.0, a_2 / 2.0)
             )
         }
 
         pub fn get_inertias(&self, vecs : &Vectors) -> Inertias {
             let ( a_b, a_1, a_2, a_3 ) = *vecs;
+            let ( (c1_dir, c1_pos), (_, _), (c2_dir, c2_pos) ) = self.get_cylinder_vecs(vecs);
 
             let mut segments = vec![ (self.cons.m_a3, a_3) ];
             let j_3 = inertia_rod_constr(&segments) + inertia_point(a_3 + self.tool.get_vec(), self.tool.get_mass());
@@ -394,13 +397,23 @@ impl SyArm
             let j_1 = inertia_rod_constr(&segments) + inertia_point(a_1 + a_2 + a_3 + self.tool.get_vec(), self.tool.get_mass());
 
             segments.insert(0, (self.cons.m_b, a_b));
-            let j_b = inertia_rod_constr(&segments) + inertia_point(a_2 + a_3 + self.tool.get_vec(), self.tool.get_mass());
+            let j_b = inertia_rod_constr(&segments) + inertia_point(a_b + a_1 + a_2 + a_3 + self.tool.get_vec(), self.tool.get_mass());
 
-            ( j_b.z_axis.length() )
+            ( 
+                j_b.z_axis.length(), 
+                inertia_to_mass(j_1, c1_pos, c1_dir), 
+                inertia_to_mass(j_2, c2_pos, c2_dir),
+                (Mat3::from_rotation_z(-self.ctrl_base.get_pos()) * j_3).x_axis.length()
+            )
         }
 
-        pub fn apply_inertias(&mut self, inertias : &Inertias) {
-            
+        pub fn apply_inertias(&mut self, inertias : Inertias) {
+            let ( j_b, m_1, m_2, j_3 ) = inertias;
+
+            self.ctrl_base.apply_load_j(j_b / 1_000_000.0);
+            self.ctrl_a1.cylinder.apply_load_m(m_1);
+            self.ctrl_a2.cylinder.apply_load_m(m_2);
+            self.ctrl_a3.apply_load_j(j_3 / 1_000_000.0);
         }
     // 
 
