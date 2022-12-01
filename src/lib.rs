@@ -449,8 +449,8 @@ impl SyArm
     // 
 
     // Update
-        pub fn update_sim(&mut self, angles : &Phis) {
-            let vectors = self.get_vectors_by_phis(angles);
+        pub fn update_sim(&mut self) {
+            let vectors = self.get_vectors_by_phis(&self.get_all_phis());
             
             self.apply_forces(self.get_forces(&vectors));
             self.apply_inertias(self.get_inertias(&vectors));
