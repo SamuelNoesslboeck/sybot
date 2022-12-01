@@ -483,9 +483,9 @@ impl SyArm
 
         pub fn measure(&mut self, accuracy : u64) {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            self.ctrl_a1.cylinder.measure(self.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, 0.0, accuracy);
-            self.ctrl_a2.cylinder.measure(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, 0.0, accuracy);
-            self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, false, 0.0, accuracy);
+            self.ctrl_a1.cylinder.measure(self.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, self.cons.meas_a1, accuracy);
+            self.ctrl_a2.cylinder.measure(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, self.cons.meas_a2, accuracy);
+            self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy);
         }
     //
 
