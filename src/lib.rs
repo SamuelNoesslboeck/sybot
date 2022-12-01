@@ -3,42 +3,32 @@
 //! 
 //! Control and calculation library for the SyArm robot
 
-mod pvec;
-pub mod interpreter;
+// Module decleration
+    mod pvec;
+    mod types;
+    pub mod interpreter;
+//
 
+// Imports
 use std::{fs, f32::consts::PI};
-
 use serde::{Serialize, Deserialize};
-// use serde_json::{Value, json};
 
 use stepper_lib::{
     ctrl::PwmStepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, 
     data::StepperData, 
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass}
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
 };
 
+// Local imports
 use pvec::PVec3;
+pub use types::*;
 
-// Types
-// Library Types
-pub type Vec3 = glam::Vec3;
-pub type Mat3 = glam::Mat3;
+// Constants
+const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
-/// Directional and positional vectors of the robot
-pub type CylVectors = (
-    // First segment
-    (Vec3, Vec3),       // C1 (direction, position)
-    (Vec3, Vec3),       // C2 (direction, position)
-    // Second segment
-    (Vec3, Vec3)        // C2 (direction, position)
-);
-
-pub type Inertias = (f32, f32, f32, f32);       // (kg*mm^2, kg, kg, kg*mm^2)
-pub type Gammas = (f32, f32, f32, f32);
-pub type Phis = (f32, f32, f32, f32);
-pub type Points = (Vec3, Vec3, Vec3, Vec3);
-pub type Vectors = (Vec3, Vec3, Vec3, Vec3);
+pub const FORCES_ZERO : Forces = Forces(0.0, 0.0, 0.0, 0.0);
+pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
 
 // Structures
     /// All construction constants for the syarm
@@ -133,6 +123,7 @@ pub type Vectors = (Vec3, Vec3, Vec3, Vec3);
     {
         // Values
         pub cons : Constants,
+        pub vars : Variables,
         pub tool : Box<dyn Tool>,
 
         // Controls
@@ -149,12 +140,12 @@ pub fn top_down_angle(point : Vec3) -> f32 {
 }
 
 pub fn _angle_to_deg(angles : Phis) -> Phis {
-    return ( 
+    Phis( 
         angles.0 * 180.0 / PI,
         angles.1 * 180.0 / PI,
         angles.2 * 180.0 / PI,
         angles.3 * 180.0 / PI
-    ); 
+    )
 }
 
 pub fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
@@ -205,6 +196,9 @@ impl SyArm
                     ratio: cons.ratio_3
                 }, 
                 cons, 
+                vars: Variables {
+                    load: 0.0
+                }
             }
         }  
 
@@ -248,7 +242,7 @@ impl SyArm
         //
         
         // First arm segment
-            /// Get the angles 
+            /// Get the angles used by the calculations for the first arm segment
             pub fn phi_a1(&self, gamma_a1 : f32) -> f32 {
                 PI - gamma_a1 - self.cons.delta_1a - self.cons.delta_1b
             }
@@ -260,35 +254,42 @@ impl SyArm
         //
         
         // Second arm segment
+            /// Get the angles used by the calculations for the second arm segment
             pub fn phi_a2(&self, gamma_a2 : f32) -> f32 {
                 gamma_a2 + self.cons.delta_2a + self.cons.delta_2b - PI
             }
 
+            /// Get the angle used by the controls for the second arm segment
             pub fn gamma_a2(&self, phi_a2 : f32) -> f32 {
                 PI + phi_a2 - self.cons.delta_2a - self.cons.delta_2b
             }
         //
         
         // Third arm segment
+            /// Get the angles used by the calculations for the third arm segment
             pub fn phi_a3(&self, gamma_a3 : f32) -> f32 {
                 gamma_a3
             }
 
+            /// Get the angle used by the controls for the third arm segment
             pub fn gamma_a3(&self, phi_a3 : f32) -> f32 {
                 phi_a3
             }
         //
 
-        pub fn get_all_gamma(&self) -> Gammas {
-            ( self.ctrl_base.get_pos(), self.ctrl_a1.get_gamma(), self.ctrl_a2.get_gamma(), self.ctrl_a3.get_pos() )
+        /// Returns the four main angles used by the controls (gammas)
+        pub fn get_all_gammas(&self) -> Gammas {
+            Gammas( self.ctrl_base.get_pos(), self.ctrl_a1.get_gamma(), self.ctrl_a2.get_gamma(), self.ctrl_a3.get_pos() )
         }
 
+        /// Converts gamma into phi angles
         pub fn gammas_for_phis(&self, phis : &Phis) -> Gammas {
-            ( self.gamma_b(phis.0), self.gamma_a1(phis.1), self.gamma_a2(phis.2), self.gamma_a3(phis.3) )
+            Gammas( self.gamma_b(phis.0), self.gamma_a1(phis.1), self.gamma_a2(phis.2), self.gamma_a3(phis.3) )
         } 
 
+        /// Returns the four main angles used by the calculations (phis)
         pub fn get_all_phis(&self) -> Phis {
-            ( 
+            Phis( 
                 self.phi_b(self.ctrl_base.get_pos()), 
                 self.phi_a1(self.ctrl_a1.get_gamma()), 
                 self.phi_a2(self.ctrl_a2.get_gamma()), 
@@ -296,8 +297,9 @@ impl SyArm
             )
         }
 
+        /// Converts phi into gamma angles
         pub fn phis_for_gammas(&self, gammas : &Gammas) -> Phis {
-            ( self.phi_a1(gammas.0), self.phi_a1(gammas.1), self.phi_a2(gammas.2), self.phi_a3(gammas.3) )
+            Phis( self.phi_a1(gammas.0), self.phi_a1(gammas.1), self.phi_a2(gammas.2), self.phi_a3(gammas.3) )
         }
     //
 
@@ -308,9 +310,9 @@ impl SyArm
         }
 
         /// Returns the  points by the given  angles
-        pub fn points_by_angles(&self, angles : &Phis) -> Points {
-            let (a_b, a_1, a_2, a_3) = self.vectors_by_angles(angles);
-            ( 
+        pub fn get_points_by_phis(&self, angles : &Phis) -> Points {
+            let Vectors(a_b, a_1, a_2, a_3) = self.get_vectors_by_phis(angles);
+            Points( 
                 a_b,
                 a_b + a_1,
                 a_b + a_1 + a_2,
@@ -319,7 +321,7 @@ impl SyArm
         }
 
         /// Get the (most relevant, characteristic) vectors of the robot by the  angles
-        pub fn vectors_by_angles(&self, angles : &Phis) -> Vectors {
+        pub fn get_vectors_by_phis(&self, angles : &Phis) -> Vectors {
             // Rotation matrices used multiple times
             let base_rot = Mat3::from_rotation_z(angles.0);
             let a1_rot = Mat3::from_rotation_x(angles.1);
@@ -333,7 +335,7 @@ impl SyArm
             let a_3 = self.a_dec().v;
 
             // Multiply up
-            ( 
+            Vectors( 
                 base_rot * a_b,
                 base_rot * a1_rot * a_1,
                 base_rot * a1_rot * a2_rot * a_2,
@@ -366,17 +368,17 @@ impl SyArm
             let phi_2 = gamma_2_ - PI;
             let phi_3 = dec_angle - (phi_1 + phi_2);
 
-            ( phi_b, phi_1, phi_2, phi_3 )         
+            Phis( phi_b, phi_1, phi_2, phi_3 )         
         }
     //
 
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {
-            let ( _, a_1, a_2, _ ) = *vecs;
+            let Vectors( _, a_1, a_2, _ ) = *vecs;
 
             let base_helper = Mat3::from_rotation_z(-self.ctrl_base.get_pos()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
 
-            (
+            CylVectors(
                 (a_1 / 2.0 - base_helper, base_helper),
                 (a_1 / 2.0 + a_2 / 2.0, a_1 / 2.0),
                 (a_1 / 2.0 + a_2 / 2.0, a_2 / 2.0)
@@ -384,8 +386,8 @@ impl SyArm
         }
 
         pub fn get_inertias(&self, vecs : &Vectors) -> Inertias {
-            let ( a_b, a_1, a_2, a_3 ) = *vecs;
-            let ( (c1_dir, c1_pos), (_, _), (c2_dir, c2_pos) ) = self.get_cylinder_vecs(vecs);
+            let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
+            let CylVectors( (c1_dir, c1_pos), (_, _), (c2_dir, c2_pos) ) = self.get_cylinder_vecs(vecs);
 
             let mut segments = vec![ (self.cons.m_a3, a_3) ];
             let j_3 = inertia_rod_constr(&segments) + inertia_point(a_3 + self.tool.get_vec(), self.tool.get_mass());
@@ -399,23 +401,61 @@ impl SyArm
             segments.insert(0, (self.cons.m_b, a_b));
             let j_b = inertia_rod_constr(&segments) + inertia_point(a_b + a_1 + a_2 + a_3 + self.tool.get_vec(), self.tool.get_mass());
 
-            ( 
-                j_b.z_axis.length(), 
+            Inertias( 
+                j_b.z_axis.length() / 1_000_000.0, 
                 inertia_to_mass(j_1, c1_pos, c1_dir), 
                 inertia_to_mass(j_2, c2_pos, c2_dir),
-                (Mat3::from_rotation_z(-self.ctrl_base.get_pos()) * j_3).x_axis.length()
+                (Mat3::from_rotation_z(-self.ctrl_base.get_pos()) * j_3).x_axis.length() / 1_000_000.0
             )
         }
 
         pub fn apply_inertias(&mut self, inertias : Inertias) {
-            let ( j_b, m_1, m_2, j_3 ) = inertias;
+            let Inertias( j_b, m_1, m_2, j_3 ) = inertias;
 
-            self.ctrl_base.apply_load_j(j_b / 1_000_000.0);
+            self.ctrl_base.apply_load_j(j_b);
             self.ctrl_a1.cylinder.apply_load_m(m_1);
             self.ctrl_a2.cylinder.apply_load_m(m_2);
-            self.ctrl_a3.apply_load_j(j_3 / 1_000_000.0);
+            self.ctrl_a3.apply_load_j(j_3);
+        }
+
+        pub fn get_forces(&self, vecs : &Vectors) -> Forces {
+            let Vectors( _, a_1, a_2, a_3 ) = *vecs;
+            let CylVectors( (c1_dir, c1_pos), (_, c2_pos_1), (c2_dir_2, c2_pos_2) ) = self.get_cylinder_vecs(vecs);
+
+            let fg_load = G * self.vars.load;
+            let fg_tool = G * self.tool.get_mass();
+
+            let fg_3 = G * self.cons.m_a3;
+            let fg_2 = G * self.cons.m_a2;
+            let fg_1 = G * self.cons.m_a1;
+
+            let a_load = self.tool.get_vec() + a_3;
+
+            let (t_3, f_3) = forces_joint(&vec![ (fg_load + fg_tool, a_load), (fg_3, a_3 / 2.0) ], Vec3::ZERO);
+            let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fg_2, a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);
+            let (f_c1, _ ) = forces_segment(&vec![ (f_2, a_1), (f_c2, c2_pos_1), (fg_1, a_1 / 2.0) ], Vec3::ZERO, c1_pos, c1_dir);
+
+            Forces( 0.0, f_c1.length(), f_c2.length(), t_3.length() / 1_000.0 )
+        }
+
+        pub fn apply_forces(&mut self, forces : Forces) {
+            let Forces( t_b, f_1, f_2, t_3 ) = forces;
+
+            self.ctrl_base.apply_load_t(t_b);
+            self.ctrl_a1.cylinder.apply_load_f(f_1);
+            self.ctrl_a2.cylinder.apply_load_f(f_2);
+            self.ctrl_a3.apply_load_t(t_3);
         }
     // 
+
+    // Update
+        pub fn update_sim(&mut self, angles : &Phis) {
+            let vectors = self.get_vectors_by_phis(angles);
+            
+            self.apply_forces(self.get_forces(&vectors));
+            self.apply_inertias(self.get_inertias(&vectors));
+        }
+    //  
 
     // Control
         pub fn drive_base_rel(&mut self, angle : f32) {
