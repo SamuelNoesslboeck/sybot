@@ -462,23 +462,41 @@ impl SyArm
             self.ctrl_base.set_pos(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
         }
 
+        pub fn drive_base_abs(&mut self, angle : f32) {
+            self.ctrl_base.set_pos(angle, self.cons.omega_b);
+        }
+
         pub fn drive_a1_rel(&mut self, angle : f32) {
             self.ctrl_a1.set_gamma(self.ctrl_a1.get_gamma() + angle, self.cons.c1_v);
+        }
+
+        pub fn drive_a1_abs(&mut self, angle : f32) {
+            self.ctrl_a1.set_gamma(angle, self.cons.c1_v);
         }
 
         pub fn drive_a2_rel(&mut self, angle : f32) {
             self.ctrl_a2.set_gamma(self.ctrl_a2.get_gamma() + angle, self.cons.c2_v);
         }
 
+        pub fn drive_a2_abs(&mut self, angle : f32) {
+            self.ctrl_a2.set_gamma(angle, self.cons.c2_v);
+        }
+
         pub fn drive_a3_rel(&mut self, angle : f32) {
             self.ctrl_a3.set_pos(self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
         }
 
-        pub fn drive_to_angles(&mut self, angles : Phis) {
-            self.ctrl_base.set_pos(angles.0, self.cons.omega_b);
-            self.ctrl_a1.set_gamma(PI - angles.1 - self.cons.delta_1a, self.cons.c1_v);
-            self.ctrl_a2.set_gamma(angles.2 - self.cons.delta_2a - self.cons.delta_2b, self.cons.c2_v);
-            self.ctrl_a3.set_pos(angles.3, self.cons.omega_3);
+        pub fn drive_a3_abs(&mut self, angle : f32) {
+            self.ctrl_a3.set_pos(angle, self.cons.omega_3);
+        }
+
+        pub fn drive_to_angles(&mut self, angles : Gammas) {
+            let Gammas( g_b, g_1, g_2, g_3 ) = angles;
+            
+            self.drive_base_abs(g_b);
+            self.drive_a1_abs(g_1);
+            self.drive_a2_abs(g_2);
+            self.drive_a3_abs(g_3);
         }
 
         pub fn measure(&mut self, accuracy : u64) {
