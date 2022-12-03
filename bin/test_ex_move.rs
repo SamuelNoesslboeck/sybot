@@ -4,6 +4,7 @@ use std::{time::Duration, thread::sleep, f32::consts::PI};
 
 fn main() {
     let mut syarm = SyArm::load_json("res/syarm_const.json");
+    syarm.init_meas();
 
     println!("Measuring ... ");
 
@@ -12,6 +13,6 @@ fn main() {
     syarm.update_sim();
 
     println!("Exact positioning");
-    syarm.drive_a3_abs(0.0);
+    // syarm.drive_a3_abs(0.0);
     println!("Done!");
 }
