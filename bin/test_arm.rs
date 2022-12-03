@@ -1,7 +1,4 @@
-use glam::Vec3;
-use syarm_lib::{SyArm, INERTIAS_ZERO, FORCES_ZERO};
-
-use std::time::Instant;
+use syarm_lib::SyArm;
 
 fn main() {
     let mut syarm_calc = SyArm::load_json("res/syarm_const.json");
