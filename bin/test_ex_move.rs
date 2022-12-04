@@ -22,6 +22,8 @@ fn main() {
 
     println!("Position A2: {}", syarm.ctrl_a2.get_gamma());
 
+    // ARM III
+
     println!("Position A3: {}", syarm.ctrl_a3.get_pos());
 
     println!("Exact positioning");
