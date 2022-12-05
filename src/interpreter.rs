@@ -16,23 +16,51 @@ use stepper_lib::gcode::*;
         None
     }
 
-    /// G11 B<Angle>
+    /// G11 A<Angle>
     /// Moves the first arm segment with a relative angle
     fn g11(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a1_rel(args[0].value);
         None
     }
 
-    /// G12 B<Angle>
+    /// G12 A<Angle>
     /// Moves the second arm segment with a relative angle
     fn g12(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a2_rel(args[0].value);
         None
     }
 
-    /// G13 B<Angle>
+    /// G13 A<Angle>
     /// Moves the third arm segment with a relative angle
     fn g13(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+        arm.drive_a3_rel(args[0].value);
+        None
+    }
+
+    /// G20 C<Angle>
+    /// Moves the base with an absolute angle
+    fn g20(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+        arm.drive_base_rel(args[0].value);
+        None
+    }
+
+    /// G21 A<Angle>
+    /// Moves the first arm segment with an absolute angle
+    fn g21(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+        arm.drive_a1_rel(args[0].value);
+        None
+    }
+
+    /// G22 A<Angle>
+    /// Moves the second arm segment with an absolute angle
+    fn g22(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+        arm.drive_a2_rel(args[0].value);
+        None
+    }
+
+    /// G23 A<Angle>
+    /// Moves the third arm segment with an absolute angle
+    fn g23(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a3_rel(args[0].value);
         None
     }

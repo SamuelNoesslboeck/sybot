@@ -170,9 +170,7 @@ impl SyArm
                         ctrl: Box::new(PwmStepperCtrl::new(
                             StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_1, cons.pin_step_1
                         )), 
-                        rte_ratio: cons.ratio_1,
-                        pos_min: cons.c1_min, 
-                        pos_max: cons.c1_max
+                        rte_ratio: cons.ratio_1
                     },
                     cons.l_c1a, 
                     cons.l_c1b
@@ -183,8 +181,6 @@ impl SyArm
                             StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_2, cons.pin_step_2
                         )), 
                         rte_ratio: cons.ratio_2,
-                        pos_min: cons.c2_min, 
-                        pos_max: cons.c2_max
                     },
                     cons.l_c2a,
                     cons.l_c2b
