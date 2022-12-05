@@ -245,7 +245,7 @@ impl SyArm
 
             /// Get the angle used by the controls for the first arm segment
             pub fn gamma_a1(&self, phi_a1 : f32) -> f32 {
-                PI - phi_a1 - self.cons.delta_1a - self.cons.delta_2b
+                PI - phi_a1 - self.cons.delta_1a - self.cons.delta_1b
             }
         //
         

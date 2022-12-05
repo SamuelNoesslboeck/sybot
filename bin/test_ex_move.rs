@@ -14,10 +14,17 @@ fn main() {
 
     // sleep(Duration::from_secs_f64(3.0));
 
-    println!("Position A2: {}", syarm.ctrl_a2.get_gamma());
+    // println!("Position A1: {}", syarm.ctrl_a1.get_gamma());
 
     println!("Exact positioning");
-    syarm.drive_a2_abs(PI / 2.0);
+    syarm.drive_a1_abs(syarm.gamma_a1(PI / 2.0));
+    println!("Done!");
+
+    println!("Position A1: {}", syarm.ctrl_a1.get_gamma());
+
+
+    println!("Exact positioning");
+    syarm.drive_a2_abs(syarm.gamma_a2(-PI / 2.0));
     println!("Done!");
 
     println!("Position A2: {}", syarm.ctrl_a2.get_gamma());
@@ -31,4 +38,7 @@ fn main() {
     println!("Done!");
 
     println!("Position A3: {}", syarm.ctrl_a3.get_pos());
+
+    let phis = syarm.get_all_phis();
+    dbg!(syarm.get_points_by_phis(&phis));
 }
