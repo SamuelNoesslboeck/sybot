@@ -14,6 +14,4 @@ fn main() {
     sleep(Duration::from_secs(1));
 
     syarm.measure(2);
-
-    syarm.drive_a1_rel(-0.1);
 }
