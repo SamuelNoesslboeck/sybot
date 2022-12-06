@@ -39,6 +39,12 @@ fn main() {
 
     println!("Position A3: {}", syarm.ctrl_a3.get_pos());
 
+    // println!("Exact positioning");
+    // syarm.drive_base_abs(PI / 8.0);
+    // println!("Done!");
+
+    // println!("Position Base: {}", syarm.ctrl_a3.get_pos());
+
     let phis = syarm.get_all_phis();
     dbg!(syarm.get_points_by_phis(&phis));
 }
