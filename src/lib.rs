@@ -112,10 +112,12 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub m_a3 : f32
     }
 
-    #[derive(Deserialize, Serialize, Clone)]
     pub struct Variables
     {
-        pub load : f32
+        pub load : f32,
+
+        pub dec_angle : f32,
+        pub point : Vec3
     }
 
     /// Calculation and control struct for the SyArm robot
@@ -193,7 +195,10 @@ impl SyArm
                 }, 
                 cons, 
                 vars: Variables {
-                    load: 0.0
+                    load: 0.0,
+
+                    dec_angle: 0.0,
+                    point: Vec3::ZERO
                 }
             }
         }  
@@ -339,6 +344,18 @@ impl SyArm
             )
         }
 
+        pub fn get_with_fixed_dec_rel(&self, x : Option<f32>, y : Option<f32>, z : Option<f32>, dec_angle_o : Option<f32>) -> Phis {
+            let point = Vec3::new(
+                x.unwrap_or(self.vars.point.x),
+                y.unwrap_or(self.vars.point.y),
+                z.unwrap_or(self.vars.point.z)
+            );
+
+            let dec_angle = dec_angle_o.unwrap_or(self.vars.dec_angle);
+            
+            self.get_with_fixed_dec(point, dec_angle)
+        }
+
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
         pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> Phis {
             // Rotate onto Y-Z plane
@@ -446,10 +463,14 @@ impl SyArm
 
     // Update
         pub fn update_sim(&mut self) {
-            let vectors = self.get_vectors_by_phis(&self.get_all_phis());
+            let phis = self.get_all_phis();
+            let vectors = self.get_vectors_by_phis(&phis);
+            let points = self.get_points_by_phis(&phis);
             
             self.apply_forces(self.get_forces(&vectors));
             self.apply_inertias(self.get_inertias(&vectors));
+
+            self.vars.point = points.3;
         }
     //  
 

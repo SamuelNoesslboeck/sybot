@@ -3,11 +3,11 @@ use stepper_lib::gcode::*;
 
 // General Functions
     /// G0 C<Angle>
-    /// Moves the base with a relative angle
-    // fn g0(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
-    //     // Rapid movement
-    //     None
-    // }
+    /// Rapid positioning
+    fn g0(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+
+        None
+    }
 
     /// G10 C<Angle>
     /// Moves the base with a relative angle
