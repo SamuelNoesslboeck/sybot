@@ -93,14 +93,15 @@ use stepper_lib::gcode::*;
 pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm> {
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
-            (10, Command::new(g10, 1)),
-            (11, Command::new(g11, 1)),
-            (12, Command::new(g12, 1)),
-            (13, Command::new(g13, 1)),
-            (28, Command::new(g28, 1))
+            (0, g0 as GCodeFunc<SyArm>),
+            (10, g10),
+            (11, g11),
+            (12, g12),
+            (13, g13),
+            (28, g28)
         ])),
         (Letter::Miscellaneous, NumEntries::from([
-            (0, Command::new(m0, 0))
+            (0, m0 as GCodeFunc<SyArm>)
         ]))
     ]);
 

@@ -10,7 +10,7 @@ fn main() {
 
     loop {
         let mut line = String::new();
-        println!("GCode:// ");
+        print!("GCode:// ");
         std::io::stdin().read_line(&mut line).unwrap();
 
         intpr.interpret(line.as_str());
