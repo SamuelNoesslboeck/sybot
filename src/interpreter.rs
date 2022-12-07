@@ -2,72 +2,85 @@ use crate::SyArm;
 use stepper_lib::gcode::*;
 
 // General Functions
-    /// G0 C<Angle>
-    /// Moves the base with a relative angle
-    // fn g0(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
-    //     // Rapid movement
-    //     None
-    // }
+    /// G0 X<Position> Y<Position> Z<Position>
+    /// Rapid positioning
+    pub fn g0(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+        let angles = arm.get_with_fixed_dec_rel(
+            get_arg_letter(args, 'X'), 
+            get_arg_letter(args, 'Y'), 
+            get_arg_letter(args, 'Z'), 
+            None
+        );
+        arm.drive_to_angles(arm.gammas_for_phis(&angles));
+        None
+    }
 
     /// G10 C<Angle>
     /// Moves the base with a relative angle
-    fn g10(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g10(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_base_rel(args[0].value);
         None
     }
 
     /// G11 A<Angle>
     /// Moves the first arm segment with a relative angle
-    fn g11(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g11(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a1_rel(args[0].value);
         None
     }
 
     /// G12 A<Angle>
     /// Moves the second arm segment with a relative angle
-    fn g12(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g12(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a2_rel(args[0].value);
         None
     }
 
     /// G13 A<Angle>
     /// Moves the third arm segment with a relative angle
-    fn g13(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g13(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a3_rel(args[0].value);
         None
     }
 
     /// G20 C<Angle>
     /// Moves the base with an absolute angle
-    fn g20(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g20(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_base_rel(args[0].value);
         None
     }
 
     /// G21 A<Angle>
     /// Moves the first arm segment with an absolute angle
-    fn g21(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g21(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a1_rel(args[0].value);
         None
     }
 
     /// G22 A<Angle>
     /// Moves the second arm segment with an absolute angle
-    fn g22(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g22(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a2_rel(args[0].value);
         None
     }
 
     /// G23 A<Angle>
     /// Moves the third arm segment with an absolute angle
-    fn g23(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
+    pub fn g23(arm : &mut SyArm, _code : &GCode, args : &Args) -> Option<()> {
         arm.drive_a3_rel(args[0].value);
+        None
+    }
+
+    /// G28 \
+    /// Return to home position
+    pub fn g28(arm : &mut SyArm, _ : &GCode, _ : &Args) -> Option<()> {
+        arm.measure(2);
         None
     }
 //
 
 // Misc Functions
-    fn m0(arm : &mut SyArm, _ : &GCode, _ : &Args) -> Option<()> {
+    pub fn m0(arm : &mut SyArm, _ : &GCode, _ : &Args) -> Option<()> {
         arm.debug_pins();
         None
     }
@@ -83,7 +96,8 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm> {
             (10, Command::new(g10, 1)),
             (11, Command::new(g11, 1)),
             (12, Command::new(g12, 1)),
-            (13, Command::new(g13, 1))
+            (13, Command::new(g13, 1)),
+            (28, Command::new(g28, 1))
         ])),
         (Letter::Miscellaneous, NumEntries::from([
             (0, Command::new(m0, 0))

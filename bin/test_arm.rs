@@ -1,7 +1,11 @@
-use syarm_lib::SyArm;
+use std::{f32::consts::PI};
+use syarm_lib::{SyArm, Gammas, Phis};
 
 fn main() {
     let mut syarm_calc = SyArm::load_json("res/syarm_const.json");
+
+    // syarm_calc.drive_to_angles(Gammas(0.0, PI / 2.0, 0.0, 0.0)); 
+
     syarm_calc.update_sim();
 
     // let angles = syarm_calc.get_with_fixed_dec(Vec3::new(0.0, 300.0, 120.0), 0.0); 
@@ -26,6 +30,8 @@ fn main() {
     // }
 
     // println!("\nCalculation duration: {} for {} times", inst.elapsed().as_secs_f32(), TIMES);
+
+    dbg!(syarm_calc.get_inertias(&syarm_calc.get_vectors_by_phis(&Phis(0.0, PI / 2.0, 0.0, 0.0))));
 
     println!("Inertias: ");
     dbg!(
