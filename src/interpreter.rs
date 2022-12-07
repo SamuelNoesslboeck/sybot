@@ -12,6 +12,7 @@ use stepper_lib::gcode::*;
             None
         );
         arm.drive_to_angles(arm.gammas_for_phis(&angles));
+        arm.update_sim();
         None
     }
 

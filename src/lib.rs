@@ -91,17 +91,14 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub omega_b : f32,
         pub ratio_b : f32,
 
-        pub c1_min : f32, 
         pub c1_max : f32,
         pub c1_v : f32,
         pub ratio_1 : f32,
 
-        pub c2_min : f32, 
         pub c2_max : f32,
         pub c2_v : f32,
         pub ratio_2 : f32,
 
-        pub phi3_min : f32,
         pub phi3_max : f32,
         pub omega_3 : f32,
         pub ratio_3 : f32,
@@ -302,6 +299,16 @@ impl SyArm
         /// Converts phi into gamma angles
         pub fn phis_for_gammas(&self, gammas : &Gammas) -> Phis {
             Phis( self.phi_a1(gammas.0), self.phi_a1(gammas.1), self.phi_a2(gammas.2), self.phi_a3(gammas.3) )
+        }
+
+        pub fn valid_gammas(&self, gammas : Gammas) -> bool {
+            let Gammas( g_b, g_1, g_2, g_3 ) = gammas;
+
+            if (g_b < 0.0) | (g_1 < 0.0) | (g_2 < 0.0) | (g_3 < 0.0) {
+                return false;
+            }
+
+
         }
     //
 
