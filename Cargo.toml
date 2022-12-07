@@ -22,6 +22,10 @@ name = "test_ex_move"
 path = "bin/test_ex_move.rs"
 
 [[bin]]
+name = "test_int"
+path = "bin/test_int.rs"
+
+[[bin]]
 name = "test_meas"
 path = "bin/test_meas.rs"
 

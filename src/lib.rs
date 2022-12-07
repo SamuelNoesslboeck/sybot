@@ -23,6 +23,7 @@ use stepper_lib::{
 // Local imports
 use pvec::PVec3;
 pub use types::*;
+pub use interpreter::init_interpreter;
 
 // Constants
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
@@ -141,7 +142,7 @@ pub fn top_down_angle(point : Vec3) -> f32 {
     Vec3::new(point.x, point.y, 0.0).angle_between(Vec3::X)
 }
 
-pub fn _angle_to_deg(angles : Phis) -> Phis {
+fn _angle_to_deg(angles : Phis) -> Phis {
     Phis( 
         angles.0 * 180.0 / PI,
         angles.1 * 180.0 / PI,
