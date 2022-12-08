@@ -1,5 +1,5 @@
 use std::{f32::consts::PI};
-use syarm_lib::{SyArm, Gammas, Phis};
+use syarm_lib::{SyArm, Phis};
 
 fn main() {
     let mut syarm_calc = SyArm::load_json("res/syarm_const.json");

@@ -8,11 +8,17 @@ fn main() {
 
     let mut intpr = init_interpreter(syarm);
 
+    println!("SyArm - GCode Interpreter"); 
+    
     loop {
         let mut line = String::new();
-        print!("GCode:// ");
         std::io::stdin().read_line(&mut line).unwrap();
 
-        intpr.interpret(line.as_str());
+        match intpr.interpret(line.as_str()).first().unwrap() {
+            Ok(_) => { },
+            Err(err) => {
+                println!("{}", err);
+            }
+        }
     }
 }

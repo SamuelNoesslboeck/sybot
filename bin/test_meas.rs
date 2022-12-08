@@ -1,6 +1,6 @@
 use syarm_lib::SyArm;
 
-use std::{time::Duration, thread::sleep, f32::consts::PI}; 
+use std::{time::Duration, thread::sleep}; 
 
 fn main() {
     let mut syarm = SyArm::load_json("res/syarm_const.json");

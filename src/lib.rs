@@ -278,7 +278,7 @@ impl SyArm
 
         /// Returns the four main angles used by the controls (gammas)
         pub fn get_all_gammas(&self) -> Gammas {
-            Gammas( self.ctrl_base.get_pos(), self.ctrl_a1.get_gamma(), self.ctrl_a2.get_gamma(), self.ctrl_a3.get_pos() )
+            Gammas( self.ctrl_base.get_pos(), self.ctrl_a1.get_gam(), self.ctrl_a2.get_gam(), self.ctrl_a3.get_pos() )
         }
 
         /// Converts gamma into phi angles
@@ -290,8 +290,8 @@ impl SyArm
         pub fn get_all_phis(&self) -> Phis {
             Phis( 
                 self.phi_b(self.ctrl_base.get_pos()), 
-                self.phi_a1(self.ctrl_a1.get_gamma()), 
-                self.phi_a2(self.ctrl_a2.get_gamma()), 
+                self.phi_a1(self.ctrl_a1.get_gam()), 
+                self.phi_a2(self.ctrl_a2.get_gam()), 
                 self.phi_a3(self.ctrl_a3.get_pos())
             )
         }
@@ -304,11 +304,26 @@ impl SyArm
         pub fn valid_gammas(&self, gammas : Gammas) -> bool {
             let Gammas( g_b, g_1, g_2, g_3 ) = gammas;
 
-            if (g_b < 0.0) | (g_1 < 0.0) | (g_2 < 0.0) | (g_3 < 0.0) {
-                return false;
-            }
+            return 
+                (!self.ctrl_base.get_limit_dest(g_b).reached()) &
+                (!self.ctrl_a1.get_limit_dest(g_1).reached())   &
+                (!self.ctrl_a2.get_limit_dest(g_2).reached())   &
+                (!self.ctrl_a3.get_limit_dest(g_3).reached())   
+        }
 
+        pub fn valid_gammas_det(&self, gammas : Gammas) -> (bool, bool, bool, bool) {
+            let Gammas( g_b, g_1, g_2, g_3 ) = gammas;
 
+            return (
+                !self.ctrl_base.get_limit_dest(g_b).reached(),
+                !self.ctrl_a1.get_limit_dest(g_1).reached(),
+                !self.ctrl_a2.get_limit_dest(g_2).reached(),
+                !self.ctrl_a3.get_limit_dest(g_3).reached()      
+            )
+        }
+
+        pub fn valid_phis(&self, phis : &Phis) -> bool {
+            self.valid_gammas(self.gammas_for_phis(phis))
         }
     //
 
@@ -352,18 +367,6 @@ impl SyArm
             )
         }
 
-        pub fn get_with_fixed_dec_rel(&self, x : Option<f32>, y : Option<f32>, z : Option<f32>, dec_angle_o : Option<f32>) -> Phis {
-            let point = Vec3::new(
-                x.unwrap_or(self.vars.point.x),
-                y.unwrap_or(self.vars.point.y),
-                z.unwrap_or(self.vars.point.z)
-            );
-
-            let dec_angle = dec_angle_o.unwrap_or(self.vars.dec_angle);
-            
-            self.get_with_fixed_dec(point, dec_angle)
-        }
-
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
         pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> Phis {
             // Rotate onto Y-Z plane
@@ -390,6 +393,28 @@ impl SyArm
             let phi_3 = dec_angle - (phi_1 + phi_2);
 
             Phis( phi_b, phi_1, phi_2, phi_3 )         
+        }
+
+        pub fn get_with_fixed_dec_s(&self, x : Option<f32>, y : Option<f32>, z : Option<f32>, dec_angle_o : Option<f32>) -> SyArmResult<Phis> {
+            let point = Vec3::new(
+                x.unwrap_or(self.vars.point.x),
+                y.unwrap_or(self.vars.point.y),
+                z.unwrap_or(self.vars.point.z)
+            );
+
+            let dec_angle = dec_angle_o.unwrap_or(self.vars.dec_angle);
+            
+            let phis = self.get_with_fixed_dec(point, dec_angle);
+            let gammas = self.gammas_for_phis(&phis);
+        
+            if self.valid_gammas(gammas) { 
+                Ok(phis)
+            } else {
+                let valids = self.valid_gammas_det(gammas);
+
+                Err(SyArmError::new(format!(
+                    "Point {} is out of range! (Gammas: {}) (Valids: ({}, {}, {}, {}))", point, gammas, valids.0, valids.1, valids.2, valids.3).as_str(), ErrType::OutOfRange))
+            }
         }
     //
 
@@ -483,28 +508,32 @@ impl SyArm
     //  
 
     // Control
+        /// Moves the base by a relative angle \
+        /// Angle in radians
         pub fn drive_base_rel(&mut self, angle : f32) {
             self.ctrl_base.set_pos(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
         }
 
+        /// Moves the base to an absolute position \
+        /// Angle in radians
         pub fn drive_base_abs(&mut self, angle : f32) {
             self.ctrl_base.set_pos(angle, self.cons.omega_b);
         }
 
         pub fn drive_a1_rel(&mut self, angle : f32) {
-            self.ctrl_a1.set_gamma(self.ctrl_a1.get_gamma() + angle, self.cons.c1_v);
+            self.ctrl_a1.set_gam(self.ctrl_a1.get_gam() + angle, self.cons.c1_v);
         }
 
         pub fn drive_a1_abs(&mut self, angle : f32) {
-            self.ctrl_a1.set_gamma(angle, self.cons.c1_v);
+            self.ctrl_a1.set_gam(angle, self.cons.c1_v);
         }
 
         pub fn drive_a2_rel(&mut self, angle : f32) {
-            self.ctrl_a2.set_gamma(self.ctrl_a2.get_gamma() + angle, self.cons.c2_v);
+            self.ctrl_a2.set_gam(self.ctrl_a2.get_gam() + angle, self.cons.c2_v);
         }
 
         pub fn drive_a2_abs(&mut self, angle : f32) {
-            self.ctrl_a2.set_gamma(angle, self.cons.c2_v);
+            self.ctrl_a2.set_gam(angle, self.cons.c2_v);
         }
 
         pub fn drive_a3_rel(&mut self, angle : f32) {
