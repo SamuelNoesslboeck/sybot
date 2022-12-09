@@ -30,6 +30,7 @@ name = "test_meas"
 path = "bin/test_meas.rs"
 
 [dependencies]
+futures = "0.3.25"
 gcode = "0.6.1"
 glam = "0.21.3"
 serde = { version = "1.0.104", features = ["derive"] }
