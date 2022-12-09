@@ -10,7 +10,7 @@
 //
 
 // Imports
-use std::{fs, f32::consts::PI};
+use std::{fs, f32::consts::PI, future::Future};
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
@@ -558,6 +558,15 @@ impl SyArm
             self.ctrl_a1.cylinder.measure(self.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, self.cons.meas_a1, accuracy);
             self.ctrl_a2.cylinder.measure(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, self.cons.meas_a2, accuracy);
             self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy);
+        }
+
+        pub fn measure_async(&mut self, accuracy : u64) -> (impl Future<Output = ()> + '_, impl Future<Output = ()> + '_, impl Future<Output = ()> + '_) {
+            (
+                // self.ctrl_base.measure_async(2*PI, self.cons.omega_b, false),
+                self.ctrl_a1.cylinder.measure_async(self.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, self.cons.meas_a1, accuracy),
+                self.ctrl_a2.cylinder.measure_async(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, self.cons.meas_a2, accuracy),
+                self.ctrl_a3.measure_async(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy)
+            )
         }
     //
 
