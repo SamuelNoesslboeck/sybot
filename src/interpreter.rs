@@ -1,4 +1,3 @@
-use futures::executor;
 use crate::{SyArm, SyArmResult};
 use stepper_lib::gcode::*;
 
@@ -77,7 +76,7 @@ use stepper_lib::gcode::*;
     /// Return to home position
     pub fn g28(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<()> {
         // arm.measure(2);
-        executor::block_on(arm.measure_async(2));
+        arm.measure(2);
         Ok(())
     }
 //

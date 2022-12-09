@@ -10,7 +10,6 @@
 //
 
 // Imports
-use futures::join;
 
 use std::{fs, f32::consts::PI};
 use serde::{Serialize, Deserialize};
@@ -562,14 +561,17 @@ impl SyArm
             self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy);
         }
 
-        pub async fn measure_async(&mut self, accuracy : u64) {
-            // self.ctrl_base.measure_async(2*PI, self.cons.omega_b, false),
-            let fut1 = self.ctrl_a1.cylinder.measure_async(self.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, self.cons.meas_a1, accuracy);
-            let fut2 = self.ctrl_a2.cylinder.measure_async(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, self.cons.meas_a2, accuracy);
-            let fut3 = self.ctrl_a3.measure_async(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy);
+        // pub async fn measure_async(&mut self, accuracy : u64) {
+        //     let mut self_mutex = Arc::new(Mutex::new(self)));
 
-            join!( fut1, fut2, fut3 );
-        }
+        //     thread::spawn(move || {
+        //         let mut self_mutex_clone = Arc::clone(&self_mutex);
+        //         let mut self_m = self_mutex_clone.lock().unwrap();
+        //         self.ctrl_a1.cylinder.measure(self_m.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, self.cons.meas_a1, accuracy)
+        //     });
+        //     thread::spawn(|| self.ctrl_a2.cylinder.measure(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, self.cons.meas_a2, accuracy));
+        //     thread::spawn(move || self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy));
+        // }
     //
 
     // Debug
