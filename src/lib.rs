@@ -10,16 +10,11 @@
 //
 
 // Imports
-<<<<<<< HEAD
-use std::{fs, f32::consts::PI, sync::{Arc, Mutex}};
-=======
-
 use std::{fs, f32::consts::PI};
->>>>>>> f82a6dd7889cab5c481512aa2ae532e274ccff14
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
-    ctrl::{PwmStepperCtrl, StepperComms, self}, 
+    ctrl::StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, 
     data::StepperData, 
     math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
@@ -117,7 +112,9 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub m_b : f32,
         pub m_a1 : f32,
         pub m_a2 : f32,
-        pub m_a3 : f32
+        pub m_a3 : f32,
+
+        pub sf : f32
     }
 
     pub struct Variables
@@ -137,16 +134,10 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub tool : Box<dyn Tool>,
 
         // Controls
-        pub ctrl_base : Arc<Mutex<GearBearing>>,
+        pub ctrl_base : GearBearing,
         pub ctrl_a1 : CylinderTriangle,
         pub ctrl_a2 : CylinderTriangle,
-        pub ctrl_a3 : GearBearing,
-
-        // Comms
-        pub comms_base : StepperComms,
-        pub comms_a1 : StepperComms,
-        pub comms_a2 : StepperComms,
-        pub comms_a3 : StepperComms
+        pub ctrl_a3 : GearBearing
     }
 //
 
@@ -173,21 +164,19 @@ impl SyArm
     // IO
         /// Creates a new syarm instance by a constants table
         pub fn from_const(cons : Constants) -> Self {
-            let ctrl_base_trl = Arc::new(Mutex::new(GearBearing { 
-                ctrl: Box::new(PwmStepperCtrl::new(
-                    StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_b, cons.pin_step_b
-                )), 
-                ratio: cons.ratio_b
-            }));
-
             Self { 
                 tool: Box::new(NoTool::new()),    
-                ctrl_base: ctrl_base, 
+                ctrl_base: GearBearing { 
+                    ctrl: StepperCtrl::new(
+                        StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_b, cons.pin_step_b
+                    ), 
+                    ratio: cons.ratio_b
+                }, 
                 ctrl_a1: CylinderTriangle::new(
                     Cylinder { 
-                        ctrl: Box::new(PwmStepperCtrl::new(
-                            StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_1, cons.pin_step_1
-                        )), 
+                        ctrl: StepperCtrl::new(
+                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_1, cons.pin_step_1
+                        ), 
                         rte_ratio: cons.ratio_1
                     },
                     cons.l_c1a, 
@@ -195,22 +184,20 @@ impl SyArm
                 ), 
                 ctrl_a2: CylinderTriangle::new(
                     Cylinder { 
-                        ctrl: Box::new(PwmStepperCtrl::new(
-                            StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_2, cons.pin_step_2
-                        )), 
+                        ctrl: StepperCtrl::new(
+                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_2, cons.pin_step_2
+                        ), 
                         rte_ratio: cons.ratio_2,
                     },
                     cons.l_c2a,
                     cons.l_c2b
                 ), 
                 ctrl_a3: GearBearing { 
-                    ctrl: Box::new(PwmStepperCtrl::new(
-                        StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_3, cons.pin_step_3
-                    )), 
+                    ctrl: StepperCtrl::new(
+                        StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_3, cons.pin_step_3
+                    ), 
                     ratio: cons.ratio_3
                 },
-
-                comms_a1: StepperComms::new(Arc::clone()),
 
                 cons, 
                 vars: Variables {
@@ -598,37 +585,37 @@ impl SyArm
         /// Moves the base by a relative angle \
         /// Angle in radians
         pub fn drive_base_rel_async(&mut self, angle : f32) {
-            self.ctrl_base.set_pos_async(&self.comms_base, self.ctrl_base.get_pos() + angle, self.cons.omega_b);
+            self.ctrl_base.set_pos_async(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
         }
 
         /// Moves the base to an absolute position \
         /// Angle in radians
         pub fn drive_base_abs_async(&mut self, angle : f32) {
-            self.ctrl_base.set_pos_async(&self.comms_base, angle, self.cons.omega_b);
+            self.ctrl_base.set_pos_async( angle, self.cons.omega_b);
         }
 
         pub fn drive_a1_rel_async(&mut self, angle : f32) {
-            self.ctrl_a1.set_gam_async(&self.comms_a1, self.ctrl_a1.get_gam() + angle, self.cons.c1_v);
+            self.ctrl_a1.set_gam_async(self.ctrl_a1.get_gam() + angle, self.cons.c1_v);
         }
 
         pub fn drive_a1_abs_async(&mut self, angle : f32) {
-            self.ctrl_a1.set_gam_async(&self.comms_a1, angle, self.cons.c1_v);
+            self.ctrl_a1.set_gam_async(angle, self.cons.c1_v);
         }
 
         pub fn drive_a2_rel_async(&mut self, angle : f32) {
-            self.ctrl_a2.set_gam_async(&self.comms_a2, self.ctrl_a2.get_gam() + angle, self.cons.c2_v);
+            self.ctrl_a2.set_gam_async(self.ctrl_a2.get_gam() + angle, self.cons.c2_v);
         }
 
         pub fn drive_a2_abs_async(&mut self, angle : f32) {
-            self.ctrl_a2.set_gam_async(&self.comms_a2, angle, self.cons.c2_v);
+            self.ctrl_a2.set_gam_async( angle, self.cons.c2_v);
         }
 
         pub fn drive_a3_rel_async(&mut self, angle : f32) {
-            self.ctrl_a3.set_pos_async(&self.comms_a3, self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
+            self.ctrl_a3.set_pos_async(self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
         }
 
         pub fn drive_a3_abs_async(&mut self, angle : f32) {
-            self.ctrl_a3.set_pos_async(&self.comms_a3, angle, self.cons.omega_3);
+            self.ctrl_a3.set_pos_async( angle, self.cons.omega_3);
         }
     // 
 

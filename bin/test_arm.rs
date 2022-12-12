@@ -36,18 +36,18 @@ fn main() {
     println!("Inertias: ");
     dbg!(
         // inertias,
-        syarm_calc.ctrl_base.ctrl.get_data().j_load,
-        syarm_calc.ctrl_a1.cylinder.ctrl.get_data().j_load,
-        syarm_calc.ctrl_a2.cylinder.ctrl.get_data().j_load,
-        syarm_calc.ctrl_a3.ctrl.get_data().j_load
+        syarm_calc.ctrl_base.ctrl.driver.lock().unwrap().data.j_load,
+        syarm_calc.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.j_load,
+        syarm_calc.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.j_load,
+        syarm_calc.ctrl_a3.ctrl.driver.lock().unwrap().data.j_load
     );
 
     println!("Forces: ");
     dbg!(
         // forces,
-        syarm_calc.ctrl_base.ctrl.get_data().t_load,
-        syarm_calc.ctrl_a1.cylinder.ctrl.get_data().t_load,
-        syarm_calc.ctrl_a2.cylinder.ctrl.get_data().t_load,
-        syarm_calc.ctrl_a3.ctrl.get_data().t_load,
+        syarm_calc.ctrl_base.ctrl.driver.lock().unwrap().data.t_load,
+        syarm_calc.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.t_load,
+        syarm_calc.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.t_load,
+        syarm_calc.ctrl_a3.ctrl.driver.lock().unwrap().data.t_load,
     );
 }
