@@ -10,7 +10,12 @@
 //
 
 // Imports
+<<<<<<< HEAD
 use std::{fs, f32::consts::PI, sync::{Arc, Mutex}};
+=======
+
+use std::{fs, f32::consts::PI};
+>>>>>>> f82a6dd7889cab5c481512aa2ae532e274ccff14
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
@@ -575,6 +580,18 @@ impl SyArm
             self.ctrl_a2.cylinder.measure(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
             self.ctrl_a3.measure(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
         }
+
+        // pub async fn measure_async(&mut self, accuracy : u64) {
+        //     let mut self_mutex = Arc::new(Mutex::new(self)));
+
+        //     thread::spawn(move || {
+        //         let mut self_mutex_clone = Arc::clone(&self_mutex);
+        //         let mut self_m = self_mutex_clone.lock().unwrap();
+        //         self.ctrl_a1.cylinder.measure(self_m.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, self.cons.meas_a1, accuracy)
+        //     });
+        //     thread::spawn(|| self.ctrl_a2.cylinder.measure(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, self.cons.meas_a2, accuracy));
+        //     thread::spawn(move || self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy));
+        // }
     //
 
     // Async control

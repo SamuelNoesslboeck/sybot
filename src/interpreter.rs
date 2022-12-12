@@ -75,6 +75,7 @@ use stepper_lib::gcode::*;
     /// G28 \
     /// Return to home position
     pub fn g28(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<()> {
+        // arm.measure(2);
         arm.measure(2);
         Ok(())
     }
