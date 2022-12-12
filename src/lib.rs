@@ -10,11 +10,11 @@
 //
 
 // Imports
-use std::{fs, f32::consts::PI};
+use std::{fs, f32::consts::PI, sync::{Arc, Mutex}};
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
-    ctrl::PwmStepperCtrl, 
+    ctrl::{PwmStepperCtrl, StepperComms, self}, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, 
     data::StepperData, 
     math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
@@ -44,16 +44,21 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub pin_dir_b : u16,         
         /// Step ctrl pin for the base controller
         pub pin_step_b : u16,          
+        /// Measure pin for the base controller
         pub pin_meas_b : u16,
 
         /// Direction ctrl pin for the first cylinder
         pub pin_dir_1 : u16, 
         /// Step ctrl pin for the first cylinder
         pub pin_step_1 : u16, 
+        /// Measure pin for the base controller
         pub pin_meas_1 : u16,
 
+        /// Direction ctrl pin for the second cylinder
         pub pin_dir_2 : u16,
+        /// Step ctrl pin for the second cylinder
         pub pin_step_2 : u16,
+        /// Measure pin for the second cylinder
         pub pin_meas_2 : u16,
 
         pub pin_dir_3 : u16,
@@ -127,10 +132,16 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub tool : Box<dyn Tool>,
 
         // Controls
-        pub ctrl_base : GearBearing,
+        pub ctrl_base : Arc<Mutex<GearBearing>>,
         pub ctrl_a1 : CylinderTriangle,
         pub ctrl_a2 : CylinderTriangle,
-        pub ctrl_a3 : GearBearing
+        pub ctrl_a3 : GearBearing,
+
+        // Comms
+        pub comms_base : StepperComms,
+        pub comms_a1 : StepperComms,
+        pub comms_a2 : StepperComms,
+        pub comms_a3 : StepperComms
     }
 //
 
@@ -157,14 +168,16 @@ impl SyArm
     // IO
         /// Creates a new syarm instance by a constants table
         pub fn from_const(cons : Constants) -> Self {
+            let ctrl_base_trl = Arc::new(Mutex::new(GearBearing { 
+                ctrl: Box::new(PwmStepperCtrl::new(
+                    StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_b, cons.pin_step_b
+                )), 
+                ratio: cons.ratio_b
+            }));
+
             Self { 
                 tool: Box::new(NoTool::new()),    
-                ctrl_base: GearBearing { 
-                    ctrl: Box::new(PwmStepperCtrl::new(
-                        StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_b, cons.pin_step_b
-                    )), 
-                    ratio: cons.ratio_b
-                }, 
+                ctrl_base: ctrl_base, 
                 ctrl_a1: CylinderTriangle::new(
                     Cylinder { 
                         ctrl: Box::new(PwmStepperCtrl::new(
@@ -190,7 +203,10 @@ impl SyArm
                         StepperData::mot_17he15_1504s(cons.u), cons.pin_dir_3, cons.pin_step_3
                     )), 
                     ratio: cons.ratio_3
-                }, 
+                },
+
+                comms_a1: StepperComms::new(Arc::clone()),
+
                 cons, 
                 vars: Variables {
                     load: 0.0,
@@ -555,11 +571,49 @@ impl SyArm
 
         pub fn measure(&mut self, accuracy : u64) {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            self.ctrl_a1.cylinder.measure(self.cons.l_c1a + self.cons.l_c1b, self.cons.c1_v, false, self.cons.meas_a1, accuracy);
-            self.ctrl_a2.cylinder.measure(self.cons.l_c2a + self.cons.l_c2b, self.cons.c2_v, false, self.cons.meas_a2, accuracy);
-            self.ctrl_a3.measure(2.0*PI, self.cons.omega_3, false, self.cons.meas_a3, accuracy);
+            self.ctrl_a1.cylinder.measure(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, self.cons.meas_a1, accuracy);
+            self.ctrl_a2.cylinder.measure(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
+            self.ctrl_a3.measure(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
         }
     //
+
+    // Async control
+        /// Moves the base by a relative angle \
+        /// Angle in radians
+        pub fn drive_base_rel_async(&mut self, angle : f32) {
+            self.ctrl_base.set_pos_async(&self.comms_base, self.ctrl_base.get_pos() + angle, self.cons.omega_b);
+        }
+
+        /// Moves the base to an absolute position \
+        /// Angle in radians
+        pub fn drive_base_abs_async(&mut self, angle : f32) {
+            self.ctrl_base.set_pos_async(&self.comms_base, angle, self.cons.omega_b);
+        }
+
+        pub fn drive_a1_rel_async(&mut self, angle : f32) {
+            self.ctrl_a1.set_gam_async(&self.comms_a1, self.ctrl_a1.get_gam() + angle, self.cons.c1_v);
+        }
+
+        pub fn drive_a1_abs_async(&mut self, angle : f32) {
+            self.ctrl_a1.set_gam_async(&self.comms_a1, angle, self.cons.c1_v);
+        }
+
+        pub fn drive_a2_rel_async(&mut self, angle : f32) {
+            self.ctrl_a2.set_gam_async(&self.comms_a2, self.ctrl_a2.get_gam() + angle, self.cons.c2_v);
+        }
+
+        pub fn drive_a2_abs_async(&mut self, angle : f32) {
+            self.ctrl_a2.set_gam_async(&self.comms_a2, angle, self.cons.c2_v);
+        }
+
+        pub fn drive_a3_rel_async(&mut self, angle : f32) {
+            self.ctrl_a3.set_pos_async(&self.comms_a3, self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
+        }
+
+        pub fn drive_a3_abs_async(&mut self, angle : f32) {
+            self.ctrl_a3.set_pos_async(&self.comms_a3, angle, self.cons.omega_3);
+        }
+    // 
 
     // Debug
         pub fn debug_pins(&self) {
