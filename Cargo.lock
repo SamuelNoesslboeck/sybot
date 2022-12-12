@@ -106,8 +106,7 @@ dependencies = [
 
 [[package]]
 name = "stepper_lib"
-version = "0.7.1"
-source = "git+https://github.com/SamuelNoesslboeck/stepper_lib#4dc0f818cebec6393e7e37013f14bc59127e0706"
+version = "0.7.2"
 dependencies = [
  "gcode",
  "glam",
