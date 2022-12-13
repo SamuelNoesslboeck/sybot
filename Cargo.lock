@@ -111,6 +111,8 @@ dependencies = [
  "gcode",
  "glam",
  "gpio",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

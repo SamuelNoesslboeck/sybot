@@ -24,6 +24,7 @@ use stepper_lib::{
 use pvec::PVec3;
 pub use types::*;
 pub use interpreter::init_interpreter;
+pub use stepper_lib::gcode::Interpreter;
 
 // Constants
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
@@ -33,7 +34,7 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
 
 // Structures
     /// All construction constants for the syarm
-    #[derive(Serialize, Deserialize, Clone)]
+    #[derive(Serialize, Deserialize)]
     pub struct Constants 
     {
         // Circuit
@@ -131,7 +132,7 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         // Values
         pub cons : Constants,
         pub vars : Variables,
-        pub tool : Box<dyn Tool>,
+        pub tool : Box<dyn Tool + std::marker::Send>,
 
         // Controls
         pub ctrl_base : GearBearing,
@@ -207,7 +208,15 @@ impl SyArm
                     point: Vec3::ZERO
                 }
             }
-        }  
+        }
+        
+        pub fn get_cons_str(&self) -> String {
+            serde_json::to_string(&self.cons).unwrap()
+        }
+
+        pub fn get_cons_str_pretty(&self) -> String {
+            serde_json::to_string_pretty(&self.cons).unwrap()
+        }
 
         /// Loads a new SyArm instance by creating a constants table out of the json file content at the given path
         pub fn load_json(path : &str) -> Self {
