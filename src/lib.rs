@@ -10,7 +10,7 @@
 //
 
 // Imports
-use std::{fs, f32::consts::PI};
+use std::{fs, f32::consts::PI, vec};
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
@@ -27,18 +27,23 @@ pub use interpreter::init_interpreter;
 pub use stepper_lib::gcode::Interpreter;
 
 // Constants
+/// Gravitational acceleration as vector
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
+/// Set of zero value forces
 pub const FORCES_ZERO : Forces = Forces(0.0, 0.0, 0.0, 0.0);
+/// Set of zero value inertias
 pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
 
 // Structures
-    /// All construction constants for the syarm
+    /// ### Constants
+    /// All the constats required for the calculation of the syarm \
+    /// JSON I/O is enabled via the `serde_json` library
     #[derive(Serialize, Deserialize)]
     pub struct Constants 
     {
         // Circuit
-        /// Voltage supplied to the motors
+        /// Voltage supplied to the motors in Volts
         pub u : f32,                    
 
         /// Direction ctrl pin for the base controller
@@ -62,59 +67,93 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         /// Measure pin for the second cylinder
         pub pin_meas_2 : u16,
 
+        /// Direction ctrl pin for the third cylinder
         pub pin_dir_3 : u16,
+        /// Step ctrl pin for the second cylinder
         pub pin_step_3 : u16,
+        /// Measure pin for the third cylinder
         pub pin_meas_3 : u16,
 
         // Measured
+        /// Set value for the base joint when measured in radians
         pub meas_b : f32,
+        /// Set value for the first cylinder when measured in mm
         pub meas_a1 : f32,
+        /// Set value for the second cylinder when measured in mm
         pub meas_a2 : f32,
+        /// Set value for the third joint when measured in radians
         pub meas_a3 : f32,
 
         // Construction
+        /// Base vector when in base position, x, y and z lengths in mm
         pub a_b : PVec3,
 
-        /// Length of the first arm segment
+        /// Length of the first arm segment in mm
         pub l_a1 : f32,
-        /// Length of the second arm segment
+        /// Length of the second arm segment in mm
         pub l_a2 : f32,
-        /// Length of the third arm segment
+        /// Length of the third arm segment in mm
         pub l_a3 : f32,
 
+        /// Length of a-segment of first cylinder triangle in mm
         pub l_c1a : f32,
+        /// Length of b-segment of first cylinder triangle in mm
         pub l_c1b : f32, 
+        /// Length of a-segment of second cylinder triangle in mm
         pub l_c2a : f32,
+        /// Length of b-segment of second cylinder triangle in mm
         pub l_c2b : f32,
 
+        /// Additional angle of a-segment of first cylinder triangle in mm
         pub delta_1a : f32,
+        /// Additional angle of b-segment of first cylinder triangle in mm
         pub delta_1b : f32,
+        /// Additional angle of a-segment of second cylinder triangle in mm
         pub delta_2a : f32,
+        /// Additional angle of b-segment of second cylinder triangle in mm
         pub delta_2b : f32,
 
-        pub phib_min : f32,
+        /// Minimum base joint angle in radians
+        pub phib_min : f32, 
+        /// Maximum base joint angle in radians
         pub phib_max : f32,
+        /// Angular speed of base joint in radians per second
         pub omega_b : f32,
+        /// Gear ratio of base joint
         pub ratio_b : f32,
 
+        /// Maximum extension of first cylinder in mm
         pub c1_max : f32,
+        /// Linear velocity of first cylinder in mm per second
         pub c1_v : f32,
+        /// Spindle pitch in mm per radians
         pub ratio_1 : f32,
 
+        /// Maximum extension of second cylinder in mm
         pub c2_max : f32,
+        /// Linear velocity of second cylinder in mm per second
         pub c2_v : f32,
+        /// Spindle pitch in mm per radians
         pub ratio_2 : f32,
 
+        /// Maximum base join angle in radians
         pub phi3_max : f32,
+        /// Angular speed of base joint in radians per second
         pub omega_3 : f32,
+        /// Gear ratio of third joint
         pub ratio_3 : f32,
 
         // Load calculation
+        /// Mass of base in kg
         pub m_b : f32,
+        /// Mass of first arm segment in kg
         pub m_a1 : f32,
+        /// Mass of second arm segment in kg
         pub m_a2 : f32,
+        /// Mass of thrid arm segment in kg
         pub m_a3 : f32,
 
+        /// Safety factor for calculations
         pub sf : f32
     }
 
@@ -512,7 +551,7 @@ impl SyArm
     // 
 
     // Update
-        pub fn update_sim(&mut self) {
+        pub fn update_sim(&mut self) -> Vectors {
             let phis = self.get_all_phis();
             let vectors = self.get_vectors_by_phis(&phis);
             let points = self.get_points_by_phis(&phis);
@@ -521,6 +560,8 @@ impl SyArm
             self.apply_inertias(self.get_inertias(&vectors));
 
             self.vars.point = points.3;
+
+            vectors
         }
     //  
 
@@ -576,12 +617,6 @@ impl SyArm
             self.ctrl_a2.cylinder.measure(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
             self.ctrl_a3.measure(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
         }
-
-        pub fn measure_async(&mut self, accuracy : u64) {
-            self.ctrl_a1.cylinder.measure_async(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, self.cons.meas_a1, accuracy);
-            self.ctrl_a2.cylinder.measure_async(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
-            self.ctrl_a3.measure_async(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
-        }
     //
 
     // Async control
@@ -619,6 +654,12 @@ impl SyArm
 
         pub fn drive_a3_abs_async(&mut self, angle : f32) {
             self.ctrl_a3.set_pos_async( angle, self.cons.omega_3);
+        }
+
+        pub fn measure_async(&mut self, accuracy : u64) {
+            self.ctrl_a1.cylinder.measure_async(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, self.cons.meas_a1, accuracy);
+            self.ctrl_a2.cylinder.measure_async(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
+            self.ctrl_a3.measure_async(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
         }
     // 
 
