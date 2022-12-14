@@ -89,7 +89,10 @@ pub enum ErrType {
     
     // Movements
     OutOfRange,
-    BadPins
+    BadPins,
+
+    // Interpreter
+    GCodeFuncNotFound
 }
 
 #[derive(Debug)]
