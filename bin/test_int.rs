@@ -1,4 +1,4 @@
-use syarm_lib::{init_interpreter, SyArm};
+use syarm_lib::{init_interpreter, SyArm, SyArmError, ErrType};
 
 // use std::{time::Duration, thread::sleep, f32::consts::PI};
 
@@ -14,7 +14,7 @@ fn main() {
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
 
-        match intpr.interpret(line.as_str()).first().unwrap() {
+        match intpr.interpret(line.as_str(), |_| { Err(SyArmError::new_simple(ErrType::GCodeFuncNotFound)) }).first().unwrap() {
             Ok(_) => { },
             Err(err) => {
                 println!("{}", err);
