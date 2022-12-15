@@ -361,6 +361,7 @@ impl SyArm
             let Gammas( g_b, g_1, g_2, g_3 ) = gammas;
 
             return 
+                g_b.is_finite() & g_1.is_finite() & g_2.is_finite() & g_3.is_finite() & 
                 (!self.ctrl_base.get_limit_dest(g_b).reached()) &
                 (!self.ctrl_a1.get_limit_dest(g_1).reached())   &
                 (!self.ctrl_a2.get_limit_dest(g_2).reached())   &
@@ -371,10 +372,10 @@ impl SyArm
             let Gammas( g_b, g_1, g_2, g_3 ) = gammas;
 
             return (
-                !self.ctrl_base.get_limit_dest(g_b).reached(),
-                !self.ctrl_a1.get_limit_dest(g_1).reached(),
-                !self.ctrl_a2.get_limit_dest(g_2).reached(),
-                !self.ctrl_a3.get_limit_dest(g_3).reached()      
+                !self.ctrl_base.get_limit_dest(g_b).reached() & g_b.is_finite(),
+                !self.ctrl_a1.get_limit_dest(g_1).reached() & g_1.is_finite(),
+                !self.ctrl_a2.get_limit_dest(g_2).reached() & g_2.is_finite(),
+                !self.ctrl_a3.get_limit_dest(g_3).reached() & g_3.is_finite()   
             )
         }
 
@@ -469,7 +470,8 @@ impl SyArm
                 let valids = self.valid_gammas_det(gammas);
 
                 Err(SyArmError::new(format!(
-                    "Point {} is out of range! (Gammas: {}) (Valids: ({}, {}, {}, {}))", point, gammas, valids.0, valids.1, valids.2, valids.3).as_str(), ErrType::OutOfRange))
+                    "Point {} is out of range! (Gammas: {}, Dec: {}) (Valids: ({}, {}, {}, {}))", 
+                        point, gammas, dec_angle, valids.0, valids.1, valids.2, valids.3).as_str(), ErrType::OutOfRange))
             }
         }
     //
@@ -611,11 +613,18 @@ impl SyArm
             self.drive_a3_abs(g_3);
         }
 
-        pub fn measure(&mut self, accuracy : u64) {
+        pub fn measure(&mut self, accuracy : u64) -> Result<(), (bool, bool, bool, bool)> {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            self.ctrl_a1.cylinder.measure(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, self.cons.meas_a1, accuracy);
-            self.ctrl_a2.cylinder.measure(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
-            self.ctrl_a3.measure(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
+            let a_1 = self.ctrl_a1.cylinder.measure(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, self.cons.meas_a1, accuracy);
+            let a_2 = self.ctrl_a2.cylinder.measure(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
+            let a_3 = self.ctrl_a3.measure(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
+
+            if a_1 & a_2 & a_3 {
+                self.update_sim();
+                Ok(())
+            } else {
+                Err((true, a_1, a_2, a_3))
+            }
         }
     //
 
@@ -655,11 +664,38 @@ impl SyArm
         pub fn drive_a3_abs_async(&mut self, angle : f32) {
             self.ctrl_a3.set_pos_async( angle, self.cons.omega_3);
         }
+        
+        pub fn drive_to_angles_async(&mut self, angles : Gammas) {
+            let Gammas( g_b, g_1, g_2, g_3 ) = angles;
+            
+            self.drive_base_abs_async(g_b);
+            self.drive_a1_abs_async(g_1);
+            self.drive_a2_abs_async(g_2);
+            self.drive_a3_abs_async(g_3);
+        }
 
         pub fn measure_async(&mut self, accuracy : u64) {
-            self.ctrl_a1.cylinder.measure_async(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, self.cons.meas_a1, accuracy);
-            self.ctrl_a2.cylinder.measure_async(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
-            self.ctrl_a3.measure_async(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
+            self.ctrl_base.measure_async(0.0, 0.0, accuracy);
+            self.ctrl_a1.cylinder.measure_async(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, accuracy);
+            self.ctrl_a2.cylinder.measure_async(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, accuracy);
+            self.ctrl_a3.measure_async(-2.0*PI, self.cons.omega_3, accuracy);
+
+            self.await_inactive();
+            self.set_endpoint();
+        }
+
+        pub fn await_inactive(&self) {
+            self.ctrl_base.ctrl.comms.await_inactive();
+            self.ctrl_a1.cylinder.ctrl.comms.await_inactive();
+            self.ctrl_a2.cylinder.ctrl.comms.await_inactive();
+            self.ctrl_a3.ctrl.comms.await_inactive();
+        }
+
+        pub fn set_endpoint(&mut self) {
+            self.ctrl_base.ctrl.set_endpoint(self.cons.meas_b);
+            self.ctrl_a1.cylinder.ctrl.set_endpoint(self.cons.meas_a1);
+            self.ctrl_a2.cylinder.ctrl.set_endpoint(self.cons.meas_a2);
+            self.ctrl_a3.ctrl.set_endpoint(self.cons.meas_a3);
         }
     // 
 
