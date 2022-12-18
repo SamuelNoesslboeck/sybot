@@ -23,7 +23,9 @@ fn main() {
         std::io::stdin().read_line(&mut line).unwrap();
 
         match intpr.interpret(line.as_str(), |_| { Err(SyArmError::new_simple(ErrType::GCodeFuncNotFound)) }).first().unwrap() {
-            Ok(_) => { },
+            Ok(j) => { 
+                println!("{}", j.to_string());
+            },
             Err(err) => {
                 println!("{}", err);
             }
