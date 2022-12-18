@@ -140,7 +140,8 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
             (28, g28)
         ])),
         (Letter::Miscellaneous, NumEntries::from([
-            (0, m0 as GCodeFunc<SyArm, SyArmResult<Value>>)
+            (0, m0 as GCodeFunc<SyArm, SyArmResult<Value>>),
+            (1, m1)
         ]))
     ]);
 
