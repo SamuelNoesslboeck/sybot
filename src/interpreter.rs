@@ -113,6 +113,11 @@ use crate::{SyArm, SyArmResult};
         arm.debug_pins();
         Ok(Value::Null)
     }
+
+    pub fn m1(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
+        println!("{}", arm.get_points_by_phis(&arm.get_all_phis()).3);
+        Ok(Value::Null)
+    }
 // 
 
 // Tool change
