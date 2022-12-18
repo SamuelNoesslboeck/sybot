@@ -129,6 +129,7 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
         (Letter::General, NumEntries::from([
             (0, g0 as GCodeFunc<SyArm, SyArmResult<Value>>),
             (4, g4),
+            (8, g8),
             (10, g10),
             (11, g11),
             (12, g12),
