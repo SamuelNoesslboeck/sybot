@@ -1,7 +1,7 @@
-use crate::{SyArm, SyArmResult};
-use stepper_lib::gcode::*;
-
 use serde_json::Value;
+use std::{thread, time::Duration};
+use stepper_lib::gcode::*;
+use crate::{SyArm, SyArmResult};
 
 // General Functions
     /// G0 X<Position> Y<Position> Z<Position>
@@ -14,6 +14,31 @@ use serde_json::Value;
                 None
         )?; 
         arm.drive_to_angles(arm.gammas_for_phis(&angles));
+        arm.update_sim();
+        Ok(serde_json::json!(vec![angles.0, angles.1, angles.2, angles.3]))
+    }
+
+    /// G4 X<Position> Y<Position> Z<Position>
+    /// Dwell (sleeping)
+    pub fn g4(_ : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        let seconds = 
+            get_arg_letter(args, 'X').unwrap_or(0.0)            // Seconds
+            + get_arg_letter(args, 'P').unwrap_or(0.0)/1000.0;  // Milliseconds
+        thread::sleep(Duration::from_secs_f32(seconds));
+        Ok(serde_json::json!(seconds))
+    }
+
+    /// G8 X<Position> Y<Position> Z<Position>
+    /// Rapid positioning async
+    pub fn g8(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        let angles = arm.get_with_fixed_dec_s(
+            get_arg_letter(args, 'X'), 
+            get_arg_letter(args, 'Y'), 
+            get_arg_letter(args, 'Z'), 
+                None
+        )?; 
+        arm.drive_to_angles_async(arm.gammas_for_phis(&angles));
+        arm.await_inactive();
         arm.update_sim();
         Ok(serde_json::json!(vec![angles.0, angles.1, angles.2, angles.3]))
     }
@@ -98,6 +123,7 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
             (0, g0 as GCodeFunc<SyArm, SyArmResult<Value>>),
+            (4, g4),
             (10, g10),
             (11, g11),
             (12, g12),
