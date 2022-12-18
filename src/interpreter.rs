@@ -103,7 +103,10 @@ use crate::{SyArm, SyArmResult};
     /// Return to home position
     pub fn g28(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
         // arm.measure(2);
-        arm.measure(2).unwrap();
+        match arm.measure(2) {
+            Ok(_) => { },
+            Err(meas) => println!(" -> Problems with measurement! {:?}", meas)
+        };
         Ok(Value::Null)
     }
 //
