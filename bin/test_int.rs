@@ -8,7 +8,15 @@ fn main() {
 
     let mut intpr = init_interpreter(syarm);
 
+    let args : Vec<String> = std::env::args().collect();
+
     println!("SyArm - GCode Interpreter"); 
+    
+    if args.len() > 1 {
+        println!(" -> Interpreting file '{}'", args[1]);
+        intpr.interpret_file(args[1].as_str(), 
+            |_| { Err(SyArmError::new_simple(ErrType::GCodeFuncNotFound)) });
+    }
     
     loop {
         let mut line = String::new();
