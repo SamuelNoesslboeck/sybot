@@ -13,5 +13,5 @@ fn main() {
 
     sleep(Duration::from_secs(1));
 
-    syarm.measure_async(2);
+    syarm.measure(2);
 }
