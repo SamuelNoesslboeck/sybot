@@ -679,9 +679,6 @@ impl SyArm
             self.ctrl_a1.cylinder.measure_async(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, accuracy);
             self.ctrl_a2.cylinder.measure_async(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, accuracy);
             self.ctrl_a3.measure_async(-2.0*PI, self.cons.omega_3, accuracy);
-
-            self.await_inactive();
-            self.set_endpoint();
         }
 
         pub fn await_inactive(&self) {

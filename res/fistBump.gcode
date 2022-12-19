@@ -4,10 +4,10 @@ G28; Measure
 
 ; Fistbump program
 G8 X-400 Y0 Z300    ; Position behind
-G4 X1               ; Wait 1 sec
-G8 X-520 Y0 Z300    ; Position front
+G4 P200             ; Wait 1 sec
+G8 X-460 Y0 Z300    ; Position front
 G8 X-400 Y0 Z300    ; Position behind
 
 G8 X0 Y380 Z400     ; Correct home position
 
-G28; Back to home
+G29; Back to home

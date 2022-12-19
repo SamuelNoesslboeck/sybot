@@ -111,6 +111,17 @@ use crate::{SyArm, SyArmResult};
         };
         Ok(Value::Null)
     }
+
+    /// G29 \
+    /// Return to home position async
+    pub fn g29(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
+        // arm.measure(2);
+        arm.measure_async(2);
+        arm.await_inactive();
+        arm.update_sim();
+        arm.set_endpoint();
+        Ok(Value::Null)
+    }
 //
 
 // Misc Functions
@@ -139,7 +150,8 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
             (11, g11),
             (12, g12),
             (13, g13),
-            (28, g28)
+            (28, g28),
+            (29, g29)
         ])),
         (Letter::Miscellaneous, NumEntries::from([
             (0, m0 as GCodeFunc<SyArm, SyArmResult<Value>>),
