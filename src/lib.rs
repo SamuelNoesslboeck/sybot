@@ -15,7 +15,7 @@ use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
     ctrl::StepperCtrl, 
-    comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool}, 
+    comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperData, 
     math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
 };
@@ -171,13 +171,15 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         // Values
         pub cons : Constants,
         pub vars : Variables,
-        pub tool : Box<dyn Tool + std::marker::Send>,
+        pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
 
         // Controls
         pub ctrl_base : GearBearing,
         pub ctrl_a1 : CylinderTriangle,
         pub ctrl_a2 : CylinderTriangle,
-        pub ctrl_a3 : GearBearing
+        pub ctrl_a3 : GearBearing,
+
+        tool_id : usize
     }
 //
 
@@ -205,7 +207,10 @@ impl SyArm
         /// Creates a new syarm instance by a constants table
         pub fn from_const(cons : Constants) -> Self {
             Self { 
-                tool: Box::new(NoTool::new()),    
+                tools: vec![ 
+                    Box::new(NoTool::new()),
+                    Box::new(PencilTool::new(127.0, 0.25))
+                ],    
                 ctrl_base: GearBearing { 
                     ctrl: StepperCtrl::new(
                         StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_b, cons.pin_step_b
@@ -245,7 +250,9 @@ impl SyArm
 
                     dec_angle: 0.0,
                     point: Vec3::ZERO
-                }
+                },
+
+                tool_id: 0
             }
         }
         
@@ -279,6 +286,16 @@ impl SyArm
             self.ctrl_a3.ctrl.init_meas(self.cons.pin_meas_3);
         }
     // 
+
+    // Tools
+        pub fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
+            self.tools.get(self.tool_id)
+        }
+
+        pub fn set_tool_id(&mut self, tool_id : usize) {
+            self.tool_id = tool_id;
+        }
+    //
 
     // Angles
         // Phi: Used by calculation (rotation matrix)
@@ -387,7 +404,7 @@ impl SyArm
     // Position calculation
         /// Get the vector of the decoration axis
         pub fn a_dec(&self) -> PVec3 {
-            PVec3::new(Vec3::new(0.0, self.cons.l_a3, 0.0) + self.tool.get_vec())
+            PVec3::new(Vec3::new(0.0, self.cons.l_a3, 0.0) + self.get_tool().unwrap().get_vec())
         }
 
         /// Returns the  points by the given  angles
@@ -494,16 +511,16 @@ impl SyArm
             let CylVectors( (c1_dir, c1_pos), (_, _), (c2_dir, c2_pos) ) = self.get_cylinder_vecs(vecs);
 
             let mut segments = vec![ (self.cons.m_a3, a_3) ];
-            let j_3 = inertia_rod_constr(&segments) + inertia_point(a_3 + self.tool.get_vec(), self.tool.get_mass());
+            let j_3 = inertia_rod_constr(&segments) + inertia_point(a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
 
             segments.insert(0, (self.cons.m_a2, a_2));
-            let j_2 = inertia_rod_constr(&segments) + inertia_point(a_2 + a_3 + self.tool.get_vec(), self.tool.get_mass());
+            let j_2 = inertia_rod_constr(&segments) + inertia_point(a_2 + a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
 
             segments.insert(0, (self.cons.m_a1, a_1));
-            let j_1 = inertia_rod_constr(&segments) + inertia_point(a_1 + a_2 + a_3 + self.tool.get_vec(), self.tool.get_mass());
+            let j_1 = inertia_rod_constr(&segments) + inertia_point(a_1 + a_2 + a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
 
             segments.insert(0, (self.cons.m_b, a_b));
-            let j_b = inertia_rod_constr(&segments) + inertia_point(a_b + a_1 + a_2 + a_3 + self.tool.get_vec(), self.tool.get_mass());
+            let j_b = inertia_rod_constr(&segments) + inertia_point(a_b + a_1 + a_2 + a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
 
             Inertias( 
                 j_b.z_axis.length() / 1_000_000.0, 
@@ -527,13 +544,13 @@ impl SyArm
             let CylVectors( (c1_dir, c1_pos), (_, c2_pos_1), (c2_dir_2, c2_pos_2) ) = self.get_cylinder_vecs(vecs);
 
             let fg_load = G * self.vars.load;
-            let fg_tool = G * self.tool.get_mass();
+            let fg_tool = G * self.get_tool().unwrap().get_mass();
 
             let fg_3 = G * self.cons.m_a3;
             let fg_2 = G * self.cons.m_a2;
             let fg_1 = G * self.cons.m_a1;
 
-            let a_load = self.tool.get_vec() + a_3;
+            let a_load = self.get_tool().unwrap().get_vec() + a_3;
 
             let (t_3, f_3) = forces_joint(&vec![ (fg_load + fg_tool, a_load), (fg_3, a_3 / 2.0) ], Vec3::ZERO);
             let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fg_2, a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);

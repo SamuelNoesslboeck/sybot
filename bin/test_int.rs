@@ -6,6 +6,11 @@ fn main() {
     let mut syarm = SyArm::load_json("res/syarm_const.json");
     syarm.init_meas();
 
+    // DEBUG
+        // Select pencil
+        syarm.set_tool_id(1);
+    // 
+
     let mut intpr = init_interpreter(syarm);
 
     let args : Vec<String> = std::env::args().collect();
