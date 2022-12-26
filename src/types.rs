@@ -14,6 +14,15 @@ pub struct Axes(
     pub Vec3
 );
 
+#[derive(Clone, Copy, Debug)]
+pub struct Actors( 
+    /// Base
+    pub Vec3,
+    pub Vec3,
+    pub Vec3,
+    pub Vec3
+);
+
 /// Exchange tuple type for directional and positional vectors of the robot 
 #[derive(Clone, Copy, Debug)]
 pub struct CylVectors(

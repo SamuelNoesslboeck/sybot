@@ -14,6 +14,7 @@ use std::{fs, f32::consts::PI, vec};
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
+    Component,
     ctrl::StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperData, 
@@ -351,7 +352,7 @@ impl SyArm
 
         /// Returns the four main angles used by the controls (gammas)
         pub fn get_all_gammas(&self) -> Gammas {
-            Gammas( self.ctrl_base.get_pos(), self.ctrl_a1.get_gam(), self.ctrl_a2.get_gam(), self.ctrl_a3.get_pos() )
+            Gammas( self.ctrl_base.get_dist(), self.ctrl_a1.get_dist(), self.ctrl_a2.get_dist(), self.ctrl_a3.get_dist() )
         }
 
         /// Converts gamma into phi angles
@@ -362,10 +363,10 @@ impl SyArm
         /// Returns the four main angles used by the calculations (phis)
         pub fn get_all_phis(&self) -> Phis {
             Phis( 
-                self.phi_b(self.ctrl_base.get_pos()), 
-                self.phi_a1(self.ctrl_a1.get_gam()), 
-                self.phi_a2(self.ctrl_a2.get_gam()), 
-                self.phi_a3(self.ctrl_a3.get_pos())
+                self.phi_b(self.ctrl_base.get_dist()), 
+                self.phi_a1(self.ctrl_a1.get_dist()), 
+                self.phi_a2(self.ctrl_a2.get_dist()), 
+                self.phi_a3(self.ctrl_a3.get_dist())
             )
         }
 
@@ -504,17 +505,34 @@ impl SyArm
     //
 
     // Advanced velocity calculation
-        pub fn create_velocity(&self, vel : Vec3, phis : &Phis) -> Vec3 {
-            let Vectors( a_b, a_1, a_2, a_3 ) = self.get_vectors_by_phis(phis);
-            let Axes( x_b, x_1, x_2, _ ) = self.stepper_axes(phis.0);
+        pub fn actor_vectors(&self, vecs : &Vectors, phis : &Phis) -> Actors {
+            let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
+            let Axes( x_b, x_1, x_2, x_3 ) = self.stepper_axes(phis.0);
 
             let a_23 = a_2 + a_3;
             let a_123 = a_1 + a_23;
             let a_b123 = a_b + a_123;
 
-            let eta_b = ( a_b123 ).cross( x_b );
-            let eta_1 = ( a_123 ).cross( x_1 );
-            let eta_2 = ( a_23 ).cross( x_2 );
+            Actors(
+                ( a_b123 ).cross( x_b ),
+                ( a_123 ).cross( x_1 ),
+                ( a_23 ).cross( x_2 ),
+                ( a_3 ).cross( x_3 )
+            )
+        }
+
+        pub fn acc_vector(&self, phis : &Phis) -> Vec3 {
+            Vec3::ZERO // TODO
+        }
+
+        pub fn create_velocity(&self, vel : Vec3, phis : &Phis) -> Vec3 {
+            let vecs = self.get_vectors_by_phis(phis);
+            let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
+            let Vectors( a_b, a_1, a_2, a_3 ) = vecs;
+
+            let a_23 = a_2 + a_3;
+            let a_123 = a_1 + a_23;
+            let a_b123 = a_b + a_123;
 
             let eta_m = Mat3 {
                 x_axis: eta_b,
@@ -532,7 +550,7 @@ impl SyArm
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {
             let Vectors( _, a_1, a_2, _ ) = *vecs;
 
-            let base_helper = Mat3::from_rotation_z(-self.ctrl_base.get_pos()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
+            let base_helper = Mat3::from_rotation_z(-self.ctrl_base.get_dist()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
 
             CylVectors(
                 (a_1 / 2.0 - base_helper, base_helper),
@@ -561,17 +579,17 @@ impl SyArm
                 j_b.z_axis.length() / 1_000_000.0, 
                 inertia_to_mass(j_1, c1_pos, c1_dir), 
                 inertia_to_mass(j_2, c2_pos, c2_dir),
-                (Mat3::from_rotation_z(-self.ctrl_base.get_pos()) * j_3).x_axis.length() / 1_000_000.0
+                (Mat3::from_rotation_z(-self.ctrl_base.get_dist()) * j_3).x_axis.length() / 1_000_000.0
             )
         }
 
         pub fn apply_inertias(&mut self, inertias : Inertias) {
             let Inertias( j_b, m_1, m_2, j_3 ) = inertias;
 
-            self.ctrl_base.apply_load_j(j_b);
-            self.ctrl_a1.cylinder.apply_load_m(m_1);
-            self.ctrl_a2.cylinder.apply_load_m(m_2);
-            self.ctrl_a3.apply_load_j(j_3);
+            self.ctrl_base.apply_load_inertia(j_b);
+            self.ctrl_a1.cylinder.apply_load_inertia(m_1);
+            self.ctrl_a2.cylinder.apply_load_inertia(m_2);
+            self.ctrl_a3.apply_load_inertia(j_3);
         }
 
         pub fn get_forces(&self, vecs : &Vectors) -> Forces {
@@ -597,10 +615,10 @@ impl SyArm
         pub fn apply_forces(&mut self, forces : Forces) {
             let Forces( t_b, f_1, f_2, t_3 ) = forces;
 
-            self.ctrl_base.apply_load_t(t_b);
-            self.ctrl_a1.cylinder.apply_load_f(f_1);
-            self.ctrl_a2.cylinder.apply_load_f(f_2);
-            self.ctrl_a3.apply_load_t(t_3);
+            self.ctrl_base.apply_load_force(t_b);
+            self.ctrl_a1.cylinder.apply_load_force(f_1);
+            self.ctrl_a2.cylinder.apply_load_force(f_2);
+            self.ctrl_a3.apply_load_force(t_3);
         }
     // 
 
@@ -623,37 +641,37 @@ impl SyArm
         /// Moves the base by a relative angle \
         /// Angle in radians
         pub fn drive_base_rel(&mut self, angle : f32) {
-            self.ctrl_base.set_pos(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
+            self.ctrl_base.drive(angle, self.cons.omega_b);
         }
 
         /// Moves the base to an absolute position \
         /// Angle in radians
         pub fn drive_base_abs(&mut self, angle : f32) {
-            self.ctrl_base.set_pos(angle, self.cons.omega_b);
+            self.ctrl_base.drive_abs(angle, self.cons.omega_b);
         }
 
         pub fn drive_a1_rel(&mut self, angle : f32) {
-            self.ctrl_a1.set_gam(self.ctrl_a1.get_gam() + angle, self.cons.c1_v);
+            self.ctrl_a1.drive(angle, self.cons.c1_v);
         }
 
         pub fn drive_a1_abs(&mut self, angle : f32) {
-            self.ctrl_a1.set_gam(angle, self.cons.c1_v);
+            self.ctrl_a1.drive_abs(angle, self.cons.c1_v);
         }
 
         pub fn drive_a2_rel(&mut self, angle : f32) {
-            self.ctrl_a2.set_gam(self.ctrl_a2.get_gam() + angle, self.cons.c2_v);
+            self.ctrl_a2.drive(angle, self.cons.c2_v);
         }
 
         pub fn drive_a2_abs(&mut self, angle : f32) {
-            self.ctrl_a2.set_gam(angle, self.cons.c2_v);
+            self.ctrl_a2.drive_abs(angle, self.cons.c2_v);
         }
 
         pub fn drive_a3_rel(&mut self, angle : f32) {
-            self.ctrl_a3.set_pos(self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
+            self.ctrl_a3.drive(angle, self.cons.omega_3);
         }
 
         pub fn drive_a3_abs(&mut self, angle : f32) {
-            self.ctrl_a3.set_pos(angle, self.cons.omega_3);
+            self.ctrl_a3.drive_abs(angle, self.cons.omega_3);
         }
 
         pub fn drive_to_angles(&mut self, angles : Gammas) {
@@ -684,37 +702,37 @@ impl SyArm
         /// Moves the base by a relative angle \
         /// Angle in radians
         pub fn drive_base_rel_async(&mut self, angle : f32) {
-            self.ctrl_base.set_pos_async(self.ctrl_base.get_pos() + angle, self.cons.omega_b);
+            self.ctrl_base.drive_async(self.ctrl_base.get_dist() + angle, self.cons.omega_b);
         }
 
         /// Moves the base to an absolute position \
         /// Angle in radians
         pub fn drive_base_abs_async(&mut self, angle : f32) {
-            self.ctrl_base.set_pos_async( angle, self.cons.omega_b);
+            self.ctrl_base.drive_abs_async(angle, self.cons.omega_b);
         }
 
         pub fn drive_a1_rel_async(&mut self, angle : f32) {
-            self.ctrl_a1.set_gam_async(self.ctrl_a1.get_gam() + angle, self.cons.c1_v);
+            self.ctrl_a1.drive_async(angle, self.cons.c1_v);
         }
 
         pub fn drive_a1_abs_async(&mut self, angle : f32) {
-            self.ctrl_a1.set_gam_async(angle, self.cons.c1_v);
+            self.ctrl_a1.drive_abs_async(angle, self.cons.c1_v);
         }
 
         pub fn drive_a2_rel_async(&mut self, angle : f32) {
-            self.ctrl_a2.set_gam_async(self.ctrl_a2.get_gam() + angle, self.cons.c2_v);
+            self.ctrl_a2.drive_async(angle, self.cons.c2_v);
         }
 
         pub fn drive_a2_abs_async(&mut self, angle : f32) {
-            self.ctrl_a2.set_gam_async( angle, self.cons.c2_v);
+            self.ctrl_a2.drive_abs_async( angle, self.cons.c2_v);
         }
 
         pub fn drive_a3_rel_async(&mut self, angle : f32) {
-            self.ctrl_a3.set_pos_async(self.ctrl_a3.get_pos() + angle, self.cons.omega_3);
+            self.ctrl_a3.drive_async(angle, self.cons.omega_3);
         }
 
         pub fn drive_a3_abs_async(&mut self, angle : f32) {
-            self.ctrl_a3.set_pos_async( angle, self.cons.omega_3);
+            self.ctrl_a3.drive_abs_async( angle, self.cons.omega_3);
         }
         
         pub fn drive_to_angles_async(&mut self, angles : Gammas) {
