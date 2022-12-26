@@ -5,6 +5,15 @@ pub use glam::Mat3;
 // Types 
 pub type SyArmResult<T> = Result<T, SyArmError>;
 
+#[derive(Clone, Copy, Debug)]
+pub struct Axes( 
+    /// Base
+    pub Vec3,
+    pub Vec3,
+    pub Vec3,
+    pub Vec3
+);
+
 /// Exchange tuple type for directional and positional vectors of the robot 
 #[derive(Clone, Copy, Debug)]
 pub struct CylVectors(

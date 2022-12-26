@@ -491,7 +491,42 @@ impl SyArm
                         point, gammas, dec_angle, valids.0, valids.1, valids.2, valids.3).as_str(), ErrType::OutOfRange))
             }
         }
+
+        pub fn stepper_axes(&self, base_angle : f32) -> Axes {
+            let rot_x = Mat3::from_rotation_z(base_angle) * Vec3::NEG_X;
+            Axes(
+                Vec3::Z,
+                rot_x, 
+                rot_x,
+                rot_x
+            )
+        } 
     //
+
+    // Advanced velocity calculation
+        pub fn create_velocity(&self, vel : Vec3, phis : &Phis) -> Vec3 {
+            let Vectors( a_b, a_1, a_2, a_3 ) = self.get_vectors_by_phis(phis);
+            let Axes( x_b, x_1, x_2, _ ) = self.stepper_axes(phis.0);
+
+            let a_23 = a_2 + a_3;
+            let a_123 = a_1 + a_23;
+            let a_b123 = a_b + a_123;
+
+            let eta_b = ( a_b123 ).cross( x_b );
+            let eta_1 = ( a_123 ).cross( x_1 );
+            let eta_2 = ( a_23 ).cross( x_2 );
+
+            let eta_m = Mat3 {
+                x_axis: eta_b,
+                y_axis: eta_1,
+                z_axis: eta_2
+            };
+            
+            let vel_red = (a_b123.cross(vel) * a_b123.length().powi(-2)).cross(a_b + a_1 + a_2);
+            
+            eta_m.inverse() * vel_red
+        }
+    // 
 
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {
