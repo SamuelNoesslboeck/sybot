@@ -1,4 +1,5 @@
 use syarm_lib::SyArm;
+use stepper_lib::Component;
 
 use std::{time::Duration, thread::sleep, f32::consts::PI}; 
 
@@ -18,15 +19,15 @@ fn main() {
     println!("Done!");
 
     print!(" -> Moving A1 ... ");
-    syarm.ctrl_a1.cylinder.extend(10.0, 5.0);
+    syarm.ctrl_a1.cylinder.drive(10.0, 5.0);
     sleep(dur);
-    syarm.ctrl_a1.cylinder.extend(-10.0, 5.0);
+    syarm.ctrl_a1.cylinder.drive(-10.0, 5.0);
     println!("Done!");
 
     print!(" -> Moving A2 ... ");
-    syarm.ctrl_a2.cylinder.extend(10.0, 5.0);
+    syarm.ctrl_a2.cylinder.drive(10.0, 5.0);
     sleep(dur);
-    syarm.ctrl_a2.cylinder.extend(-10.0, 5.0);
+    syarm.ctrl_a2.cylinder.drive(-10.0, 5.0);
     println!("Done!");
 
     print!(" -> Moving A3 ... ");

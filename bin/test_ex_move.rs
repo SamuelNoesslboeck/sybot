@@ -1,3 +1,4 @@
+use stepper_lib::Component;
 use syarm_lib::SyArm;
 
 use std::{f32::consts::PI};
@@ -9,7 +10,7 @@ fn main() {
     println!("Measuring ... ");
 
     syarm.update_sim();
-    syarm.measure(2); 
+    syarm.measure(2).unwrap(); 
     syarm.update_sim();
 
     // sleep(Duration::from_secs_f64(3.0));
@@ -20,30 +21,30 @@ fn main() {
     syarm.drive_a1_abs(syarm.gamma_a1(PI / 2.0));
     println!("Done!");
 
-    println!("Position A1: {}", syarm.ctrl_a1.get_gam());
+    println!("Position A1: {}", syarm.ctrl_a1.get_dist());
 
 
     println!("Exact positioning");
     syarm.drive_a2_abs(syarm.gamma_a2(-PI / 2.0));
     println!("Done!");
 
-    println!("Position A2: {}", syarm.ctrl_a2.get_gam());
+    println!("Position A2: {}", syarm.ctrl_a2.get_dist());
 
     // ARM III
 
-    println!("Position A3: {}", syarm.ctrl_a3.get_pos());
+    println!("Position A3: {}", syarm.ctrl_a3.get_dist());
 
     println!("Exact positioning");
     syarm.drive_a3_abs(0.0);
     println!("Done!");
 
-    println!("Position A3: {}", syarm.ctrl_a3.get_pos());
+    println!("Position A3: {}", syarm.ctrl_a3.get_dist());
 
     // println!("Exact positioning");
     // syarm.drive_base_abs(PI / 8.0);
     // println!("Done!");
 
-    // println!("Position Base: {}", syarm.ctrl_a3.get_pos());
+    // println!("Position Base: {}", syarm.ctrl_a3.get_dist());
 
     let phis = syarm.get_all_phis();
     dbg!(syarm.get_points_by_phis(&phis));

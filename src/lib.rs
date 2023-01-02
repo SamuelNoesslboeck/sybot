@@ -6,6 +6,8 @@
 // Module decleration
     mod pvec;
     mod types;
+    #[cfg(test)]
+    mod tests;
     pub mod interpreter;
 //
 
@@ -504,7 +506,7 @@ impl SyArm
         } 
     //
 
-    // Advanced velocity calculation
+    // Advanced velocity calculation (Path - 3D)
         pub fn actor_vectors(&self, vecs : &Vectors, phis : &Phis) -> Actors {
             let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
             let Axes( x_b, x_1, x_2, x_3 ) = self.stepper_axes(phis.0);
@@ -521,18 +523,22 @@ impl SyArm
             )
         }
 
-        pub fn acc_vector(&self, phis : &Phis) -> Vec3 {
-            Vec3::ZERO // TODO
+        pub fn accel_dyn(&self, vel_0 : Vec3) -> Vec3 {
+            Vec3::new(
+                self.ctrl_base.accel_dyn(vel_0.x),
+                self.ctrl_a1.accel_dyn(vel_0.y),
+                self.ctrl_a2.accel_dyn(vel_0.z)
+            )
         }
 
-        pub fn create_velocity(&self, vel : Vec3, phis : &Phis) -> Vec3 {
+        pub fn omegas_from_vel(&self, vel : Vec3, phis : &Phis) -> Vec3 {
             let vecs = self.get_vectors_by_phis(phis);
             let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
-            let Vectors( a_b, a_1, a_2, a_3 ) = vecs;
+            // let Vectors( a_b, a_1, a_2, a_3 ) = vecs;
 
-            let a_23 = a_2 + a_3;
-            let a_123 = a_1 + a_23;
-            let a_b123 = a_b + a_123;
+            // let a_23 = a_2 + a_3;
+            // let a_123 = a_1 + a_23;
+            // let a_b123 = a_b + a_123;
 
             let eta_m = Mat3 {
                 x_axis: eta_b,
@@ -540,9 +546,24 @@ impl SyArm
                 z_axis: eta_2
             };
             
-            let vel_red = (a_b123.cross(vel) * a_b123.length().powi(-2)).cross(a_b + a_1 + a_2);
+            // let vel_red = (a_b123.cross(vel) * a_b123.length().powi(-2)).cross(a_b + a_1 + a_2);
             
-            eta_m.inverse() * vel_red
+            eta_m.inverse().mul_vec3(vel)
+        }
+
+        pub fn vel_from_omegas(&self, omegas : Vec3, phis : &Phis) -> Vec3 {
+            let vecs = self.get_vectors_by_phis(phis);
+            let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
+
+            eta_b * omegas.x + eta_1 * omegas.y + eta_2 * omegas.z
+        }
+
+        pub fn lin_move_seg(&mut self, pos_0 : Phis, pos : Phis, vel_max : f32) {
+            self.ctrl_base.lin_move(pos - pos_0, , accel)
+        }
+
+        pub fn lin_move(&mut self, pos_0 : Phis, pos : Phis, vel_max : Vec3) {
+
         }
     // 
 
@@ -767,6 +788,15 @@ impl SyArm
     // 
 
     // Debug
+        pub fn write_position(&mut self, angles : &Gammas) {
+            let Gammas( g_b, g_1, g_2, g_3 ) = *angles;
+
+            self.ctrl_base.write_dist(g_b);
+            self.ctrl_a1.write_dist(g_1);
+            self.ctrl_a2.write_dist(g_2);
+            self.ctrl_a3.write_dist(g_3);
+        }
+
         pub fn debug_pins(&self) {
             self.ctrl_base.ctrl.debug_pins();
             self.ctrl_a1.cylinder.ctrl.debug_pins();
