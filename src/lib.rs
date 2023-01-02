@@ -523,11 +523,12 @@ impl SyArm
             )
         }
 
-        pub fn accel_dyn(&self, vel_0 : Vec3) -> Vec3 {
+        pub fn accel_dyn(&self, phis : &Phis, omegas : Vec3) -> Vec3 {
+            let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
             Vec3::new(
-                self.ctrl_base.accel_dyn(vel_0.x),
-                self.ctrl_a1.accel_dyn(vel_0.y),
-                self.ctrl_a2.accel_dyn(vel_0.z)
+                eta_b * self.ctrl_base.accel_dyn(omegas.x),
+                eta_1 * self.ctrl_a1.accel_dyn(omegas.y),
+                eta_2 * self.ctrl_a2.accel_dyn(omegas.z)
             )
         }
 
