@@ -521,8 +521,13 @@ impl SyArm
             )
         }
 
-        pub fn acc_vector(&self, phis : &Phis) -> Vec3 {
-            Vec3::ZERO // TODO
+        pub fn accel_dyn(&self, phis : &Phis, omegas : Vec3) -> Vec3 {
+            let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
+            Vec3::new(
+                eta_b * self.ctrl_base.accel_dyn(omegas.x),
+                eta_1 * self.ctrl_a1.accel_dyn(omegas.y),
+                eta_2 * self.ctrl_a2.accel_dyn(omegas.z)
+            )
         }
 
         pub fn create_velocity(&self, vel : Vec3, phis : &Phis) -> Vec3 {
