@@ -73,7 +73,7 @@ use crate::*;
 
         println!("Actor vectors:");
         dbg!(syarm.actor_vectors(&vecs, &ANGLES));
-        dbg!(syarm.accel_dyn(
+        dbg!(syarm.accel_dyn(&ANGLES, 
             dbg!(omega)
         ));
         dbg!(syarm.vel_from_omegas(omega, &ANGLES));

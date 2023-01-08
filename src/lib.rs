@@ -20,7 +20,7 @@ use stepper_lib::{
     ctrl::StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperData, 
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, paths::PathPhi
 };
 
 // Local imports
@@ -506,7 +506,7 @@ impl SyArm
         } 
     //
 
-    // Advanced velocity calculation (Path - 3D)
+    // Advanced velocity calculation
         pub fn actor_vectors(&self, vecs : &Vectors, phis : &Phis) -> Actors {
             let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
             let Axes( x_b, x_1, x_2, x_3 ) = self.stepper_axes(phis.0);
@@ -558,15 +558,45 @@ impl SyArm
 
             eta_b * omegas.x + eta_1 * omegas.y + eta_2 * omegas.z
         }
-
-        pub fn lin_move_seg(&mut self, pos_0 : Phis, pos : Phis, vel_max : f32) {
-            self.ctrl_base.lin_move(pos - pos_0, , accel)
-        }
-
-        pub fn lin_move(&mut self, pos_0 : Phis, pos : Phis, vel_max : Vec3) {
-
-        }
     // 
+
+    // Path generaton
+        pub fn gen_lin_path(&self, pos_0 : Vec3, pos : Vec3, dec_angle : f32, accuracy : f32) -> SyArmResult<SyArmPath> {
+            let mut path = SyArmPath::new();
+            let delta_pos = pos - pos_0;
+
+            let n_seg = (delta_pos.length() / accuracy).ceil();
+
+            for i in 0 .. (n_seg as u64 + 1) {  // +1 for endposition included
+                let gammas = self.gammas_for_phis(&self.get_with_fixed_dec(pos_0 + (i as f32)/n_s * delta_pos, dec_angle));
+                if !self.valid_gammas(gammas) {
+                    return Err(SyArmError::new_simple(ErrType::OutOfRange))
+                }
+                path.push(value)
+            }
+
+            Ok(path)
+        }
+
+        pub fn calc_drive_paths(&self, path : &SyArmPath, vel_max : f32, dist : f32) -> (PathPhi, PathPhi, PathPhi, PathPhi) {
+            let mut path_b = PathPhi::new();
+            let mut path_1 = PathPhi::new();
+            let mut path_2 = PathPhi::new();
+            let mut path_3 = PathPhi::new();
+
+            let dt = dist / vel_max;
+
+            for elem in path {
+                let Gammas( g_b, g_1, g_2, g_3 ) = path;
+                path_b.push((dt, g_b));
+                path_1.push((dt, g_1));
+                path_2.push((dt, g_2)); 
+                path_3.push((dt, g_3));
+            }
+
+            ( path_b, path_1, path_2, path_3 )
+        }
+    //
 
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {

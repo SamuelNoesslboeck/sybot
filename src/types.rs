@@ -2,8 +2,9 @@
 pub use glam::Vec3;
 pub use glam::Mat3;
 
-// Types 
+// Renamed Types 
 pub type SyArmResult<T> = Result<T, SyArmError>;
+pub type SyArmPath = Vec<Gammas>;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Axes( 
