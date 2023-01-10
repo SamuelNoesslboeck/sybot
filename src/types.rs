@@ -51,38 +51,11 @@ pub struct Forces(
     pub f32
 );
 
-#[derive(Clone, Copy, Debug)]
-pub struct Gammas( 
-    /// Base
-    pub f32,
-    pub f32,
-    pub f32,
-    pub f32
-);
+pub type Gammas = [f32; 4];
 
-impl std::fmt::Display for Gammas {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({}, {}, {}, {})", self.0, self.1, self.2, self.3)
-    }
-}
+pub type Inertias = [f32; 4];
 
-#[derive(Clone, Copy, Debug)]
-pub struct Inertias( 
-    /// Base
-    pub f32,
-    pub f32,
-    pub f32,
-    pub f32
-);
-
-#[derive(Clone, Copy, Debug)]
-pub struct Phis( 
-    /// Base
-    pub f32,
-    pub f32,
-    pub f32,
-    pub f32
-);
+pub type Phis = [f32; 4];
 
 #[derive(Clone, Copy, Debug)]
 pub struct Points( 

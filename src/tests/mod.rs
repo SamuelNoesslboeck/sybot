@@ -35,7 +35,7 @@ use crate::*;
 
         // println!("\nCalculation duration: {} for {} times", inst.elapsed().as_secs_f32(), TIMES);
 
-        dbg!(syarm.get_inertias(&syarm.get_vectors_by_phis(&ANGLES)));
+        dbg!(syarm.get_inertias(&syarm.vectors_by_phis(&ANGLES)));
 
         println!("Inertias: ");
         dbg!(
@@ -58,24 +58,38 @@ use crate::*;
 // 
 
 // Test move
+    fn print_stepper_path(path : &StepperPath) {
+        println!("| index\t| dt\t| phi\t| omega\t| alpha\t|");
+        for i in 0 .. path.dts.len() {
+            println!("|{}\t|{}\t|{}\t|{}\t|{}\t|", i, path.dts[i], path.phis[i], path.omegas[i], path.alphas[i]);
+        }
+    }
+
     #[test]
     fn test_linear_move() {
         let mut syarm = SyArm::load_json("res/syarm_const.json");  
 
-        const ANGLES : Phis = Phis(0.0, PI / 2.0, -PI / 2.0, 0.0);
-        const VEL : Vec3 = Vec3::new(50.0, 0.0, 0.0);
+        // Constants
+        const ACC : f32 = 10.0;
+        const DECO : f32 = 0.0;
+        const VEL : f32 = 100.0;
+        const START : Vec3 = Vec3::new(0.0, 380.0, 400.0);
+        const END : Vec3 = Vec3::new(-200.0, 200.0, 300.0);
 
-        syarm.write_position(&syarm.gammas_for_phis(&ANGLES));
+        let angles : Phis = syarm.get_with_fixed_dec(START, DECO);
+        // let vecs = syarm._by_phis(&angles);
+
+        syarm.write_position(&syarm.gammas_for_phis(&angles));
         syarm.update_sim();
 
-        let omega = syarm.omegas_from_vel(VEL, &ANGLES);
-        let vecs = syarm.get_vectors_by_phis(&ANGLES);
+        let raw_path = syarm.gen_lin_path(START, END, DECO, ACC).unwrap();
+        let drive_path = syarm.calc_drive_paths(&raw_path, VEL, (END - START).length());
 
-        println!("Actor vectors:");
-        dbg!(syarm.actor_vectors(&vecs, &ANGLES));
-        dbg!(syarm.accel_dyn(&ANGLES, 
-            dbg!(omega)
-        ));
-        dbg!(syarm.vel_from_omegas(omega, &ANGLES));
+        // print_stepper_path(&non_corrected);
+
+        let paths = syarm.run_path_correction(drive_path);
+        let path = &paths[0];
+        
+        print_stepper_path(path);
     }
 //

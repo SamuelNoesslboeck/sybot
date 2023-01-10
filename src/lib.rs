@@ -16,11 +16,12 @@ use std::{fs, f32::consts::PI, vec};
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
-    Component,
+    Component, ComponentGroup
     ctrl::StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperData, 
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, paths::PathPhi
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, 
+    paths::{pathphi_new, pathphi_push, PathPhi, StepperPath, path_correction}
 };
 
 // Local imports
@@ -120,31 +121,26 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub phib_min : f32, 
         /// Maximum base joint angle in radians
         pub phib_max : f32,
-        /// Angular speed of base joint in radians per second
-        pub omega_b : f32,
         /// Gear ratio of base joint
         pub ratio_b : f32,
 
         /// Maximum extension of first cylinder in mm
         pub c1_max : f32,
-        /// Linear velocity of first cylinder in mm per second
-        pub c1_v : f32,
         /// Spindle pitch in mm per radians
         pub ratio_1 : f32,
 
         /// Maximum extension of second cylinder in mm
         pub c2_max : f32,
-        /// Linear velocity of second cylinder in mm per second
-        pub c2_v : f32,
         /// Spindle pitch in mm per radians
         pub ratio_2 : f32,
 
         /// Maximum base join angle in radians
         pub phi3_max : f32,
-        /// Angular speed of base joint in radians per second
-        pub omega_3 : f32,
         /// Gear ratio of third joint
         pub ratio_3 : f32,
+
+        /// Maximum angluar speeds for the bearings
+        pub velocities : [f32; 4],
 
         // Load calculation
         /// Mass of base in kg
@@ -177,10 +173,7 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
         pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
 
         // Controls
-        pub ctrl_base : GearBearing,
-        pub ctrl_a1 : CylinderTriangle,
-        pub ctrl_a2 : CylinderTriangle,
-        pub ctrl_a3 : GearBearing,
+        pub ctrls : [Box<dyn Component>; 4],
 
         tool_id : usize
     }
@@ -214,38 +207,40 @@ impl SyArm
                     Box::new(NoTool::new()),
                     Box::new(PencilTool::new(127.0, 0.25))
                 ],    
-                ctrl_base: GearBearing { 
-                    ctrl: StepperCtrl::new(
-                        StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_b, cons.pin_step_b
-                    ), 
-                    ratio: cons.ratio_b
-                }, 
-                ctrl_a1: CylinderTriangle::new(
-                    Cylinder { 
+                ctrls: [ 
+                    Box::new(GearBearing { 
                         ctrl: StepperCtrl::new(
-                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_1, cons.pin_step_1
+                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_b, cons.pin_step_b
                         ), 
-                        rte_ratio: cons.ratio_1
-                    },
-                    cons.l_c1a, 
-                    cons.l_c1b
-                ), 
-                ctrl_a2: CylinderTriangle::new(
-                    Cylinder { 
+                        ratio: cons.ratio_b
+                    }), 
+                    Box::new(CylinderTriangle::new(
+                        Cylinder { 
+                            ctrl: StepperCtrl::new(
+                                StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_1, cons.pin_step_1
+                            ), 
+                            rte_ratio: cons.ratio_1
+                        },
+                        cons.l_c1a, 
+                        cons.l_c1b
+                    )), 
+                    Box::new(CylinderTriangle::new(
+                        Cylinder { 
+                            ctrl: StepperCtrl::new(
+                                StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_2, cons.pin_step_2
+                            ), 
+                            rte_ratio: cons.ratio_2,
+                        },
+                        cons.l_c2a,
+                        cons.l_c2b
+                    )), 
+                    Box::new(GearBearing { 
                         ctrl: StepperCtrl::new(
-                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_2, cons.pin_step_2
+                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_3, cons.pin_step_3
                         ), 
-                        rte_ratio: cons.ratio_2,
-                    },
-                    cons.l_c2a,
-                    cons.l_c2b
-                ), 
-                ctrl_a3: GearBearing { 
-                    ctrl: StepperCtrl::new(
-                        StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_3, cons.pin_step_3
-                    ), 
-                    ratio: cons.ratio_3
-                },
+                        ratio: cons.ratio_3
+                    }),
+                ], 
 
                 cons, 
                 vars: Variables {
@@ -283,6 +278,7 @@ impl SyArm
 
         /// Initializes measurement systems
         pub fn init_meas(&mut self) {
+            // TODO do at init
             self.ctrl_base.ctrl.init_meas(self.cons.pin_meas_b);
             self.ctrl_a1.cylinder.ctrl.init_meas(self.cons.pin_meas_1);
             self.ctrl_a2.cylinder.ctrl.init_meas(self.cons.pin_meas_2);
@@ -353,32 +349,32 @@ impl SyArm
         //
 
         /// Returns the four main angles used by the controls (gammas)
-        pub fn get_all_gammas(&self) -> Gammas {
-            Gammas( self.ctrl_base.get_dist(), self.ctrl_a1.get_dist(), self.ctrl_a2.get_dist(), self.ctrl_a3.get_dist() )
+        pub fn all_gammas(&self) -> Gammas {
+            self.ctrls.get_dist()
         }
 
         /// Converts gamma into phi angles
-        pub fn gammas_for_phis(&self, phis : &Phis) -> Gammas {
-            Gammas( self.gamma_b(phis.0), self.gamma_a1(phis.1), self.gamma_a2(phis.2), self.gamma_a3(phis.3) )
+        pub fn gammas_for_phis(&self, phis : Phis) -> Gammas {
+            let [ p_b, p_1, p_2, p_3 ] = phis;
+            [ self.gamma_b(p_b), self.gamma_a1(p_1), self.gamma_a2(p_2), self.gamma_a3(p_3) ]
         } 
 
         /// Returns the four main angles used by the calculations (phis)
-        pub fn get_all_phis(&self) -> Phis {
-            Phis( 
-                self.phi_b(self.ctrl_base.get_dist()), 
-                self.phi_a1(self.ctrl_a1.get_dist()), 
-                self.phi_a2(self.ctrl_a2.get_dist()), 
-                self.phi_a3(self.ctrl_a3.get_dist())
-            )
+        pub fn all_phis(&self) -> Phis {
+            let [ g_b, g_1, g_2, g_3 ] = self.all_gammas();
+            [ self.phi_b(g_b), self.phi_a1(g_1), self.phi_a2(g_2), self.phi_a3(g_3) ]
         }
 
         /// Converts phi into gamma angles
-        pub fn phis_for_gammas(&self, gammas : &Gammas) -> Phis {
-            Phis( self.phi_a1(gammas.0), self.phi_a1(gammas.1), self.phi_a2(gammas.2), self.phi_a3(gammas.3) )
+        pub fn phis_for_gammas(&self, gammas : Gammas) -> Phis {
+            let [ g_b, g_1, g_2, g_3 ] = gammas;
+            [ self.phi_b(g_b), self.phi_a1(g_1), self.phi_a2(g_2), self.phi_a3(g_3) ]
         }
 
         pub fn valid_gammas(&self, gammas : Gammas) -> bool {
-            let Gammas( g_b, g_1, g_2, g_3 ) = gammas;
+            let [ g_b, g_1, g_2, g_3 ] = gammas;
+
+            // TODO: Add get_limit_dest to Component trait
 
             return 
                 g_b.is_finite() & g_1.is_finite() & g_2.is_finite() & g_3.is_finite() & 
@@ -411,8 +407,8 @@ impl SyArm
         }
 
         /// Returns the  points by the given  angles
-        pub fn get_points_by_phis(&self, angles : &Phis) -> Points {
-            let Vectors(a_b, a_1, a_2, a_3) = self.get_vectors_by_phis(angles);
+        pub fn points_by_phis(&self, angles : &Phis) -> Points {
+            let Vectors(a_b, a_1, a_2, a_3) = self.vectors_by_phis(angles);
             Points( 
                 a_b,
                 a_b + a_1,
@@ -422,7 +418,7 @@ impl SyArm
         }
 
         /// Get the (most relevant, characteristic) vectors of the robot by the  angles
-        pub fn get_vectors_by_phis(&self, angles : &Phis) -> Vectors {
+        pub fn vectors_by_phis(&self, angles : &Phis) -> Vectors {
             // Rotation matrices used multiple times
             let base_rot = Mat3::from_rotation_z(angles.0);
             let a1_rot = Mat3::from_rotation_x(angles.1);
@@ -507,57 +503,58 @@ impl SyArm
     //
 
     // Advanced velocity calculation
-        pub fn actor_vectors(&self, vecs : &Vectors, phis : &Phis) -> Actors {
-            let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
-            let Axes( x_b, x_1, x_2, x_3 ) = self.stepper_axes(phis.0);
+        // pub fn actor_vectors(&self, vecs : &Vectors, phis : &Phis) -> Actors {
+        //     let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
+        //     let Axes( x_b, x_1, x_2, x_3 ) = self.stepper_axes(phis.0);
 
-            let a_23 = a_2 + a_3;
-            let a_123 = a_1 + a_23;
-            let a_b123 = a_b + a_123;
+        //     let a_23 = a_2 + a_3;
+        //     let a_123 = a_1 + a_23;
+        //     let a_b123 = a_b + a_123;
 
-            Actors(
-                ( a_b123 ).cross( x_b ),
-                ( a_123 ).cross( x_1 ),
-                ( a_23 ).cross( x_2 ),
-                ( a_3 ).cross( x_3 )
-            )
-        }
+        //     Actors(
+        //         ( a_b123 ).cross( x_b ),
+        //         ( a_123 ).cross( x_1 ),
+        //         ( a_23 ).cross( x_2 ),
+        //         ( a_3 ).cross( x_3 )
+        //     )
+        // }
 
-        pub fn accel_dyn(&self, phis : &Phis, omegas : Vec3) -> Vec3 {
-            let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
-            Vec3::new(
-                eta_b * self.ctrl_base.accel_dyn(omegas.x),
-                eta_1 * self.ctrl_a1.accel_dyn(omegas.y),
-                eta_2 * self.ctrl_a2.accel_dyn(omegas.z)
-            )
-        }
+        // pub fn accel_dyn(&self, phis : &Phis, omegas : Vec3) -> Vec3 {
+        //     let Gammas( g_b, g_1, g_2, _ ) = self.gammas_for_phis(phis);
 
-        pub fn omegas_from_vel(&self, vel : Vec3, phis : &Phis) -> Vec3 {
-            let vecs = self.get_vectors_by_phis(phis);
-            let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
-            // let Vectors( a_b, a_1, a_2, a_3 ) = vecs;
+        //     Vec3::new(
+        //         self.ctrl_base.accel_dyn(omegas.x, g_b),
+        //         self.ctrl_a1.accel_dyn(omegas.y, g_1),
+        //         self.ctrl_a2.accel_dyn(omegas.z, g_2)
+        //     ) 
+        // }
 
-            // let a_23 = a_2 + a_3;
-            // let a_123 = a_1 + a_23;
-            // let a_b123 = a_b + a_123;
+        // pub fn omegas_from_vel(&self, vel : Vec3, phis : &Phis) -> Vec3 {
+        //     let vecs = self.vectors_by_phis(phis);
+        //     let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
+        //     // let Vectors( a_b, a_1, a_2, a_3 ) = vecs;
 
-            let eta_m = Mat3 {
-                x_axis: eta_b,
-                y_axis: eta_1,
-                z_axis: eta_2
-            };
+        //     // let a_23 = a_2 + a_3;
+        //     // let a_123 = a_1 + a_23;
+        //     // let a_b123 = a_b + a_123;
+
+        //     let eta_m = Mat3 {
+        //         x_axis: eta_b,
+        //         y_axis: eta_1,
+        //         z_axis: eta_2
+        //     };
             
-            // let vel_red = (a_b123.cross(vel) * a_b123.length().powi(-2)).cross(a_b + a_1 + a_2);
+        //     // let vel_red = (a_b123.cross(vel) * a_b123.length().powi(-2)).cross(a_b + a_1 + a_2);
             
-            eta_m.inverse().mul_vec3(vel)
-        }
+        //     eta_m.inverse().mul_vec3(vel)
+        // }
 
-        pub fn vel_from_omegas(&self, omegas : Vec3, phis : &Phis) -> Vec3 {
-            let vecs = self.get_vectors_by_phis(phis);
-            let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
+        // pub fn vel_from_omegas(&self, omegas : Vec3, phis : &Phis) -> Vec3 {
+        //     let vecs = self.vectors_by_phis(phis);
+        //     let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
 
-            eta_b * omegas.x + eta_1 * omegas.y + eta_2 * omegas.z
-        }
+        //     eta_b * omegas.x + eta_1 * omegas.y + eta_2 * omegas.z
+        // }
     // 
 
     // Path generaton
@@ -568,33 +565,46 @@ impl SyArm
             let n_seg = (delta_pos.length() / accuracy).ceil();
 
             for i in 0 .. (n_seg as u64 + 1) {  // +1 for endposition included
-                let gammas = self.gammas_for_phis(&self.get_with_fixed_dec(pos_0 + (i as f32)/n_s * delta_pos, dec_angle));
+                let gammas = self.gammas_for_phis(self.get_with_fixed_dec(pos_0 + (i as f32)/n_seg * delta_pos, dec_angle));
                 if !self.valid_gammas(gammas) {
                     return Err(SyArmError::new_simple(ErrType::OutOfRange))
                 }
-                path.push(value)
+                path.push(gammas)
             }
 
             Ok(path)
         }
 
         pub fn calc_drive_paths(&self, path : &SyArmPath, vel_max : f32, dist : f32) -> (PathPhi, PathPhi, PathPhi, PathPhi) {
-            let mut path_b = PathPhi::new();
-            let mut path_1 = PathPhi::new();
-            let mut path_2 = PathPhi::new();
-            let mut path_3 = PathPhi::new();
+            let mut path_b = pathphi_new();
+            let mut path_1 = pathphi_new();
+            let mut path_2 = pathphi_new();
+            let mut path_3 = pathphi_new();
 
-            let dt = dist / vel_max;
+            let dt = dist / vel_max / path.len() as f32;
 
             for elem in path {
-                let Gammas( g_b, g_1, g_2, g_3 ) = path;
-                path_b.push((dt, g_b));
-                path_1.push((dt, g_1));
-                path_2.push((dt, g_2)); 
-                path_3.push((dt, g_3));
+                let Gammas( g_b, g_1, g_2, g_3 ) = *elem;
+                pathphi_push(&mut path_b, (dt, g_b));
+                pathphi_push(&mut path_1, (dt, g_1));
+                pathphi_push(&mut path_2, (dt, g_2)); 
+                pathphi_push(&mut path_3, (dt, g_3));
             }
 
             ( path_b, path_1, path_2, path_3 )
+        }
+
+        pub fn run_path_correction(&mut self, paths : (PathPhi, PathPhi, PathPhi, PathPhi)) -> Vec<StepperPath> {
+            let comps_raw : [&mut dyn Component; 4] = [
+                &mut self.ctrl_base,
+                &mut self.ctrl_a1,
+                &mut self.ctrl_a2,
+                &mut self.ctrl_a3
+            ];
+            let mut comps = Vec::from(comps_raw);
+            let node_count = paths.0.0.len();
+
+            path_correction(&mut vec![ paths.0, paths.1, paths.2, paths.3 ], &mut comps, node_count)
         }
     //
 
@@ -676,9 +686,9 @@ impl SyArm
 
     // Update
         pub fn update_sim(&mut self) -> Vectors {
-            let phis = self.get_all_phis();
-            let vectors = self.get_vectors_by_phis(&phis);
-            let points = self.get_points_by_phis(&phis);
+            let phis = self.all_phis();
+            let vectors = self.vectors_by_phis(&phis);
+            let points = self.points_by_phis(&phis);
             
             self.apply_forces(self.get_forces(&vectors));
             self.apply_inertias(self.get_inertias(&vectors));
@@ -690,49 +700,16 @@ impl SyArm
     //  
 
     // Control
-        /// Moves the base by a relative angle \
-        /// Angle in radians
-        pub fn drive_base_rel(&mut self, angle : f32) {
-            self.ctrl_base.drive(angle, self.cons.omega_b);
+        pub fn drive_comp_rel(&mut self, index : usize, angle : f32) {
+            self.ctrls[index].drive(angle, self.cons.velocities[index]);
         }
 
-        /// Moves the base to an absolute position \
-        /// Angle in radians
-        pub fn drive_base_abs(&mut self, angle : f32) {
-            self.ctrl_base.drive_abs(angle, self.cons.omega_b);
+        pub fn drive_rel(&mut self, angles : Gammas) {
+            self.ctrls.drive(angles, self.cons.velocities);
         }
 
-        pub fn drive_a1_rel(&mut self, angle : f32) {
-            self.ctrl_a1.drive(angle, self.cons.c1_v);
-        }
-
-        pub fn drive_a1_abs(&mut self, angle : f32) {
-            self.ctrl_a1.drive_abs(angle, self.cons.c1_v);
-        }
-
-        pub fn drive_a2_rel(&mut self, angle : f32) {
-            self.ctrl_a2.drive(angle, self.cons.c2_v);
-        }
-
-        pub fn drive_a2_abs(&mut self, angle : f32) {
-            self.ctrl_a2.drive_abs(angle, self.cons.c2_v);
-        }
-
-        pub fn drive_a3_rel(&mut self, angle : f32) {
-            self.ctrl_a3.drive(angle, self.cons.omega_3);
-        }
-
-        pub fn drive_a3_abs(&mut self, angle : f32) {
-            self.ctrl_a3.drive_abs(angle, self.cons.omega_3);
-        }
-
-        pub fn drive_to_angles(&mut self, angles : Gammas) {
-            let Gammas( g_b, g_1, g_2, g_3 ) = angles;
-            
-            self.drive_base_abs(g_b);
-            self.drive_a1_abs(g_1);
-            self.drive_a2_abs(g_2);
-            self.drive_a3_abs(g_3);
+        pub fn drive_abs(&mut self, angles : Gammas) {
+            self.ctrls.drive_abs(angles, self.cons.velocities);
         }
 
         pub fn measure(&mut self, accuracy : u64) -> Result<(), (bool, bool, bool, bool)> {

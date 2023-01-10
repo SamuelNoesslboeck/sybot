@@ -46,6 +46,6 @@ fn main() {
 
     // println!("Position Base: {}", syarm.ctrl_a3.get_dist());
 
-    let phis = syarm.get_all_phis();
-    dbg!(syarm.get_points_by_phis(&phis));
+    let phis = syarm.all_phis();
+    dbg!(syarm.points_by_phis(&phis));
 }

@@ -13,7 +13,7 @@ use crate::{SyArm, SyArmResult};
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_to_angles(arm.gammas_for_phis(&angles));
+        arm.drive_abs(arm.gammas_for_phis(&angles));
         arm.update_sim();
         Ok(serde_json::json!(vec![angles.0, angles.1, angles.2, angles.3]))
     }
@@ -131,7 +131,7 @@ use crate::{SyArm, SyArmResult};
     }
 
     pub fn m1(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
-        println!("{}", arm.get_points_by_phis(&arm.get_all_phis()).3);
+        println!("{}", arm.points_by_phis(&arm.all_phis()).3);
         Ok(Value::Null)
     }
 // 
