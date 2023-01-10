@@ -372,27 +372,11 @@ impl SyArm
         }
 
         pub fn valid_gammas(&self, gammas : Gammas) -> bool {
-            let [ g_b, g_1, g_2, g_3 ] = gammas;
-
-            // TODO: Add get_limit_dest to Component trait
-
-            return 
-                g_b.is_finite() & g_1.is_finite() & g_2.is_finite() & g_3.is_finite() & 
-                (!self.ctrl_base.get_limit_dest(g_b).reached()) &
-                (!self.ctrl_a1.get_limit_dest(g_1).reached())   &
-                (!self.ctrl_a2.get_limit_dest(g_2).reached())   &
-                (!self.ctrl_a3.get_limit_dest(g_3).reached())   
+            self.ctrls.valid_dist(gammas)
         }
 
-        pub fn valid_gammas_det(&self, gammas : Gammas) -> (bool, bool, bool, bool) {
-            let Gammas( g_b, g_1, g_2, g_3 ) = gammas;
-
-            return (
-                !self.ctrl_base.get_limit_dest(g_b).reached() & g_b.is_finite(),
-                !self.ctrl_a1.get_limit_dest(g_1).reached() & g_1.is_finite(),
-                !self.ctrl_a2.get_limit_dest(g_2).reached() & g_2.is_finite(),
-                !self.ctrl_a3.get_limit_dest(g_3).reached() & g_3.is_finite()   
-            )
+        pub fn valid_gammas_verb(&self, gammas : Gammas) -> [bool; 4] {
+            self.ctrls.valid_dist_verb(gammas)
         }
 
         pub fn valid_phis(&self, phis : &Phis) -> bool {
@@ -483,7 +467,7 @@ impl SyArm
             if self.valid_gammas(gammas) { 
                 Ok(phis)
             } else {
-                let valids = self.valid_gammas_det(gammas);
+                let valids = self.valid_gammas_verb(gammas);
 
                 Err(SyArmError::new(format!(
                     "Point {} is out of range! (Gammas: {}, Dec: {}) (Valids: ({}, {}, {}, {}))", 
