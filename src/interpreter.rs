@@ -13,9 +13,9 @@ use crate::{SyArm, SyArmResult};
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_abs(arm.gammas_for_phis(&angles));
+        arm.drive_abs(arm.gammas_for_phis(angles));
         arm.update_sim();
-        Ok(serde_json::json!(vec![angles.0, angles.1, angles.2, angles.3]))
+        Ok(serde_json::json!(angles))
     }
 
     /// G4 X{Seconds} P{Milliseconds}
@@ -37,68 +37,68 @@ use crate::{SyArm, SyArmResult};
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_to_angles_async(arm.gammas_for_phis(&angles));
+        arm.drive_abs_async(arm.gammas_for_phis(angles));
         arm.await_inactive();
         arm.update_sim();
-        Ok(serde_json::json!(vec![angles.0, angles.1, angles.2, angles.3]))
+        Ok(serde_json::json!(angles))
     }   
 
-    // Incorrect time measurement
-        /// G10 C<Angle>
-        /// Moves the base with a relative angle
-        pub fn g10(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_base_rel(args[0].value);
-            Ok(Value::Null)
-        }
+    // Move single axis
+        // /// G10 C<Angle>
+        // /// Moves the base with a relative angle
+        // pub fn g10(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_base_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-        /// G11 A<Angle>
-        /// Moves the first arm segment with a relative angle
-        pub fn g11(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_a1_rel(args[0].value);
-            Ok(Value::Null)
-        }
+        // /// G11 A<Angle>
+        // /// Moves the first arm segment with a relative angle
+        // pub fn g11(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a1_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-        /// G12 A<Angle>
-        /// Moves the second arm segment with a relative angle
-        pub fn g12(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_a2_rel(args[0].value);
-            Ok(Value::Null)
-        }
+        // /// G12 A<Angle>
+        // /// Moves the second arm segment with a relative angle
+        // pub fn g12(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a2_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-        /// G13 A<Angle>
-        /// Moves the third arm segment with a relative angle
-        pub fn g13(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_a3_rel(args[0].value);
-            Ok(Value::Null)
-        }
+        // /// G13 A<Angle>
+        // /// Moves the third arm segment with a relative angle
+        // pub fn g13(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a3_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-        /// G20 C<Angle>
-        /// Moves the base with an absolute angle
-        pub fn g20(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_base_rel(args[0].value);
-            Ok(Value::Null)
-        }
+        // /// G20 C<Angle>
+        // /// Moves the base with an absolute angle
+        // pub fn g20(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_base_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-        /// G21 A<Angle>
-        /// Moves the first arm segment with an absolute angle
-        pub fn g21(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_a1_rel(args[0].value);
-            Ok(Value::Null)
-        }
+        // /// G21 A<Angle>
+        // /// Moves the first arm segment with an absolute angle
+        // pub fn g21(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a1_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-        /// G22 A<Angle>
-        /// Moves the second arm segment with an absolute angle
-        pub fn g22(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_a2_rel(args[0].value);
-            Ok(Value::Null)
-        }
+        // /// G22 A<Angle>
+        // /// Moves the second arm segment with an absolute angle
+        // pub fn g22(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a2_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-        /// G23 A<Angle>
-        /// Moves the third arm segment with an absolute angle
-        pub fn g23(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-            arm.drive_a3_rel(args[0].value);
-            Ok(Value::Null)
-        }
+        // /// G23 A<Angle>
+        // /// Moves the third arm segment with an absolute angle
+        // pub fn g23(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a3_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
     // 
 
     /// G28 \
@@ -125,8 +125,8 @@ use crate::{SyArm, SyArmResult};
 //
 
 // Misc Functions
-    pub fn m0(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
-        arm.debug_pins();
+    pub fn m0(_ : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
+        // arm.debug_pins();
         Ok(Value::Null)
     }
 
@@ -146,10 +146,10 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
             (0, g0 as GCodeFunc<SyArm, SyArmResult<Value>>),
             (4, g4),
             (8, g8),
-            (10, g10),
-            (11, g11),
-            (12, g12),
-            (13, g13),
+            // (10, g10),
+            // (11, g11),
+            // (12, g12),
+            // (13, g13),
             (28, g28),
             (29, g29)
         ])),

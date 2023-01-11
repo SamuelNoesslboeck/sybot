@@ -58,12 +58,12 @@ use crate::*;
 // 
 
 // Test move
-    fn print_stepper_path(path : &StepperPath) {
-        println!("| index\t| dt\t| phi\t| omega\t| alpha\t|");
-        for i in 0 .. path.dts.len() {
-            println!("|{}\t|{}\t|{}\t|{}\t|{}\t|", i, path.dts[i], path.phis[i], path.omegas[i], path.alphas[i]);
-        }
-    }
+    // fn print_stepper_path(path : &StepperPath) {
+    //     println!("| index\t| dt\t| phi\t| omega\t| alpha\t|");
+    //     for i in 0 .. path.dts.len() {
+    //         println!("|{}\t|{}\t|{}\t|{}\t|{}\t|", i, path.dts[i], path.phis[i], path.omegas[i], path.alphas[i]);
+    //     }
+    // }
 
     #[test]
     fn test_linear_move() {
@@ -87,9 +87,9 @@ use crate::*;
 
         // print_stepper_path(&non_corrected);
 
-        let paths = syarm.run_path_correction(drive_path);
-        let path = &paths[0];
+        // let paths = syarm.run_path_correction(drive_path);
+        // let path = &paths[0];
         
-        print_stepper_path(path);
+        // print_stepper_path(path);
     }
 //
