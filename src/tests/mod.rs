@@ -6,9 +6,9 @@ use crate::*;
     fn test_arm() {
         let mut syarm = SyArm::load_json("res/syarm_const.json");
 
-        const ANGLES : Phis = Phis(0.0, PI / 2.0, -PI / 2.0, 0.0);
+        const ANGLES : Phis = [0.0, PI / 2.0, -PI / 2.0, 0.0];
 
-        syarm.write_position(&syarm.gammas_for_phis(&ANGLES)); 
+        syarm.write_position(&syarm.gammas_for_phis(ANGLES)); 
 
         syarm.update_sim();
 
@@ -37,23 +37,23 @@ use crate::*;
 
         dbg!(syarm.get_inertias(&syarm.vectors_by_phis(&ANGLES)));
 
-        println!("Inertias: ");
-        dbg!(
-            // inertias,
-            syarm.ctrl_base.ctrl.driver.lock().unwrap().data.j_load,
-            syarm.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.j_load,
-            syarm.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.j_load,
-            syarm.ctrl_a3.ctrl.driver.lock().unwrap().data.j_load
-        );
+        // println!("Inertias: ");
+        // dbg!(
+        //     // inertias,
+        //     syarm.ctrl.ctrl.driver.lock().unwrap().data.j_load,
+        //     syarm.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.j_load,
+        //     syarm.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.j_load,
+        //     syarm.ctrl_a3.ctrl.driver.lock().unwrap().data.j_load
+        // );
 
-        println!("Forces: ");
-        dbg!(
-            // forces,
-            syarm.ctrl_base.ctrl.driver.lock().unwrap().data.t_load,
-            syarm.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.t_load,
-            syarm.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.t_load,
-            syarm.ctrl_a3.ctrl.driver.lock().unwrap().data.t_load,
-        );
+        // println!("Forces: ");
+        // dbg!(
+        //     // forces,
+        //     syarm.ctrl_base.ctrl.driver.lock().unwrap().data.t_load,
+        //     syarm.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.t_load,
+        //     syarm.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.t_load,
+        //     syarm.ctrl_a3.ctrl.driver.lock().unwrap().data.t_load,
+        // );
     }
 // 
 
@@ -79,7 +79,7 @@ use crate::*;
         let angles : Phis = syarm.get_with_fixed_dec(START, DECO);
         // let vecs = syarm._by_phis(&angles);
 
-        syarm.write_position(&syarm.gammas_for_phis(&angles));
+        syarm.write_position(&syarm.gammas_for_phis(angles));
         syarm.update_sim();
 
         let raw_path = syarm.gen_lin_path(START, END, DECO, ACC).unwrap();

@@ -16,8 +16,7 @@ use std::{fs, f32::consts::PI, vec};
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{
-    Component, ComponentGroup
-    ctrl::StepperCtrl, 
+    Component, ComponentGroup, StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperData, 
     math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, 
@@ -33,11 +32,6 @@ pub use stepper_lib::gcode::Interpreter;
 // Constants
 /// Gravitational acceleration as vector
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
-
-/// Set of zero value forces
-pub const FORCES_ZERO : Forces = Forces(0.0, 0.0, 0.0, 0.0);
-/// Set of zero value inertias
-pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
 
 // Structures
     /// ### Constants
@@ -180,20 +174,11 @@ pub const INERTIAS_ZERO : Inertias = Inertias(0.0, 0.0, 0.0, 0.0);
 //
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
-pub fn top_down_angle(point : Vec3) -> f32 {
+fn top_down_angle(point : Vec3) -> f32 {
     Vec3::new(point.x, point.y, 0.0).angle_between(Vec3::X)
 }
 
-fn _angle_to_deg(angles : Phis) -> Phis {
-    Phis( 
-        angles.0 * 180.0 / PI,
-        angles.1 * 180.0 / PI,
-        angles.2 * 180.0 / PI,
-        angles.3 * 180.0 / PI
-    )
-}
-
-pub fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
+fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
     ((a.powi(2) + b.powi(2) - c.powi(2)) / 2.0 / a / b).acos()
 }
 
@@ -379,7 +364,7 @@ impl SyArm
             self.ctrls.valid_dist_verb(gammas)
         }
 
-        pub fn valid_phis(&self, phis : &Phis) -> bool {
+        pub fn valid_phis(&self, phis : Phis) -> bool {
             self.valid_gammas(self.gammas_for_phis(phis))
         }
     //
@@ -404,10 +389,10 @@ impl SyArm
         /// Get the (most relevant, characteristic) vectors of the robot by the  angles
         pub fn vectors_by_phis(&self, angles : &Phis) -> Vectors {
             // Rotation matrices used multiple times
-            let base_rot = Mat3::from_rotation_z(angles.0);
-            let a1_rot = Mat3::from_rotation_x(angles.1);
-            let a2_rot = Mat3::from_rotation_x(angles.2);
-            let a3_rot = Mat3::from_rotation_x(angles.3);
+            let base_rot = Mat3::from_rotation_z(angles[0]);
+            let a1_rot = Mat3::from_rotation_x(angles[1]);
+            let a2_rot = Mat3::from_rotation_x(angles[2]);
+            let a3_rot = Mat3::from_rotation_x(angles[3]);
 
             // Create vectors in default position (Pointing along X-Axis) except base
             let a_b = self.cons.a_b.v;
@@ -449,7 +434,7 @@ impl SyArm
             let phi_2 = gamma_2_ - PI;
             let phi_3 = dec_angle - (phi_1 + phi_2);
 
-            Phis( phi_b, phi_1, phi_2, phi_3 )         
+            [ phi_b, phi_1, phi_2, phi_3 ]     
         }
 
         pub fn get_with_fixed_dec_s(&self, x : Option<f32>, y : Option<f32>, z : Option<f32>, dec_angle_o : Option<f32>) -> SyArmResult<Phis> {
@@ -462,7 +447,7 @@ impl SyArm
             let dec_angle = dec_angle_o.unwrap_or(self.vars.dec_angle);
             
             let phis = self.get_with_fixed_dec(point, dec_angle);
-            let gammas = self.gammas_for_phis(&phis);
+            let gammas = self.gammas_for_phis(phis);
         
             if self.valid_gammas(gammas) { 
                 Ok(phis)
@@ -470,8 +455,8 @@ impl SyArm
                 let valids = self.valid_gammas_verb(gammas);
 
                 Err(SyArmError::new(format!(
-                    "Point {} is out of range! (Gammas: {}, Dec: {}) (Valids: ({}, {}, {}, {}))", 
-                        point, gammas, dec_angle, valids.0, valids.1, valids.2, valids.3).as_str(), ErrType::OutOfRange))
+                    "Point {} is out of range! (Gammas: {:?}, Dec: {}) (Valids: ({:?}))", 
+                        point, gammas, dec_angle, valids).as_str(), ErrType::OutOfRange))
             }
         }
 
@@ -568,7 +553,7 @@ impl SyArm
             let dt = dist / vel_max / path.len() as f32;
 
             for elem in path {
-                let Gammas( g_b, g_1, g_2, g_3 ) = *elem;
+                let [ g_b, g_1, g_2, g_3 ] = *elem;
                 pathphi_push(&mut path_b, (dt, g_b));
                 pathphi_push(&mut path_1, (dt, g_1));
                 pathphi_push(&mut path_2, (dt, g_2)); 
@@ -578,25 +563,25 @@ impl SyArm
             ( path_b, path_1, path_2, path_3 )
         }
 
-        pub fn run_path_correction(&mut self, paths : (PathPhi, PathPhi, PathPhi, PathPhi)) -> Vec<StepperPath> {
-            let comps_raw : [&mut dyn Component; 4] = [
-                &mut self.ctrl_base,
-                &mut self.ctrl_a1,
-                &mut self.ctrl_a2,
-                &mut self.ctrl_a3
-            ];
-            let mut comps = Vec::from(comps_raw);
-            let node_count = paths.0.0.len();
+        // pub fn run_path_correction(&mut self, paths : (PathPhi, PathPhi, PathPhi, PathPhi)) -> Vec<StepperPath> {
+        //     let comps_raw : [&mut dyn Component; 4] = [
+        //         &mut self.ctrls[0],
+        //         &mut self.ctrl_a1,
+        //         &mut self.ctrl_a2,
+        //         &mut self.ctrl_a3
+        //     ];
+        //     let mut comps = Vec::from(comps_raw);
+        //     let node_count = paths.0.0.len();
 
-            path_correction(&mut vec![ paths.0, paths.1, paths.2, paths.3 ], &mut comps, node_count)
-        }
+        //     path_correction(&mut vec![ paths.0, paths.1, paths.2, paths.3 ], &mut comps, node_count)
+        // }
     //
 
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {
             let Vectors( _, a_1, a_2, _ ) = *vecs;
 
-            let base_helper = Mat3::from_rotation_z(-self.ctrl_base.get_dist()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
+            let base_helper = Mat3::from_rotation_z(-self.ctrls[0].get_dist()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
 
             CylVectors(
                 (a_1 / 2.0 - base_helper, base_helper),
@@ -621,21 +606,16 @@ impl SyArm
             segments.insert(0, (self.cons.m_b, a_b));
             let j_b = inertia_rod_constr(&segments) + inertia_point(a_b + a_1 + a_2 + a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
 
-            Inertias( 
+            [ 
                 j_b.z_axis.length() / 1_000_000.0, 
                 inertia_to_mass(j_1, c1_pos, c1_dir), 
                 inertia_to_mass(j_2, c2_pos, c2_dir),
-                (Mat3::from_rotation_z(-self.ctrl_base.get_dist()) * j_3).x_axis.length() / 1_000_000.0
-            )
+                (Mat3::from_rotation_z(-self.ctrls[0].get_dist()) * j_3).x_axis.length() / 1_000_000.0
+            ]
         }
 
         pub fn apply_inertias(&mut self, inertias : Inertias) {
-            let Inertias( j_b, m_1, m_2, j_3 ) = inertias;
-
-            self.ctrl_base.apply_load_inertia(j_b);
-            self.ctrl_a1.cylinder.apply_load_inertia(m_1);
-            self.ctrl_a2.cylinder.apply_load_inertia(m_2);
-            self.ctrl_a3.apply_load_inertia(j_3);
+            self.ctrls.apply_load_inertia(inertias);
         }
 
         pub fn get_forces(&self, vecs : &Vectors) -> Forces {
@@ -655,16 +635,11 @@ impl SyArm
             let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fg_2, a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);
             let (f_c1, _ ) = forces_segment(&vec![ (f_2, a_1), (f_c2, c2_pos_1), (fg_1, a_1 / 2.0) ], Vec3::ZERO, c1_pos, c1_dir);
 
-            Forces( 0.0, f_c1.length(), f_c2.length(), t_3.length() / 1_000.0 )
+            [ 0.0, f_c1.length(), f_c2.length(), t_3.length() / 1_000.0 ]
         }
 
         pub fn apply_forces(&mut self, forces : Forces) {
-            let Forces( t_b, f_1, f_2, t_3 ) = forces;
-
-            self.ctrl_base.apply_load_force(t_b);
-            self.ctrl_a1.cylinder.apply_load_force(f_1);
-            self.ctrl_a2.cylinder.apply_load_force(f_2);
-            self.ctrl_a3.apply_load_force(t_3);
+            self.ctrls.apply_load_force(forces);
         }
     // 
 
@@ -692,6 +667,10 @@ impl SyArm
             self.ctrls.drive(angles, self.cons.velocities);
         }
 
+        pub fn drive_comp_abs(&mut self, index : usize, angle : f32) {
+            self.ctrls[index].drive_abs(angle, self.cons.velocities[index]);
+        }
+
         pub fn drive_abs(&mut self, angles : Gammas) {
             self.ctrls.drive_abs(angles, self.cons.velocities);
         }
@@ -712,49 +691,16 @@ impl SyArm
     //
 
     // Async control
-        /// Moves the base by a relative angle \
-        /// Angle in radians
-        pub fn drive_base_rel_async(&mut self, angle : f32) {
-            self.ctrl_base.drive_async(self.ctrl_base.get_dist() + angle, self.cons.omega_b);
+        pub fn drive_comp_rel_async(&mut self, index : usize, angle : f32) {
+            self.ctrls[index].drive_async(angle, self.cons.velocities[index]);
         }
 
-        /// Moves the base to an absolute position \
-        /// Angle in radians
-        pub fn drive_base_abs_async(&mut self, angle : f32) {
-            self.ctrl_base.drive_abs_async(angle, self.cons.omega_b);
-        }
-
-        pub fn drive_a1_rel_async(&mut self, angle : f32) {
-            self.ctrl_a1.drive_async(angle, self.cons.c1_v);
-        }
-
-        pub fn drive_a1_abs_async(&mut self, angle : f32) {
-            self.ctrl_a1.drive_abs_async(angle, self.cons.c1_v);
-        }
-
-        pub fn drive_a2_rel_async(&mut self, angle : f32) {
-            self.ctrl_a2.drive_async(angle, self.cons.c2_v);
-        }
-
-        pub fn drive_a2_abs_async(&mut self, angle : f32) {
-            self.ctrl_a2.drive_abs_async( angle, self.cons.c2_v);
-        }
-
-        pub fn drive_a3_rel_async(&mut self, angle : f32) {
-            self.ctrl_a3.drive_async(angle, self.cons.omega_3);
-        }
-
-        pub fn drive_a3_abs_async(&mut self, angle : f32) {
-            self.ctrl_a3.drive_abs_async( angle, self.cons.omega_3);
+        pub fn drive_rel_async(&mut self, angles : Gammas) {
+            self.ctrls.drive_async(angles, self.cons.velocities);
         }
         
-        pub fn drive_to_angles_async(&mut self, angles : Gammas) {
-            let Gammas( g_b, g_1, g_2, g_3 ) = angles;
-            
-            self.drive_base_abs_async(g_b);
-            self.drive_a1_abs_async(g_1);
-            self.drive_a2_abs_async(g_2);
-            self.drive_a3_abs_async(g_3);
+        pub fn drive_abs_async(&mut self, angles : Gammas) {
+            self.ctrls.drive_async_abs(angles, self.cons.velocities);
         }
 
         pub fn measure_async(&mut self, accuracy : u64) {
@@ -765,10 +711,7 @@ impl SyArm
         }
 
         pub fn await_inactive(&self) {
-            self.ctrl_base.ctrl.comms.await_inactive();
-            self.ctrl_a1.cylinder.ctrl.comms.await_inactive();
-            self.ctrl_a2.cylinder.ctrl.comms.await_inactive();
-            self.ctrl_a3.ctrl.comms.await_inactive();
+            self.ctrls.await_inactive();
         }
 
         pub fn set_endpoint(&mut self) {
@@ -781,19 +724,14 @@ impl SyArm
 
     // Debug
         pub fn write_position(&mut self, angles : &Gammas) {
-            let Gammas( g_b, g_1, g_2, g_3 ) = *angles;
-
-            self.ctrl_base.write_dist(g_b);
-            self.ctrl_a1.write_dist(g_1);
-            self.ctrl_a2.write_dist(g_2);
-            self.ctrl_a3.write_dist(g_3);
+            self.ctrls.write_dist(angles);
         }
 
-        pub fn debug_pins(&self) {
-            self.ctrl_base.ctrl.debug_pins();
-            self.ctrl_a1.cylinder.ctrl.debug_pins();
-            self.ctrl_a2.cylinder.ctrl.debug_pins();
-            self.ctrl_a3.ctrl.debug_pins();
-        }
+        // pub fn debug_pins(&self) {
+        //     self.ctrl_base.ctrl.debug_pins();
+        //     self.ctrl_a1.cylinder.ctrl.debug_pins();
+        //     self.ctrl_a2.cylinder.ctrl.debug_pins();
+        //     self.ctrl_a3.ctrl.debug_pins();
+        // }
     // 
 }

@@ -39,17 +39,7 @@ pub struct CylVectors(
 );
 
 /// Exchange type type for forces and torques acting upon the robot
-#[derive(Clone, Copy, Debug)]
-pub struct Forces( 
-    /// Base torque [Nm]
-    pub f32,
-    /// First cylinder force [N]
-    pub f32,
-    /// Second cylinder force [N]
-    pub f32,
-    /// Third join torque [Nm]
-    pub f32
-);
+pub type Forces = [f32; 4];
 
 pub type Gammas = [f32; 4];
 
