@@ -19,8 +19,7 @@ use stepper_lib::{
     Component, ComponentGroup, StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperData, 
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, 
-    paths::{pathphi_new, pathphi_push, PathPhi}
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
 };
 
 // Local imports
