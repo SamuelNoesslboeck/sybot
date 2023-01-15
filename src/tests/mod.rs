@@ -67,6 +67,8 @@ use crate::*;
         // syarm.debug_pins();
     
         println!("Running movement tests ... ");
+
+        syarm.measure(2).unwrap();
         
         for i in 0 .. 4 {
             print!(" -> Moving base ... ");
