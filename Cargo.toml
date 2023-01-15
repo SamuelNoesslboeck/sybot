@@ -10,7 +10,7 @@ name = "syarm_lib"
 path = "src/lib.rs"
 
 [[bin]]
-name = "interpreter"
+name = "intpr"
 path = "bin/interpreter.rs"
 
 [dependencies]
