@@ -8,7 +8,7 @@
     mod types;
     #[cfg(test)]
     mod tests;
-    pub mod interpreter;
+    pub mod intpr;
 //
 
 // Imports
@@ -25,7 +25,7 @@ use stepper_lib::{
 // Local imports
 use pvec::PVec3;
 pub use types::*;
-pub use interpreter::init_interpreter;
+pub use intpr::init_interpreter;
 pub use stepper_lib::gcode::Interpreter;
 
 // Constants
@@ -531,24 +531,24 @@ impl SyArm
             Ok(path)
         }
 
-        pub fn calc_drive_paths(&self, path : &SyArmPath, vel_max : f32, dist : f32) -> (PathPhi, PathPhi, PathPhi, PathPhi) {
-            let mut path_b = pathphi_new();
-            let mut path_1 = pathphi_new();
-            let mut path_2 = pathphi_new();
-            let mut path_3 = pathphi_new();
+        // pub fn calc_drive_paths(&self, path : &SyArmPath, vel_max : f32, dist : f32) -> (PathPhi, PathPhi, PathPhi, PathPhi) {
+        //     let mut path_b = pathphi_new();
+        //     let mut path_1 = pathphi_new();
+        //     let mut path_2 = pathphi_new();
+        //     let mut path_3 = pathphi_new();
 
-            let dt = dist / vel_max / path.len() as f32;
+        //     let dt = dist / vel_max / path.len() as f32;
 
-            for elem in path {
-                let [ g_b, g_1, g_2, g_3 ] = *elem;
-                pathphi_push(&mut path_b, (dt, g_b));
-                pathphi_push(&mut path_1, (dt, g_1));
-                pathphi_push(&mut path_2, (dt, g_2)); 
-                pathphi_push(&mut path_3, (dt, g_3));
-            }
+        //     for elem in path {
+        //         let [ g_b, g_1, g_2, g_3 ] = *elem;
+        //         pathphi_push(&mut path_b, (dt, g_b));
+        //         pathphi_push(&mut path_1, (dt, g_1));
+        //         pathphi_push(&mut path_2, (dt, g_2)); 
+        //         pathphi_push(&mut path_3, (dt, g_3));
+        //     }
 
-            ( path_b, path_1, path_2, path_3 )
-        }
+        //     ( path_b, path_1, path_2, path_3 )
+        // }
 
         // pub fn run_path_correction(&mut self, paths : (PathPhi, PathPhi, PathPhi, PathPhi)) -> Vec<StepperPath> {
         //     let comps_raw : [&mut dyn Component; 4] = [
