@@ -12,13 +12,13 @@
 //
 
 // Imports
-use std::{fs, f32::consts::PI, vec};
-use serde::{Serialize, Deserialize};
+use std::{fs, f32::consts::PI, ops::Index, vec, marker::PhantomData};
+use serde::{Serialize, Deserialize, ser::SerializeTuple, de::Visitor};
 
 use stepper_lib::{
     Component, ComponentGroup, StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
-    data::StepperData, 
+    data::StepperConst, 
     math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
 };
 
@@ -33,53 +33,96 @@ pub use stepper_lib::gcode::Interpreter;
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 // Structures
+    // Helper type
+        #[derive(Debug)]
+        struct ValArray<T, const N : usize>([T; N]);
+
+        struct ValArrayDes<T, const N : usize>;
+
+        impl<T : Serialize + for<'de> Deserialize<'de>, const N : usize> Serialize for ValArray<T, N> {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer {
+                let mut seq = serializer.serialize_tuple(N)?;
+                for i in 0 .. N {
+                    seq.serialize_element(&self.0[i]);
+                }
+                seq.end()
+            }
+        }
+
+        impl<'de, const N : usize> Visitor<'de> for ValArrayDes<T, N>
+        {
+            type Value = ValArray<u32, N>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str(format!("[f32; {}]", N).as_str())
+            }
+
+            fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
+                where
+                    A: serde::de::SeqAccess<'de>, {
+                let mut arr : [u32; N];
+                for i in 0 .. N {
+                    arr[i] = seq.next_element()?.unwrap();
+                }
+                Ok(ValArray(arr))
+            }
+        }
+
+        impl<'de, T : Serialize + Deserialize<'de>, const N : usize> Deserialize<'de> for ValArray<T, N> {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de> {
+                deserializer.deserialize_seq(ValArrayDes)
+            }
+        }
+
+        impl<T : Serialize + for<'de> Deserialize<'de>, const N : usize> ValArray<T, N> {
+            pub fn seq_mut(&mut self) -> &mut [f32; N] {
+                &mut self.0
+            }
+
+            pub fn seq(&self) -> &[f32; N] {
+                &self.0
+            }
+        }
+
+        impl<T : Serialize + for<'de> Deserialize<'de>, const N : usize> Index<usize> for ValArray<T, N> {
+            type Output = f32;
+
+            fn index(&self, index: usize) -> &Self::Output {
+                &self.0[index]
+            }
+        }
+    //
+
     /// ### Constants
     /// All the constats required for the calculation of the syarm \
     /// JSON I/O is enabled via the `serde_json` library
-    #[derive(Serialize, Deserialize)]
-    pub struct Constants 
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Constants<const N : usize>
     {
         // Circuit
         /// Voltage supplied to the motors in Volts
         pub u : f32,                    
 
-        /// Direction ctrl pin for the base controller
-        pub pin_dir_b : u16,         
-        /// Step ctrl pin for the base controller
-        pub pin_step_b : u16,          
+        /// Directional pin for the components
+        pub pin_dir : ValArray<u16, N>,
 
-        /// Direction ctrl pin for the first cylinder
-        pub pin_dir_1 : u16, 
-        /// Step ctrl pin for the first cylinder
-        pub pin_step_1 : u16, 
+        /// Step signal pin for the components
+        pub pin_step : ValArray<u16, N>,
 
-        /// Direction ctrl pin for the second cylinder
-        pub pin_dir_2 : u16,
-        /// Step ctrl pin for the second cylinder
-        pub pin_step_2 : u16,
-
-        /// Direction ctrl pin for the third cylinder
-        pub pin_dir_3 : u16,
-        /// Step ctrl pin for the second cylinder
-        pub pin_step_3 : u16,
-
-        /// Mearurement pins for the components
-        pub pin_meas : [u16; 4],
+        /// Measurement pins for the components
+        pub pin_meas : ValArray<u16, N>,
 
         // Measured
         /// Set value for the bearings when measured in either radians or millimeters
-        pub meas : [f32; 4],
+        pub meas : ValArray<f32, N>,
 
         // Construction
         /// Base vector when in base position, x, y and z lengths in mm
-        pub a_b : PVec3,
-
-        /// Length of the first arm segment in mm
-        pub l_a1 : f32,
-        /// Length of the second arm segment in mm
-        pub l_a2 : f32,
-        /// Length of the third arm segment in mm
-        pub l_a3 : f32,
+        pub vecs : ValArray<[f32; 3], N>,
 
         /// Length of a-segment of first cylinder triangle in mm
         pub l_c1a : f32,
@@ -122,17 +165,11 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
         pub ratio_3 : f32,
 
         /// Maximum angluar speeds for the bearings
-        pub velocities : [f32; 4],
+        pub velocities : ValArray<f32, N>,
 
         // Load calculation
-        /// Mass of base in kg
-        pub m_b : f32,
-        /// Mass of first arm segment in kg
-        pub m_a1 : f32,
-        /// Mass of second arm segment in kg
-        pub m_a2 : f32,
-        /// Mass of thrid arm segment in kg
-        pub m_a3 : f32,
+        /// Masses of each component
+        pub masses : ValArray<f32, N>,
 
         /// Safety factor for calculations
         pub sf : f32
@@ -150,7 +187,7 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
     pub struct SyArm
     {
         // Values
-        pub cons : Constants,
+        pub cons : Constants<4>,
         pub vars : Variables,
         pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
 
@@ -174,7 +211,7 @@ impl SyArm
 {
     // IO
         /// Creates a new syarm instance by a constants table
-        pub fn from_const(cons : Constants) -> Self {
+        pub fn from_const(cons : Constants<4>) -> Self {
             Self { 
                 tools: vec![ 
                     Box::new(NoTool::new()),
