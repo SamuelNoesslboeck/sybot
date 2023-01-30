@@ -19,8 +19,7 @@ use stepper_lib::{
     Component, ComponentGroup, StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperData, 
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, 
-    paths::{pathphi_new, pathphi_push, PathPhi, StepperPath, path_correction}
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
 };
 
 // Local imports
@@ -264,7 +263,8 @@ impl SyArm
         /// Initializes measurement systems
         pub fn init_meas(&mut self) {
             // TODO do at init
-            self.ctrl_base.ctrl.init_meas(self.cons.pin_meas_b);
+            
+            self.ctrls.ctrl.init_meas(self.cons.pin_meas_b);
             self.ctrl_a1.cylinder.ctrl.init_meas(self.cons.pin_meas_1);
             self.ctrl_a2.cylinder.ctrl.init_meas(self.cons.pin_meas_2);
             self.ctrl_a3.ctrl.init_meas(self.cons.pin_meas_3);
@@ -543,38 +543,6 @@ impl SyArm
 
             Ok(path)
         }
-
-        pub fn calc_drive_paths(&self, path : &SyArmPath, vel_max : f32, dist : f32) -> (PathPhi, PathPhi, PathPhi, PathPhi) {
-            let mut path_b = pathphi_new();
-            let mut path_1 = pathphi_new();
-            let mut path_2 = pathphi_new();
-            let mut path_3 = pathphi_new();
-
-            let dt = dist / vel_max / path.len() as f32;
-
-            for elem in path {
-                let [ g_b, g_1, g_2, g_3 ] = *elem;
-                pathphi_push(&mut path_b, (dt, g_b));
-                pathphi_push(&mut path_1, (dt, g_1));
-                pathphi_push(&mut path_2, (dt, g_2)); 
-                pathphi_push(&mut path_3, (dt, g_3));
-            }
-
-            ( path_b, path_1, path_2, path_3 )
-        }
-
-        // pub fn run_path_correction(&mut self, paths : (PathPhi, PathPhi, PathPhi, PathPhi)) -> Vec<StepperPath> {
-        //     let comps_raw : [&mut dyn Component; 4] = [
-        //         &mut self.ctrls[0],
-        //         &mut self.ctrl_a1,
-        //         &mut self.ctrl_a2,
-        //         &mut self.ctrl_a3
-        //     ];
-        //     let mut comps = Vec::from(comps_raw);
-        //     let node_count = paths.0.0.len();
-
-        //     path_correction(&mut vec![ paths.0, paths.1, paths.2, paths.3 ], &mut comps, node_count)
-        // }
     //
 
     // Load / Inertia calculation

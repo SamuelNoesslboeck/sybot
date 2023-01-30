@@ -82,14 +82,14 @@ use crate::*;
         syarm.write_position(&syarm.gammas_for_phis(angles));
         syarm.update_sim();
 
-        let raw_path = syarm.gen_lin_path(START, END, DECO, ACC).unwrap();
-        let drive_path = syarm.calc_drive_paths(&raw_path, VEL, (END - START).length());
+        // let raw_path = syarm.gen_lin_path(START, END, DECO, ACC).unwrap();
+        // let drive_path = syarm.calc_drive_paths(&raw_path, VEL, (END - START).length());
 
-        // print_stepper_path(&non_corrected);
+        // // print_stepper_path(&non_corrected);
 
-        let paths = syarm.run_path_correction(drive_path);
-        let path = &paths[0];
+        // let paths = syarm.run_path_correction(drive_path);
+        // let path = &paths[0];
         
-        print_stepper_path(path);
+        // print_stepper_path(path);
     }
 //
