@@ -43,63 +43,63 @@ use crate::{SyArm, SyArmResult};
         Ok(serde_json::json!(angles))
     }   
 
-    // // Incorrect time measurement
-    //     /// G10 C<Angle>
-    //     /// Moves the base with a relative angle
-    //     pub fn g10(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_comp_rel(0, args[0].value);
-    //         Ok(Value::Null)
-    //     }
+    // Move single axis
+        // /// G10 C<Angle>
+        // /// Moves the base with a relative angle
+        // pub fn g10(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_base_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-    //     /// G11 A<Angle>
-    //     /// Moves the first arm segment with a relative angle
-    //     pub fn g11(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_comp_rel(0, args[0].value);
-    //         Ok(Value::Null)
-    //     }
+        // /// G11 A<Angle>
+        // /// Moves the first arm segment with a relative angle
+        // pub fn g11(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a1_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-    //     /// G12 A<Angle>
-    //     /// Moves the second arm segment with a relative angle
-    //     pub fn g12(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_comp_rel(0, args[0].value);
-    //         Ok(Value::Null)
-    //     }
+        // /// G12 A<Angle>
+        // /// Moves the second arm segment with a relative angle
+        // pub fn g12(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a2_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-    //     /// G13 A<Angle>
-    //     /// Moves the third arm segment with a relative angle
-    //     pub fn g13(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_comp_rel(0, args[0].value);
-    //         Ok(Value::Null)
-    //     }
+        // /// G13 A<Angle>
+        // /// Moves the third arm segment with a relative angle
+        // pub fn g13(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a3_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-    //     /// G20 C<Angle>
-    //     /// Moves the base with an absolute angle
-    //     pub fn g20(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_comp_rel(0, args[0].value);
-    //         Ok(Value::Null)
-    //     }
+        // /// G20 C<Angle>
+        // /// Moves the base with an absolute angle
+        // pub fn g20(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_base_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-    //     /// G21 A<Angle>
-    //     /// Moves the first arm segment with an absolute angle
-    //     pub fn g21(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_comp_rel(0, args[0].value);
-    //         Ok(Value::Null)
-    //     }
+        // /// G21 A<Angle>
+        // /// Moves the first arm segment with an absolute angle
+        // pub fn g21(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a1_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-    //     /// G22 A<Angle>
-    //     /// Moves the second arm segment with an absolute angle
-    //     pub fn g22(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_a2_rel(args[0].value);
-    //         Ok(Value::Null)
-    //     }
+        // /// G22 A<Angle>
+        // /// Moves the second arm segment with an absolute angle
+        // pub fn g22(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a2_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
 
-    //     /// G23 A<Angle>
-    //     /// Moves the third arm segment with an absolute angle
-    //     pub fn g23(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-    //         arm.drive_a3_rel(args[0].value);
-    //         Ok(Value::Null)
-    //     }
-    // // 
+        // /// G23 A<Angle>
+        // /// Moves the third arm segment with an absolute angle
+        // pub fn g23(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
+        //     arm.drive_a3_rel(args[0].value);
+        //     Ok(Value::Null)
+        // }
+    // 
 
     /// G28 \
     /// Return to home position
@@ -125,7 +125,7 @@ use crate::{SyArm, SyArmResult};
 //
 
 // Misc Functions
-    pub fn m0(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
+    pub fn m0(_ : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
         // arm.debug_pins();
         Ok(Value::Null)
     }
@@ -158,6 +158,3 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
             (1, m1)
         ]))
     ]);
-
-    return Interpreter::new(syarm, funcs);
-}

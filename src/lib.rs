@@ -8,7 +8,7 @@
     mod types;
     #[cfg(test)]
     mod tests;
-    pub mod interpreter;
+    pub mod intpr;
 //
 
 // Imports
@@ -25,7 +25,7 @@ use stepper_lib::{
 // Local imports
 use pvec::PVec3;
 pub use types::*;
-pub use interpreter::init_interpreter;
+pub use intpr::init_interpreter;
 pub use stepper_lib::gcode::Interpreter;
 
 // Constants
@@ -47,39 +47,28 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
         pub pin_dir_b : u16,         
         /// Step ctrl pin for the base controller
         pub pin_step_b : u16,          
-        /// Measure pin for the base controller
-        pub pin_meas_b : u16,
 
         /// Direction ctrl pin for the first cylinder
         pub pin_dir_1 : u16, 
         /// Step ctrl pin for the first cylinder
         pub pin_step_1 : u16, 
-        /// Measure pin for the base controller
-        pub pin_meas_1 : u16,
 
         /// Direction ctrl pin for the second cylinder
         pub pin_dir_2 : u16,
         /// Step ctrl pin for the second cylinder
         pub pin_step_2 : u16,
-        /// Measure pin for the second cylinder
-        pub pin_meas_2 : u16,
 
         /// Direction ctrl pin for the third cylinder
         pub pin_dir_3 : u16,
         /// Step ctrl pin for the second cylinder
         pub pin_step_3 : u16,
-        /// Measure pin for the third cylinder
-        pub pin_meas_3 : u16,
+
+        /// Mearurement pins for the components
+        pub pin_meas : [u16; 4],
 
         // Measured
-        /// Set value for the base joint when measured in radians
-        pub meas_b : f32,
-        /// Set value for the first cylinder when measured in mm
-        pub meas_a1 : f32,
-        /// Set value for the second cylinder when measured in mm
-        pub meas_a2 : f32,
-        /// Set value for the third joint when measured in radians
-        pub meas_a3 : f32,
+        /// Set value for the bearings when measured in either radians or millimeters
+        pub meas : [f32; 4],
 
         // Construction
         /// Base vector when in base position, x, y and z lengths in mm
@@ -263,11 +252,9 @@ impl SyArm
         /// Initializes measurement systems
         pub fn init_meas(&mut self) {
             // TODO do at init
-            
-            self.ctrls.ctrl.init_meas(self.cons.pin_meas_b);
-            self.ctrl_a1.cylinder.ctrl.init_meas(self.cons.pin_meas_1);
-            self.ctrl_a2.cylinder.ctrl.init_meas(self.cons.pin_meas_2);
-            self.ctrl_a3.ctrl.init_meas(self.cons.pin_meas_3);
+            for i in 0 .. 4 {
+                self.ctrls[i].init_meas(self.cons.pin_meas[i])
+            }
         }
     // 
 
@@ -627,6 +614,15 @@ impl SyArm
     //  
 
     // Control
+        pub fn measure_dists(&self) -> [f32; 4] {
+            [
+                0.0,
+                -(self.cons.l_c1a + self.cons.l_c1b),
+                -(self.cons.l_c2a + self.cons.l_c2b),
+                -2.0*PI
+            ]
+        }
+
         pub fn drive_comp_rel(&mut self, index : usize, angle : f32) {
             self.ctrls[index].drive(angle, self.cons.velocities[index]);
         }
@@ -643,22 +639,19 @@ impl SyArm
             self.ctrls.drive_abs(angles, self.cons.velocities);
         }
 
-        pub fn measure(&mut self, accuracy : u64) -> Result<(), (bool, bool, bool, bool)> {
+        pub fn measure(&mut self, accuracy : u64) -> Result<(), [bool; 4]> {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            let a_1 = self.ctrl_a1.cylinder.measure(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, self.cons.meas_a1, accuracy);
-            let a_2 = self.ctrl_a2.cylinder.measure(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, self.cons.meas_a2, accuracy);
-            let a_3 = self.ctrl_a3.measure(-2.0*PI, self.cons.omega_3,  self.cons.meas_a3, accuracy);
+            let [ _, res_1, res_2, res_3 ] = self.ctrls.measure(self.measure_dists(), self.cons.velocities, self.cons.meas, [accuracy; 4]);
 
-            if a_1 & a_2 & a_3 {
+            if res_1 & res_2 & res_3 {
                 self.update_sim();
                 Ok(())
             } else {
-                Err((true, a_1, a_2, a_3))
+                Err([true, res_1, res_2, res_3])
             }
         }
-    //
 
-    // Async control
+        // Async 
         pub fn drive_comp_rel_async(&mut self, index : usize, angle : f32) {
             self.ctrls[index].drive_async(angle, self.cons.velocities[index]);
         }
@@ -672,10 +665,7 @@ impl SyArm
         }
 
         pub fn measure_async(&mut self, accuracy : u64) {
-            self.ctrl_base.measure_async(0.0, 0.0, accuracy);
-            self.ctrl_a1.cylinder.measure_async(-(self.cons.l_c1a + self.cons.l_c1b), self.cons.c1_v, accuracy);
-            self.ctrl_a2.cylinder.measure_async(-(self.cons.l_c2a + self.cons.l_c2b), self.cons.c2_v, accuracy);
-            self.ctrl_a3.measure_async(-2.0*PI, self.cons.omega_3, accuracy);
+            self.ctrls.measure_async(self.measure_dists(), self.cons.velocities, [accuracy; 4]);
         }
 
         pub fn await_inactive(&self) {
@@ -683,10 +673,7 @@ impl SyArm
         }
 
         pub fn set_endpoint(&mut self) {
-            self.ctrl_base.ctrl.set_endpoint(self.cons.meas_b);
-            self.ctrl_a1.cylinder.ctrl.set_endpoint(self.cons.meas_a1);
-            self.ctrl_a2.cylinder.ctrl.set_endpoint(self.cons.meas_a2);
-            self.ctrl_a3.ctrl.set_endpoint(self.cons.meas_a3);
+            self.ctrls.set_endpoint(self.cons.meas);
         }
     // 
 

@@ -1,51 +1,53 @@
-use stepper_lib::Component;
-use syarm_lib::SyArm;
+// TODO: Rewrite into tests
 
-use std::{f32::consts::PI};
+// use stepper_lib::Component;
+// use syarm_lib::SyArm;
 
-fn main() {
-    let mut syarm = SyArm::load_json("res/syarm_const.json");
-    syarm.init_meas();
+// use std::{f32::consts::PI};
 
-    println!("Measuring ... ");
+// fn main() {
+//     let mut syarm = SyArm::load_json("res/syarm_const.json");
+//     syarm.init_meas();
 
-    syarm.update_sim();
-    syarm.measure(2).unwrap(); 
-    syarm.update_sim();
+//     println!("Measuring ... ");
 
-    // sleep(Duration::from_secs_f64(3.0));
+//     syarm.update_sim();
+//     syarm.measure(2).unwrap(); 
+//     syarm.update_sim();
 
-    // println!("Position A1: {}", syarm.ctrl_a1.get_gamma());
+//     // sleep(Duration::from_secs_f64(3.0));
 
-    println!("Exact positioning");
-    syarm.drive_a1_abs(syarm.gamma_a1(PI / 2.0));
-    println!("Done!");
+//     // println!("Position A1: {}", syarm.ctrl_a1.get_gamma());
 
-    println!("Position A1: {}", syarm.ctrl_a1.get_dist());
+//     println!("Exact positioning");
+//     syarm.drive_a1_abs(syarm.gamma_a1(PI / 2.0));
+//     println!("Done!");
+
+//     println!("Position A1: {}", syarm.ctrl_a1.get_dist());
 
 
-    println!("Exact positioning");
-    syarm.drive_a2_abs(syarm.gamma_a2(-PI / 2.0));
-    println!("Done!");
+//     println!("Exact positioning");
+//     syarm.drive_a2_abs(syarm.gamma_a2(-PI / 2.0));
+//     println!("Done!");
 
-    println!("Position A2: {}", syarm.ctrl_a2.get_dist());
+//     println!("Position A2: {}", syarm.ctrl_a2.get_dist());
 
-    // ARM III
+//     // ARM III
 
-    println!("Position A3: {}", syarm.ctrl_a3.get_dist());
+//     println!("Position A3: {}", syarm.ctrl_a3.get_dist());
 
-    println!("Exact positioning");
-    syarm.drive_a3_abs(0.0);
-    println!("Done!");
+//     println!("Exact positioning");
+//     syarm.drive_a3_abs(0.0);
+//     println!("Done!");
 
-    println!("Position A3: {}", syarm.ctrl_a3.get_dist());
+//     println!("Position A3: {}", syarm.ctrl_a3.get_dist());
 
-    // println!("Exact positioning");
-    // syarm.drive_base_abs(PI / 8.0);
-    // println!("Done!");
+//     // println!("Exact positioning");
+//     // syarm.drive_base_abs(PI / 8.0);
+//     // println!("Done!");
 
-    // println!("Position Base: {}", syarm.ctrl_a3.get_dist());
+//     // println!("Position Base: {}", syarm.ctrl_a3.get_dist());
 
-    let phis = syarm.all_phis();
-    dbg!(syarm.points_by_phis(&phis));
-}
+//     let phis = syarm.all_phis();
+//     dbg!(syarm.points_by_phis(&phis));
+// }

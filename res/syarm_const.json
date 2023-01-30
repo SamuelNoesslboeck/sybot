@@ -2,25 +2,30 @@
     "u": 12.0,                    
 
     "pin_dir_b": 17,         
-    "pin_step_b": 26,
-    "pin_meas_b": 16,          
+    "pin_step_b": 26,      
 
     "pin_dir_1": 5,
-    "pin_step_1": 9, 
-    "pin_meas_1": 25,   
+    "pin_step_1": 9,  
 
     "pin_dir_2": 22,
     "pin_step_2": 11,
-    "pin_meas_2": 7,   
 
     "pin_dir_3": 27,
     "pin_step_3": 19,
-    "pin_meas_3": 8,   
+    
+    "pin_meas": [
+        16,
+        25, 
+        7,  
+        8
+    ],
 
-    "meas_b": 0.0,
-    "meas_a1": 94.0,
-    "meas_a2": 108.0,
-    "meas_a3": -1.84,
+    "meas": [
+        0.0,
+        94.0,
+        108.0,
+        -1.84
+    ],
 
     "a_b": [ 0.0, 0.0, 115.0 ],
 
