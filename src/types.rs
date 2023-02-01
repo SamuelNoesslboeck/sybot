@@ -47,23 +47,9 @@ pub type Inertias = [f32; 4];
 
 pub type Phis = [f32; 4];
 
-#[derive(Clone, Copy, Debug)]
-pub struct Points( 
-    /// Base
-    pub Vec3,
-    pub Vec3,
-    pub Vec3,
-    pub Vec3
-);
+pub type Points = [Vec3; 4];
 
-#[derive(Clone, Copy, Debug)]
-pub struct Vectors( 
-    /// Base
-    pub Vec3,
-    pub Vec3,
-    pub Vec3,
-    pub Vec3
-);
+pub type Vectors = [Vec3; 4];
 
 #[derive(Copy, Clone, Debug)]
 pub enum ErrType {

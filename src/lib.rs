@@ -4,11 +4,11 @@
 //! Control and calculation library for the SyArm robot
 
 // Module decleration
-    mod pvec;
+    pub mod intpr;
+
     mod types;
     #[cfg(test)]
     mod tests;
-    pub mod intpr;
 //
 
 // Imports
@@ -22,8 +22,7 @@ use stepper_lib::{
     math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, JsonConfig
 };
 
-// Local imports
-use pvec::PVec3;
+// Public imports
 pub use types::*;
 pub use intpr::init_interpreter;
 pub use stepper_lib::gcode::Interpreter;
@@ -47,6 +46,7 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
         // Values
         pub conf : JsonConfig,
         pub vars : Variables,
+        pub dim : [Vec3; 4],
 
         // Controls
         pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
@@ -73,6 +73,8 @@ impl SyArm
             Self { 
                 comps: conf.get_comps(),
                 tools: conf.get_tools(),
+
+                dim: conf.get_dim().try_into().unwrap(),
 
                 conf, 
                 vars: Variables {
@@ -133,43 +135,37 @@ impl SyArm
 
     // Position calculation
         /// Get the vector of the decoration axis
-        pub fn a_dec(&self) -> PVec3 {
-            PVec3::new(Vec3::new(0.0, self.cons.l_a3, 0.0) + self.get_tool().unwrap().get_vec())
+        pub fn a_dec(&self) -> Vec3 {
+            self.dim[3] + self.get_tool().unwrap().get_vec()
         }
 
         /// Returns the  points by the given  angles
         pub fn points_by_phis(&self, angles : &Phis) -> Points {
-            let Vectors(a_b, a_1, a_2, a_3) = self.vectors_by_phis(angles);
-            Points( 
+            let [ a_b, a_1, a_2, a_3 ]= self.vectors_by_phis(angles);
+            [ 
                 a_b,
                 a_b + a_1,
                 a_b + a_1 + a_2,
                 a_b + a_1 + a_2 + a_3
-            )
+            ]
         }
 
         /// Get the (most relevant, characteristic) vectors of the robot by the  angles
         pub fn vectors_by_phis(&self, angles : &Phis) -> Vectors {
-            // Rotation matrices used multiple times
-            let base_rot = Mat3::from_rotation_z(angles[0]);
-            let a1_rot = Mat3::from_rotation_x(angles[1]);
-            let a2_rot = Mat3::from_rotation_x(angles[2]);
-            let a3_rot = Mat3::from_rotation_x(angles[3]);
+            let mut vecs = vec![];
+            let matr = self.conf.get_axes(angles);
 
             // Create vectors in default position (Pointing along X-Axis) except base
-            let a_b = self.cons.a_b.v;
-            let a_1 = Vec3::new(0.0, self.cons.l_a1,  0.0);
-            let a_2 = Vec3::new(0.0, self.cons.l_a2, 0.0);
-            let a_3 = self.a_dec().v;
+            for i in 0 .. matr.len() {
+                let mut mat_total = matr[i]; 
+                for n in 0 .. i {
+                    mat_total = matr[matr.len() - n - 1] * mat_total;
+                }
 
+                vecs.push(mat_total * self.dim[i]);
+            }
             
-            // Multiply up
-            Vectors( 
-                base_rot * a_b,
-                base_rot * a1_rot * a_1,
-                base_rot * a1_rot * a2_rot * a_2,
-                base_rot * a1_rot * a2_rot * a3_rot * a_3
-            )
+            vecs.try_into().unwrap()
         }
 
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
