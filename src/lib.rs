@@ -19,7 +19,7 @@ use stepper_lib::{
     Component, ComponentGroup, StepperCtrl, 
     comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
     data::StepperConst, 
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, JsonConfig
 };
 
 // Local imports
@@ -33,148 +33,6 @@ pub use stepper_lib::gcode::Interpreter;
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 // Structures
-    // Helper type
-        #[derive(Debug)]
-        struct ValArray<T, const N : usize>([T; N]);
-
-        struct ValArrayDes<T, const N : usize>;
-
-        impl<T : Serialize + for<'de> Deserialize<'de>, const N : usize> Serialize for ValArray<T, N> {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: serde::Serializer {
-                let mut seq = serializer.serialize_tuple(N)?;
-                for i in 0 .. N {
-                    seq.serialize_element(&self.0[i]);
-                }
-                seq.end()
-            }
-        }
-
-        impl<'de, const N : usize> Visitor<'de> for ValArrayDes<T, N>
-        {
-            type Value = ValArray<u32, N>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str(format!("[f32; {}]", N).as_str())
-            }
-
-            fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
-                where
-                    A: serde::de::SeqAccess<'de>, {
-                let mut arr : [u32; N];
-                for i in 0 .. N {
-                    arr[i] = seq.next_element()?.unwrap();
-                }
-                Ok(ValArray(arr))
-            }
-        }
-
-        impl<'de, T : Serialize + Deserialize<'de>, const N : usize> Deserialize<'de> for ValArray<T, N> {
-            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-                where
-                    D: serde::Deserializer<'de> {
-                deserializer.deserialize_seq(ValArrayDes)
-            }
-        }
-
-        impl<T : Serialize + for<'de> Deserialize<'de>, const N : usize> ValArray<T, N> {
-            pub fn seq_mut(&mut self) -> &mut [f32; N] {
-                &mut self.0
-            }
-
-            pub fn seq(&self) -> &[f32; N] {
-                &self.0
-            }
-        }
-
-        impl<T : Serialize + for<'de> Deserialize<'de>, const N : usize> Index<usize> for ValArray<T, N> {
-            type Output = f32;
-
-            fn index(&self, index: usize) -> &Self::Output {
-                &self.0[index]
-            }
-        }
-    //
-
-    /// ### Constants
-    /// All the constats required for the calculation of the syarm \
-    /// JSON I/O is enabled via the `serde_json` library
-    #[derive(Debug, Serialize, Deserialize)]
-    pub struct Constants<const N : usize>
-    {
-        // Circuit
-        /// Voltage supplied to the motors in Volts
-        pub u : f32,                    
-
-        /// Directional pin for the components
-        pub pin_dir : ValArray<u16, N>,
-
-        /// Step signal pin for the components
-        pub pin_step : ValArray<u16, N>,
-
-        /// Measurement pins for the components
-        pub pin_meas : ValArray<u16, N>,
-
-        // Measured
-        /// Set value for the bearings when measured in either radians or millimeters
-        pub meas : ValArray<f32, N>,
-
-        // Construction
-        /// Base vector when in base position, x, y and z lengths in mm
-        pub vecs : ValArray<[f32; 3], N>,
-
-        /// Length of a-segment of first cylinder triangle in mm
-        pub l_c1a : f32,
-        /// Length of b-segment of first cylinder triangle in mm
-        pub l_c1b : f32, 
-        /// Length of a-segment of second cylinder triangle in mm
-        pub l_c2a : f32,
-        /// Length of b-segment of second cylinder triangle in mm
-        pub l_c2b : f32,
-
-        /// Additional angle of a-segment of first cylinder triangle in mm
-        pub delta_1a : f32,
-        /// Additional angle of b-segment of first cylinder triangle in mm
-        pub delta_1b : f32,
-        /// Additional angle of a-segment of second cylinder triangle in mm
-        pub delta_2a : f32,
-        /// Additional angle of b-segment of second cylinder triangle in mm
-        pub delta_2b : f32,
-
-        /// Minimum base joint angle in radians
-        pub phib_min : f32, 
-        /// Maximum base joint angle in radians
-        pub phib_max : f32,
-        /// Gear ratio of base joint
-        pub ratio_b : f32,
-
-        /// Maximum extension of first cylinder in mm
-        pub c1_max : f32,
-        /// Spindle pitch in mm per radians
-        pub ratio_1 : f32,
-
-        /// Maximum extension of second cylinder in mm
-        pub c2_max : f32,
-        /// Spindle pitch in mm per radians
-        pub ratio_2 : f32,
-
-        /// Maximum base join angle in radians
-        pub phi3_max : f32,
-        /// Gear ratio of third joint
-        pub ratio_3 : f32,
-
-        /// Maximum angluar speeds for the bearings
-        pub velocities : ValArray<f32, N>,
-
-        // Load calculation
-        /// Masses of each component
-        pub masses : ValArray<f32, N>,
-
-        /// Safety factor for calculations
-        pub sf : f32
-    }
-
     pub struct Variables
     {
         pub load : f32,
@@ -187,11 +45,11 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
     pub struct SyArm
     {
         // Values
-        pub cons : Constants<4>,
+        pub conf : JsonConfig,
         pub vars : Variables,
-        pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
 
         // Controls
+        pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
         pub ctrls : [Box<dyn Component>; 4],
 
         tool_id : usize
@@ -211,48 +69,12 @@ impl SyArm
 {
     // IO
         /// Creates a new syarm instance by a constants table
-        pub fn from_const(cons : Constants<4>) -> Self {
+        pub fn from_conf(conf : JsonConfig) -> Self {
             Self { 
-                tools: vec![ 
-                    Box::new(NoTool::new()),
-                    Box::new(PencilTool::new(127.0, 0.25))
-                ],    
-                ctrls: [ 
-                    Box::new(GearBearing { 
-                        ctrl: StepperCtrl::new(
-                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_b, cons.pin_step_b
-                        ), 
-                        ratio: cons.ratio_b
-                    }), 
-                    Box::new(CylinderTriangle::new(
-                        Cylinder { 
-                            ctrl: StepperCtrl::new(
-                                StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_1, cons.pin_step_1
-                            ), 
-                            rte_ratio: cons.ratio_1
-                        },
-                        cons.l_c1a, 
-                        cons.l_c1b
-                    )), 
-                    Box::new(CylinderTriangle::new(
-                        Cylinder { 
-                            ctrl: StepperCtrl::new(
-                                StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_2, cons.pin_step_2
-                            ), 
-                            rte_ratio: cons.ratio_2,
-                        },
-                        cons.l_c2a,
-                        cons.l_c2b
-                    )), 
-                    Box::new(GearBearing { 
-                        ctrl: StepperCtrl::new(
-                            StepperData::mot_17he15_1504s(cons.u, cons.sf), cons.pin_dir_3, cons.pin_step_3
-                        ), 
-                        ratio: cons.ratio_3
-                    }),
-                ], 
+                ctrls: conf.get_comps(),
+                tools: conf.get_tools(),
 
-                cons, 
+                conf, 
                 vars: Variables {
                     load: 0.0,
 
@@ -261,36 +83,6 @@ impl SyArm
                 },
 
                 tool_id: 0
-            }
-        }
-        
-        pub fn get_cons_str(&self) -> String {
-            serde_json::to_string(&self.cons).unwrap()
-        }
-
-        pub fn get_cons_str_pretty(&self) -> String {
-            serde_json::to_string_pretty(&self.cons).unwrap()
-        }
-
-        /// Loads a new SyArm instance by creating a constants table out of the json file content at the given path
-        pub fn load_json(path : &str) -> Self {
-            let json_content  = fs::read_to_string(path).unwrap();
-            return Self::from_const(serde_json::from_str(json_content.as_str()).unwrap());
-        }
-
-        // pub fn load_var(&mut self, path : &str) {
-            
-        // }
-
-        // pub fn save_var(&self, path : &str) {
-            
-        // }
-
-        /// Initializes measurement systems
-        pub fn init_meas(&mut self) {
-            // TODO do at init
-            for i in 0 .. 4 {
-                self.ctrls[i].init_meas(self.cons.pin_meas[i])
             }
         }
     // 
