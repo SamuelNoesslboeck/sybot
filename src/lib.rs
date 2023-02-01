@@ -50,7 +50,7 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
         // Controls
         pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
-        pub ctrls : [Box<dyn Component>; 4],
+        pub comps : [Box<dyn Component>; 4],
 
         tool_id : usize
     }
@@ -71,7 +71,7 @@ impl SyArm
         /// Creates a new syarm instance by a constants table
         pub fn from_conf(conf : JsonConfig) -> Self {
             Self { 
-                ctrls: conf.get_comps(),
+                comps: conf.get_comps(),
                 tools: conf.get_tools(),
 
                 conf, 
@@ -98,86 +98,32 @@ impl SyArm
     //
 
     // Angles
-        // Phi: Used by calculation (rotation matrix)
-        // Gamma: Used for controls (motor positioning)
-
-        // Base
-            /// Get the angles used by the calculations for the base
-            pub fn phi_b(&self, gamma_b : f32) -> f32 {
-                gamma_b
-            }
-
-            /// Get the angle used by the controls for the base
-            pub fn gamma_b(&self, phi_b : f32) -> f32 {
-                phi_b
-            }
-        //
-        
-        // First arm segment
-            /// Get the angles used by the calculations for the first arm segment
-            pub fn phi_a1(&self, gamma_a1 : f32) -> f32 {
-                PI - gamma_a1 - self.cons.delta_1a - self.cons.delta_1b
-            }
-
-            /// Get the angle used by the controls for the first arm segment
-            pub fn gamma_a1(&self, phi_a1 : f32) -> f32 {
-                PI - phi_a1 - self.cons.delta_1a - self.cons.delta_1b
-            }
-        //
-        
-        // Second arm segment
-            /// Get the angles used by the calculations for the second arm segment
-            pub fn phi_a2(&self, gamma_a2 : f32) -> f32 {
-                gamma_a2 + self.cons.delta_2a + self.cons.delta_2b - PI
-            }
-
-            /// Get the angle used by the controls for the second arm segment
-            pub fn gamma_a2(&self, phi_a2 : f32) -> f32 {
-                PI + phi_a2 - self.cons.delta_2a - self.cons.delta_2b
-            }
-        //
-        
-        // Third arm segment
-            /// Get the angles used by the calculations for the third arm segment
-            pub fn phi_a3(&self, gamma_a3 : f32) -> f32 {
-                gamma_a3
-            }
-
-            /// Get the angle used by the controls for the third arm segment
-            pub fn gamma_a3(&self, phi_a3 : f32) -> f32 {
-                phi_a3
-            }
-        //
-
         /// Returns the four main angles used by the controls (gammas)
         pub fn all_gammas(&self) -> Gammas {
-            self.ctrls.get_dist()
+            self.comps.get_dist()
         }
 
         /// Converts gamma into phi angles
         pub fn gammas_for_phis(&self, phis : Phis) -> Gammas {
-            let [ p_b, p_1, p_2, p_3 ] = phis;
-            [ self.gamma_b(p_b), self.gamma_a1(p_1), self.gamma_a2(p_2), self.gamma_a3(p_3) ]
+            self.comps.dist_without_offset(phis)
         } 
 
         /// Returns the four main angles used by the calculations (phis)
         pub fn all_phis(&self) -> Phis {
-            let [ g_b, g_1, g_2, g_3 ] = self.all_gammas();
-            [ self.phi_b(g_b), self.phi_a1(g_1), self.phi_a2(g_2), self.phi_a3(g_3) ]
+            self.phis_for_gammas(self.all_gammas())
         }
 
         /// Converts phi into gamma angles
         pub fn phis_for_gammas(&self, gammas : Gammas) -> Phis {
-            let [ g_b, g_1, g_2, g_3 ] = gammas;
-            [ self.phi_b(g_b), self.phi_a1(g_1), self.phi_a2(g_2), self.phi_a3(g_3) ]
+            self.comps.dist_with_offset(gammas) 
         }
 
         pub fn valid_gammas(&self, gammas : Gammas) -> bool {
-            self.ctrls.valid_dist(gammas)
+            self.comps.valid_dist(gammas)
         }
 
         pub fn valid_gammas_verb(&self, gammas : Gammas) -> [bool; 4] {
-            self.ctrls.valid_dist_verb(gammas)
+            self.comps.valid_dist_verb(gammas)
         }
 
         pub fn valid_phis(&self, phis : Phis) -> bool {
@@ -216,6 +162,7 @@ impl SyArm
             let a_2 = Vec3::new(0.0, self.cons.l_a2, 0.0);
             let a_3 = self.a_dec().v;
 
+            
             // Multiply up
             Vectors( 
                 base_rot * a_b,
@@ -365,7 +312,7 @@ impl SyArm
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {
             let Vectors( _, a_1, a_2, _ ) = *vecs;
 
-            let base_helper = Mat3::from_rotation_z(-self.ctrls[0].get_dist()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
+            let base_helper = Mat3::from_rotation_z(-self.comps[0].get_dist()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
 
             CylVectors(
                 (a_1 / 2.0 - base_helper, base_helper),
@@ -394,12 +341,12 @@ impl SyArm
                 j_b.z_axis.length() / 1_000_000.0, 
                 inertia_to_mass(j_1, c1_pos, c1_dir), 
                 inertia_to_mass(j_2, c2_pos, c2_dir),
-                (Mat3::from_rotation_z(-self.ctrls[0].get_dist()) * j_3).x_axis.length() / 1_000_000.0
+                (Mat3::from_rotation_z(-self.comps[0].get_dist()) * j_3).x_axis.length() / 1_000_000.0
             ]
         }
 
         pub fn apply_inertias(&mut self, inertias : Inertias) {
-            self.ctrls.apply_load_inertia(inertias);
+            self.comps.apply_load_inertia(inertias);
         }
 
         pub fn get_forces(&self, vecs : &Vectors) -> Forces {
@@ -423,7 +370,7 @@ impl SyArm
         }
 
         pub fn apply_forces(&mut self, forces : Forces) {
-            self.ctrls.apply_load_force(forces);
+            self.comps.apply_load_force(forces);
         }
     // 
 
@@ -453,24 +400,24 @@ impl SyArm
         }
 
         pub fn drive_comp_rel(&mut self, index : usize, angle : f32) {
-            self.ctrls[index].drive(angle, self.cons.velocities[index]);
+            self.comps[index].drive(angle, self.cons.velocities[index]);
         }
 
         pub fn drive_rel(&mut self, angles : Gammas) {
-            self.ctrls.drive(angles, self.cons.velocities);
+            self.comps.drive(angles, self.cons.velocities);
         }
 
         pub fn drive_comp_abs(&mut self, index : usize, angle : f32) {
-            self.ctrls[index].drive_abs(angle, self.cons.velocities[index]);
+            self.comps[index].drive_abs(angle, self.cons.velocities[index]);
         }
 
         pub fn drive_abs(&mut self, angles : Gammas) {
-            self.ctrls.drive_abs(angles, self.cons.velocities);
+            self.comps.drive_abs(angles, self.cons.velocities);
         }
 
         pub fn measure(&mut self, accuracy : u64) -> Result<(), [bool; 4]> {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            let [ _, res_1, res_2, res_3 ] = self.ctrls.measure(self.measure_dists(), self.cons.velocities, self.cons.meas, [accuracy; 4]);
+            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.cons.velocities, self.cons.meas, [accuracy; 4]);
 
             if res_1 & res_2 & res_3 {
                 self.update_sim();
@@ -482,33 +429,33 @@ impl SyArm
 
         // Async 
         pub fn drive_comp_rel_async(&mut self, index : usize, angle : f32) {
-            self.ctrls[index].drive_async(angle, self.cons.velocities[index]);
+            self.comps[index].drive_async(angle, self.cons.velocities[index]);
         }
 
         pub fn drive_rel_async(&mut self, angles : Gammas) {
-            self.ctrls.drive_async(angles, self.cons.velocities);
+            self.comps.drive_async(angles, self.cons.velocities);
         }
         
         pub fn drive_abs_async(&mut self, angles : Gammas) {
-            self.ctrls.drive_async_abs(angles, self.cons.velocities);
+            self.comps.drive_async_abs(angles, self.cons.velocities);
         }
 
         pub fn measure_async(&mut self, accuracy : u64) {
-            self.ctrls.measure_async(self.measure_dists(), self.cons.velocities, [accuracy; 4]);
+            self.comps.measure_async(self.measure_dists(), self.cons.velocities, [accuracy; 4]);
         }
 
         pub fn await_inactive(&self) {
-            self.ctrls.await_inactive();
+            self.comps.await_inactive();
         }
 
         pub fn set_endpoint(&mut self) {
-            self.ctrls.set_endpoint(self.cons.meas);
+            self.comps.set_endpoint(self.cons.meas);
         }
     // 
 
     // Debug
         pub fn write_position(&mut self, angles : &Gammas) {
-            self.ctrls.write_dist(angles);
+            self.comps.write_dist(angles);
         }
 
         // pub fn debug_pins(&self) {

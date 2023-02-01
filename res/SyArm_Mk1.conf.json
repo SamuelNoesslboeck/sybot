@@ -35,7 +35,8 @@
         },
         "meas": {
           "pin": 255,
-          "set_val": 0.0
+          "set_val": 0.0,
+          "dist": 0.0
         },
         "limit": {
           "max": 0.0,
@@ -59,7 +60,8 @@
         },
         "meas": {
           "pin": 255,
-          "set_val": 0.0
+          "set_val": 0.0,
+          "dist": 0.0
         },
         "limit": {
           "max": 0.0,
@@ -83,7 +85,8 @@
         },
         "meas": {
           "pin": 255,
-          "set_val": 0.0
+          "set_val": 0.0,
+          "dist": 0.0
         },
         "limit": {
           "max": 0.0,
@@ -103,7 +106,8 @@
         },
         "meas": {
           "pin": 255,
-          "set_val": 0.0
+          "set_val": 0.0,
+          "dist": 0.0
         },
         "limit": {
           "max": 0.0,
