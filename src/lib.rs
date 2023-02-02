@@ -12,14 +12,13 @@
 //
 
 // Imports
-use std::{fs, f32::consts::PI, ops::Index, vec, marker::PhantomData};
-use serde::{Serialize, Deserialize, ser::SerializeTuple, de::Visitor};
+use std::vec;
+use std::f32::consts::PI;
 
 use stepper_lib::{
-    Component, ComponentGroup, StepperCtrl, 
-    comp::{Cylinder, GearBearing, CylinderTriangle, Tool, NoTool, PencilTool}, 
-    data::StepperConst, 
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, JsonConfig
+    Component, ComponentGroup, JsonConfig,
+    comp::Tool,
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, 
 };
 
 // Public imports
@@ -47,9 +46,10 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
         pub conf : JsonConfig,
         pub vars : Variables,
 
-        pub dim : [Vec3; 4],
         pub anchor : Vec3,
+        pub dim : [Vec3; 4],
         pub vels : [f32; 4],
+        pub mass : [f32; 4],
 
         // Controls
         pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
@@ -80,6 +80,7 @@ impl SyArm
                 dim: conf.get_dim().try_into().unwrap(),
                 anchor: conf.get_anchor(),
                 vels: conf.get_velocities().try_into().unwrap(), 
+                mass: conf.get_mass().try_into().unwrap(),
 
                 conf, 
                 vars: Variables {
@@ -148,10 +149,10 @@ impl SyArm
         pub fn points_by_phis(&self, angles : &Phis) -> Points {
             let [ a_b, a_1, a_2, a_3 ]= self.vectors_by_phis(angles);
             [ 
-                a_b,
-                a_b + a_1,
-                a_b + a_1 + a_2,
-                a_b + a_1 + a_2 + a_3
+                self.anchor + a_b,
+                self.anchor + a_b + a_1,
+                self.anchor + a_b + a_1 + a_2,
+                self.anchor + a_b + a_1 + a_2 + a_3
             ]
         }
 
@@ -163,8 +164,9 @@ impl SyArm
             // Create vectors in default position (Pointing along X-Axis) except base
             for i in 0 .. matr.len() {
                 let mut mat_total = matr[i]; 
+
                 for n in 0 .. i {
-                    mat_total = matr[matr.len() - n - 1] * mat_total;
+                    mat_total = matr[i - n - 1] * mat_total;
                 }
 
                 vecs.push(mat_total * self.dim[i]);
@@ -184,7 +186,7 @@ impl SyArm
             let dec_rot = Mat3::from_rotation_x(dec_angle) * dec;
 
             // Triganlge point
-            let d_point = rot_point - dec_rot - self.anchor;
+            let d_point = rot_point - dec_rot - self.anchor - self.dim[0];
             
             let phi_h1 = law_of_cosines(d_point.length(), self.dim[1].length(), self.dim[2].length());      // Helper angle for phi_1 calc
             let gamma_2_ = law_of_cosines(self.dim[2].length(), self.dim[1].length(), d_point.length());    // Gamma 2 with side angles
@@ -311,9 +313,9 @@ impl SyArm
 
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors) -> CylVectors {
-            let Vectors( _, a_1, a_2, _ ) = *vecs;
+            let [ _, a_1, a_2, _ ] = *vecs;
 
-            let base_helper = Mat3::from_rotation_z(-self.comps[0].get_dist()) * Vec3::new(0.0, -self.cons.l_c1a, 0.0);
+            let base_helper = Mat3::from_rotation_z(-self.comps[0].get_dist()) * Vec3::new(0.0, -100.0, 0.0); // TODO: -100.0 Y-Dist HARDCODED FOR TESTING!!!
 
             CylVectors(
                 (a_1 / 2.0 - base_helper, base_helper),
@@ -323,26 +325,28 @@ impl SyArm
         }
 
         pub fn get_inertias(&self, vecs : &Vectors) -> Inertias {
-            let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
             let CylVectors( (c1_dir, c1_pos), (_, _), (c2_dir, c2_pos) ) = self.get_cylinder_vecs(vecs);
 
-            let mut segments = vec![ (self.cons.m_a3, a_3) ];
-            let j_3 = inertia_rod_constr(&segments) + inertia_point(a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
+            let mut index : usize;
+            let mut inertias = vec![ ];
+            let mut segments = vec![ ];
+            let tool = self.get_tool().unwrap();
+            let tool_mass = tool.get_mass();
+            let mut point = tool.get_vec();
 
-            segments.insert(0, (self.cons.m_a2, a_2));
-            let j_2 = inertia_rod_constr(&segments) + inertia_point(a_2 + a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
+            for i in 0 .. 4 {
+                index = 3 - i;
 
-            segments.insert(0, (self.cons.m_a1, a_1));
-            let j_1 = inertia_rod_constr(&segments) + inertia_point(a_1 + a_2 + a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
-
-            segments.insert(0, (self.cons.m_b, a_b));
-            let j_b = inertia_rod_constr(&segments) + inertia_point(a_b + a_1 + a_2 + a_3 + self.get_tool().unwrap().get_vec(), self.get_tool().unwrap().get_mass());
+                point += vecs[index];
+                segments.insert(0, (self.mass[index], vecs[index]) );
+                inertias.insert(0, inertia_rod_constr(&segments) + inertia_point(point, tool_mass));
+            }
 
             [ 
-                j_b.z_axis.length() / 1_000_000.0, 
-                inertia_to_mass(j_1, c1_pos, c1_dir), 
-                inertia_to_mass(j_2, c2_pos, c2_dir),
-                (Mat3::from_rotation_z(-self.comps[0].get_dist()) * j_3).x_axis.length() / 1_000_000.0
+                inertias[0].z_axis.length() / 1_000_000.0, 
+                inertia_to_mass(inertias[1], c1_pos, c1_dir), 
+                inertia_to_mass(inertias[2], c2_pos, c2_dir),
+                (Mat3::from_rotation_z(-self.comps[0].get_dist()) * inertias[3]).x_axis.length() / 1_000_000.0
             ]
         }
 
@@ -351,21 +355,19 @@ impl SyArm
         }
 
         pub fn get_forces(&self, vecs : &Vectors) -> Forces {
-            let Vectors( _, a_1, a_2, a_3 ) = *vecs;
+            let [ _, a_1, a_2, a_3 ] = *vecs;
             let CylVectors( (c1_dir, c1_pos), (_, c2_pos_1), (c2_dir_2, c2_pos_2) ) = self.get_cylinder_vecs(vecs);
 
             let fg_load = G * self.vars.load;
             let fg_tool = G * self.get_tool().unwrap().get_mass();
 
-            let fg_3 = G * self.cons.m_a3;
-            let fg_2 = G * self.cons.m_a2;
-            let fg_1 = G * self.cons.m_a1;
+            let fgs = self.mass.map(|m| m * G);
 
             let a_load = self.get_tool().unwrap().get_vec() + a_3;
 
-            let (t_3, f_3) = forces_joint(&vec![ (fg_load + fg_tool, a_load), (fg_3, a_3 / 2.0) ], Vec3::ZERO);
-            let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fg_2, a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);
-            let (f_c1, _ ) = forces_segment(&vec![ (f_2, a_1), (f_c2, c2_pos_1), (fg_1, a_1 / 2.0) ], Vec3::ZERO, c1_pos, c1_dir);
+            let (t_3, f_3) = forces_joint(&vec![ (fg_load + fg_tool, a_load), (fgs[3], a_3 / 2.0) ], Vec3::ZERO);
+            let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fgs[2], a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);
+            let (f_c1, _ ) = forces_segment(&vec![ (f_2, a_1), (f_c2, c2_pos_1), (fgs[1], a_1 / 2.0) ], Vec3::ZERO, c1_pos, c1_dir);
 
             [ 0.0, f_c1.length(), f_c2.length(), t_3.length() / 1_000.0 ]
         }
@@ -384,7 +386,7 @@ impl SyArm
             self.apply_forces(self.get_forces(&vectors));
             self.apply_inertias(self.get_inertias(&vectors));
 
-            self.vars.point = points.3;
+            self.vars.point = points[3];
 
             vectors
         }
@@ -392,12 +394,7 @@ impl SyArm
 
     // Control
         pub fn measure_dists(&self) -> [f32; 4] {
-            [
-                0.0,
-                -(self.cons.l_c1a + self.cons.l_c1b),
-                -(self.cons.l_c2a + self.cons.l_c2b),
-                -2.0*PI
-            ]
+            self.conf.get_meas_dist().try_into().unwrap()
         }
 
         pub fn drive_comp_rel(&mut self, index : usize, angle : f32) {
@@ -418,7 +415,7 @@ impl SyArm
 
         pub fn measure(&mut self, accuracy : u64) -> Result<(), [bool; 4]> {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.vels, self.cons.meas, [accuracy; 4]);
+            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.vels, self.conf.get_meas().try_into().unwrap(), [accuracy; 4]);
 
             if res_1 & res_2 & res_3 {
                 self.update_sim();
@@ -450,7 +447,7 @@ impl SyArm
         }
 
         pub fn set_endpoint(&mut self) {
-            self.comps.set_endpoint(self.cons.meas);
+            self.comps.set_endpoint(self.conf.get_meas().try_into().unwrap());
         }
     // 
 

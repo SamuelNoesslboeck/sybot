@@ -1,10 +1,14 @@
 use std::{f32::consts::PI, thread::sleep, time::Duration};
 use crate::*;
 
+mod calc;
+
 // Test Arm
     #[test]
     fn test_arm() {
-        let mut syarm = SyArm::load_json("res/syarm_const.json");
+        let mut syarm = SyArm::from_conf(
+            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+        );
 
         const ANGLES : Phis = [0.0, PI / 2.0, -PI / 2.0, 0.0];
 
@@ -60,7 +64,9 @@ use crate::*;
 // Test Deg
     #[test]
     fn test_deg() {
-        let mut syarm = SyArm::load_json("res/syarm_const.json");
+        let mut syarm = SyArm::from_conf(
+            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+        );
         let dur = Duration::from_secs_f32(0.5);
         let angle = PI / 8.0;
     
@@ -84,21 +90,11 @@ use crate::*;
 // Test meas
     #[test]
     fn test_meas() {
-        let mut syarm = SyArm::load_json("res/syarm_const.json");
-        syarm.init_meas();
+        let mut syarm = SyArm::from_conf(
+            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+        );
+
         syarm.update_sim();
-<<<<<<< HEAD
-
-        // let raw_path = syarm.gen_lin_path(START, END, DECO, ACC).unwrap();
-        // let drive_path = syarm.calc_drive_paths(&raw_path, VEL, (END - START).length());
-
-        // // print_stepper_path(&non_corrected);
-
-        // let paths = syarm.run_path_correction(drive_path);
-        // let path = &paths[0];
-        
-        // print_stepper_path(path);
-=======
     
         // syarm.debug_pins();
     
@@ -107,7 +103,6 @@ use crate::*;
         sleep(Duration::from_secs(1));
     
         syarm.measure(2).unwrap();
->>>>>>> cb8048fca6b27c64dfd902df7c160d85b4b1584f
     }
 // 
 

@@ -131,7 +131,7 @@ use crate::{SyArm, SyArmResult};
     }
 
     pub fn m1(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
-        println!("{}", arm.points_by_phis(&arm.all_phis()).3);
+        println!("{}", arm.points_by_phis(&arm.all_phis())[3]);
         Ok(Value::Null)
     }
 // 
@@ -158,3 +158,6 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
             (1, m1)
         ]))
     ]);
+
+    Interpreter::new(syarm, funcs)
+}

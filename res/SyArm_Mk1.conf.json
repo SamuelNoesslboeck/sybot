@@ -6,115 +6,122 @@
     "s_f": 1.5
   },
 
-  "anchor": [ 0.0, 0.0, 0.0 ],
+  "anchor": [ 0.0, 0.0, 100.0 ],
   "dim": [
-    [ 0.0, 0.0, 0.0 ],
-    [ 0.0, 0.0, 0.0 ],
-    [ 0.0, 0.0, 0.0 ],
-    [ 0.0, 0.0, 0.0 ]
+    [ 0.0, 0.0, 15.0 ],
+    [ 0.0, 285.0, 0.0 ],
+    [ 0.0, 285.0, 0.0 ],
+    [ 0.0, 45.0, 0.0 ]
   ],
   "axes": [
-    [ 0.0, 0.0, 0.0 ],
-    [ 0.0, 0.0, 0.0 ],
-    [ 0.0, 0.0, 0.0 ],
-    [ 0.0, 0.0, 0.0 ]
+    [ 0.0, 0.0, 1.0 ],
+    [ 1.0, 0.0, 0.0 ],
+    [ 1.0, 0.0, 0.0 ],
+    [ 1.0, 0.0, 0.0 ]
   ],
 
-  "comp": [
-    [
-      {
-        "name": "Base",
-        "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
-        "obj": {
-          "ctrl": {
-            "data": "MOT_17HE15_1504S",
-            "pin_dir": 255,
-            "pin_step": 255
-          },
-          "ratio": 1.5
+  "comps": [
+    {
+      "name": "Base",
+      "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
+      "obj": {
+        "ctrl": {
+          "data": "MOT_17HE15_1504S",
+          "pin_dir": 17,
+          "pin_step": 26
         },
-        "meas": {
-          "pin": 255,
-          "set_val": 0.0,
-          "dist": 0.0
-        },
-        "limit": {
-          "max": 0.0,
-          "min": 0.0
-        }
+        "ratio": 0.08333
       },
-      {
-        "name": "Arm_1",
-        "type_name": "stepper_lib::comp::cylinder_triangle::CylinderTriangle",
-        "obj": {
-          "cylinder": {
-            "ctrl": {
-              "data": "MOT_17HE15_1504S",
-              "pin_dir": 255,
-              "pin_step": 255
-            },
-            "rte_ratio": 1.5
-          },
-          "l_a": 100.0,
-          "l_b": 200.0
-        },
-        "meas": {
-          "pin": 255,
-          "set_val": 0.0,
-          "dist": 0.0
-        },
-        "limit": {
-          "max": 0.0,
-          "min": 0.0
-        }
+      "mass": 0.2,
+      "meas": {
+        "pin": 16,
+        "set_val": 0.0,
+        "dist": 0.0
       },
-      {
-        "name": "Arm_2",
-        "type_name": "stepper_lib::comp::cylinder_triangle::CylinderTriangle",
-        "obj": {
-          "cylinder": {
-            "ctrl": {
-              "data": "MOT_17HE15_1504S",
-              "pin_dir": 255,
-              "pin_step": 255
-            },
-            "rte_ratio": 1.5
-          },
-          "l_a": 100.0,
-          "l_b": 200.0
-        },
-        "meas": {
-          "pin": 255,
-          "set_val": 0.0,
-          "dist": 0.0
-        },
-        "limit": {
-          "max": 0.0,
-          "min": 0.0
-        }
-      },
-      {
-        "name": "Arm_3",
-        "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
-        "obj": {
-          "ctrl": {
-            "data": "MOT_17HE15_1504S",
-            "pin_dir": 255,
-            "pin_step": 255
-          },
-          "ratio": 1.5
-        },
-        "meas": {
-          "pin": 255,
-          "set_val": 0.0,
-          "dist": 0.0
-        },
-        "limit": {
-          "max": 0.0,
-          "min": 0.0
-        }
+      "limit": {
+        "max": 0.0,
+        "min": 0.0,
+        "vel": 5.0
       }
-    ]
+    },
+    {
+      "name": "Arm_1",
+      "type_name": "stepper_lib::comp::cylinder_triangle::CylinderTriangle",
+      "obj": {
+        "cylinder": {
+          "ctrl": {
+            "data": "MOT_17HE15_1504S",
+            "pin_dir": 5,
+            "pin_step": 9
+          },
+          "rte_ratio": 1.273
+        },
+        "l_a": 134.0,
+        "l_b": 203.5,
+        "offset_a": 0.43,
+        "offset_b": 0.43
+      },
+      "meas": {
+        "pin": 25,
+        "set_val": 0.0,
+        "dist": 0.0
+      },
+      "limit": {
+        "max": 0.0,
+        "min": 0.0,
+        "vel": 50.0
+      }
+    },
+    {
+      "name": "Arm_2",
+      "type_name": "stepper_lib::comp::cylinder_triangle::CylinderTriangle",
+      "obj": {
+        "cylinder": {
+          "ctrl": {
+            "data": "MOT_17HE15_1504S",
+            "pin_dir": 22,
+            "pin_step": 11
+          },
+          "rte_ratio": 1.273
+        },
+        "l_a": 152,
+        "l_b": 142.5,
+        "offset_a": 0.36,
+        "offset_b": 0.0
+      },
+      "meas": {
+        "pin": 7,
+        "set_val": 0.0,
+        "dist": 0.0
+      },
+      "limit": {
+        "max": 0.0,
+        "min": 0.0,
+        "vel": 50.0
+      }
+    },
+    {
+      "name": "Arm_3",
+      "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
+      "obj": {
+        "ctrl": {
+          "data": "MOT_17HE15_1504S",
+          "pin_dir": 27,
+          "pin_step": 19
+        },
+        "ratio": 0.1
+      },
+      "meas": {
+        "pin": 8,
+        "set_val": 0.0,
+        "dist": 0.0
+      },
+      "limit": {
+        "max": 0.0,
+        "min": 0.0,
+        "vel": 2.0
+      }
+    }
   ],
   "tools": [
     {
