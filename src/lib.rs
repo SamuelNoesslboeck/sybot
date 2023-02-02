@@ -46,7 +46,10 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
         // Values
         pub conf : JsonConfig,
         pub vars : Variables,
+
         pub dim : [Vec3; 4],
+        pub anchor : Vec3,
+        pub vels : [f32; 4],
 
         // Controls
         pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
@@ -75,6 +78,8 @@ impl SyArm
                 tools: conf.get_tools(),
 
                 dim: conf.get_dim().try_into().unwrap(),
+                anchor: conf.get_anchor(),
+                vels: conf.get_velocities().try_into().unwrap(), 
 
                 conf, 
                 vars: Variables {
@@ -175,14 +180,14 @@ impl SyArm
             let rot_point = Mat3::from_rotation_z(-phi_b) * point;
 
             // Calculate the decoration vector
-            let dec = self.a_dec().into_y();
-            let dec_rot = Mat3::from_rotation_x(dec_angle) * dec.v;
+            let dec = self.a_dec();
+            let dec_rot = Mat3::from_rotation_x(dec_angle) * dec;
 
             // Triganlge point
-            let d_point = rot_point - dec_rot - self.cons.a_b.v;
+            let d_point = rot_point - dec_rot - self.anchor;
             
-            let phi_h1 = law_of_cosines(d_point.length(), self.cons.l_a1, self.cons.l_a2);      // Helper angle for phi_1 calc
-            let gamma_2_ = law_of_cosines(self.cons.l_a2, self.cons.l_a1, d_point.length());    // Gamma 2 with side angles
+            let phi_h1 = law_of_cosines(d_point.length(), self.dim[1].length(), self.dim[2].length());      // Helper angle for phi_1 calc
+            let gamma_2_ = law_of_cosines(self.dim[2].length(), self.dim[1].length(), d_point.length());    // Gamma 2 with side angles
             let mut phi_h = Vec3::Y.angle_between(d_point);                                             // Direct angle towards point
 
             if 0.0 > d_point.z {
@@ -396,24 +401,24 @@ impl SyArm
         }
 
         pub fn drive_comp_rel(&mut self, index : usize, angle : f32) {
-            self.comps[index].drive(angle, self.cons.velocities[index]);
+            self.comps[index].drive(angle, self.vels[index]);
         }
 
         pub fn drive_rel(&mut self, angles : Gammas) {
-            self.comps.drive(angles, self.cons.velocities);
+            self.comps.drive(angles, self.vels);
         }
 
         pub fn drive_comp_abs(&mut self, index : usize, angle : f32) {
-            self.comps[index].drive_abs(angle, self.cons.velocities[index]);
+            self.comps[index].drive_abs(angle, self.vels[index]);
         }
 
         pub fn drive_abs(&mut self, angles : Gammas) {
-            self.comps.drive_abs(angles, self.cons.velocities);
+            self.comps.drive_abs(angles, self.vels);
         }
 
         pub fn measure(&mut self, accuracy : u64) -> Result<(), [bool; 4]> {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.cons.velocities, self.cons.meas, [accuracy; 4]);
+            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.vels, self.cons.meas, [accuracy; 4]);
 
             if res_1 & res_2 & res_3 {
                 self.update_sim();
@@ -425,19 +430,19 @@ impl SyArm
 
         // Async 
         pub fn drive_comp_rel_async(&mut self, index : usize, angle : f32) {
-            self.comps[index].drive_async(angle, self.cons.velocities[index]);
+            self.comps[index].drive_async(angle, self.vels[index]);
         }
 
         pub fn drive_rel_async(&mut self, angles : Gammas) {
-            self.comps.drive_async(angles, self.cons.velocities);
+            self.comps.drive_async(angles, self.vels);
         }
         
         pub fn drive_abs_async(&mut self, angles : Gammas) {
-            self.comps.drive_async_abs(angles, self.cons.velocities);
+            self.comps.drive_async_abs(angles, self.vels);
         }
 
         pub fn measure_async(&mut self, accuracy : u64) {
-            self.comps.measure_async(self.measure_dists(), self.cons.velocities, [accuracy; 4]);
+            self.comps.measure_async(self.measure_dists(), self.vels, [accuracy; 4]);
         }
 
         pub fn await_inactive(&self) {
