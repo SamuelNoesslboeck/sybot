@@ -18,7 +18,7 @@ use std::f32::consts::PI;
 use stepper_lib::{
     Component, ComponentGroup, JsonConfig,
     comp::Tool,
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, 
+    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, conf::MachineConfig, 
 };
 
 // Public imports
@@ -42,17 +42,12 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
     /// Calculation and control struct for the SyArm robot
     pub struct SyArm
     {
-        // Values
         pub conf : JsonConfig,
+        pub mach : MachineConfig<4, 4, 4>,
+
         pub vars : Variables,
 
-        pub anchor : Vec3,
-        pub dim : [Vec3; 4],
-        pub vels : [f32; 4],
-        pub mass : [f32; 4],
-
         // Controls
-        pub tools : Vec<Box<dyn Tool + std::marker::Send>>,
         pub comps : [Box<dyn Component>; 4],
 
         tool_id : usize
@@ -73,16 +68,13 @@ impl SyArm
     // IO
         /// Creates a new syarm instance by a constants table
         pub fn from_conf(conf : JsonConfig) -> Self {
+            let (mach, comps) = conf.get_machine().unwrap();
+
             Self { 
-                comps: conf.get_comps(),
-                tools: conf.get_tools(),
-
-                dim: conf.get_dim().try_into().unwrap(),
-                anchor: conf.get_anchor(),
-                vels: conf.get_velocities().try_into().unwrap(), 
-                mass: conf.get_mass().try_into().unwrap(),
-
                 conf, 
+                mach: mach,
+                comps: comps,
+
                 vars: Variables {
                     load: 0.0,
 
@@ -97,7 +89,7 @@ impl SyArm
 
     // Tools
         pub fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
-            self.tools.get(self.tool_id)
+            self.mach.tools.get(self.tool_id)
         }
 
         pub fn set_tool_id(&mut self, tool_id : usize) {
@@ -113,7 +105,7 @@ impl SyArm
 
         /// Converts gamma into phi angles
         pub fn gammas_for_phis(&self, phis : Phis) -> Gammas {
-            self.comps.dist_without_offset(phis)
+            self.mach.convert_angles(phis, true)
         } 
 
         /// Returns the four main angles used by the calculations (phis)
@@ -123,7 +115,7 @@ impl SyArm
 
         /// Converts phi into gamma angles
         pub fn phis_for_gammas(&self, gammas : Gammas) -> Phis {
-            self.comps.dist_with_offset(gammas) 
+            self.mach.convert_angles(gammas, false)
         }
 
         pub fn valid_gammas(&self, gammas : Gammas) -> bool {
@@ -141,35 +133,35 @@ impl SyArm
 
     // Position calculation
         /// Get the vector of the decoration axis
-        pub fn a_dec(&self) -> Vec3 {
-            self.dim[3] + self.get_tool().unwrap().get_vec()
+        pub fn dec_axis(&self) -> Vec3 {
+            self.mach.dims[3] + self.get_tool().unwrap().get_vec()
         }
 
         /// Returns the  points by the given  angles
         pub fn points_by_phis(&self, angles : &Phis) -> Points {
-            let [ a_b, a_1, a_2, a_3 ]= self.vectors_by_phis(angles);
+            let [ a_b, a_1, a_2, a_3 ] = self.vectors_by_phis(angles);
             [ 
-                self.anchor + a_b,
-                self.anchor + a_b + a_1,
-                self.anchor + a_b + a_1 + a_2,
-                self.anchor + a_b + a_1 + a_2 + a_3
+                self.mach.anchor + a_b,
+                self.mach.anchor + a_b + a_1,
+                self.mach.anchor + a_b + a_1 + a_2,
+                self.mach.anchor + a_b + a_1 + a_2 + a_3
             ]
         }
 
         /// Get the (most relevant, characteristic) vectors of the robot by the  angles
         pub fn vectors_by_phis(&self, angles : &Phis) -> Vectors {
             let mut vecs = vec![];
-            let matr = self.conf.get_axes(angles);
+            let matr = self.mach.get_axes(angles);
 
             // Create vectors in default position (Pointing along X-Axis) except base
-            for i in 0 .. matr.len() {
+            for i in 0 .. 4 {
                 let mut mat_total = matr[i]; 
 
                 for n in 0 .. i {
                     mat_total = matr[i - n - 1] * mat_total;
                 }
 
-                vecs.push(mat_total * self.dim[i]);
+                vecs.push(mat_total * self.mach.dims[i]);
             }
             
             vecs.try_into().unwrap()
@@ -182,14 +174,14 @@ impl SyArm
             let rot_point = Mat3::from_rotation_z(-phi_b) * point;
 
             // Calculate the decoration vector
-            let dec = self.a_dec();
+            let dec = self.dec_axis();
             let dec_rot = Mat3::from_rotation_x(dec_angle) * dec;
 
             // Triganlge point
-            let d_point = rot_point - dec_rot - self.anchor - self.dim[0];
+            let d_point = rot_point - dec_rot - self.mach.anchor - self.mach.dims[0];
             
-            let phi_h1 = law_of_cosines(d_point.length(), self.dim[1].length(), self.dim[2].length());      // Helper angle for phi_1 calc
-            let gamma_2_ = law_of_cosines(self.dim[2].length(), self.dim[1].length(), d_point.length());    // Gamma 2 with side angles
+            let phi_h1 = law_of_cosines(d_point.length(), self.mach.dims[1].length(), self.mach.dims[2].length());      // Helper angle for phi_1 calc
+            let gamma_2_ = law_of_cosines(self.mach.dims[2].length(), self.mach.dims[1].length(), d_point.length());    // Gamma 2 with side angles
             let mut phi_h = Vec3::Y.angle_between(d_point);                                             // Direct angle towards point
 
             if 0.0 > d_point.z {
@@ -338,7 +330,7 @@ impl SyArm
                 index = 3 - i;
 
                 point += vecs[index];
-                segments.insert(0, (self.mass[index], vecs[index]) );
+                segments.insert(0, (self.mach.sim[index].mass, vecs[index]) );
                 inertias.insert(0, inertia_rod_constr(&segments) + inertia_point(point, tool_mass));
             }
 
@@ -361,7 +353,9 @@ impl SyArm
             let fg_load = G * self.vars.load;
             let fg_tool = G * self.get_tool().unwrap().get_mass();
 
-            let fgs = self.mass.map(|m| m * G);
+            let fgs : [Vec3; 4] = self.mach.sim.iter().map(
+                |sim| sim.mass * G
+            ).collect::<Vec<Vec3>>().try_into().unwrap();
 
             let a_load = self.get_tool().unwrap().get_vec() + a_3;
 
@@ -394,28 +388,29 @@ impl SyArm
 
     // Control
         pub fn measure_dists(&self) -> [f32; 4] {
-            self.conf.get_meas_dist().try_into().unwrap()
+            self.mach.meas.iter().map(|meas| meas.dist).collect::<Vec<f32>>().try_into().unwrap()
         }
 
         pub fn drive_comp_rel(&mut self, index : usize, angle : f32) {
-            self.comps[index].drive(angle, self.vels[index]);
+            self.comps[index].drive(angle, self.mach.vels[index]);
         }
 
         pub fn drive_rel(&mut self, angles : Gammas) {
-            self.comps.drive(angles, self.vels);
+            self.comps.drive(angles, self.mach.vels);
         }
 
         pub fn drive_comp_abs(&mut self, index : usize, angle : f32) {
-            self.comps[index].drive_abs(angle, self.vels[index]);
+            self.comps[index].drive_abs(angle, self.mach.vels[index]);
         }
 
         pub fn drive_abs(&mut self, angles : Gammas) {
-            self.comps.drive_abs(angles, self.vels);
+            self.comps.drive_abs(angles, self.mach.vels);
         }
 
         pub fn measure(&mut self, accuracy : u64) -> Result<(), [bool; 4]> {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.vels, self.conf.get_meas().try_into().unwrap(), [accuracy; 4]);
+            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.mach.vels, 
+                self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<f32>>().try_into().unwrap(), [accuracy; 4]);
 
             if res_1 & res_2 & res_3 {
                 self.update_sim();
@@ -427,19 +422,19 @@ impl SyArm
 
         // Async 
         pub fn drive_comp_rel_async(&mut self, index : usize, angle : f32) {
-            self.comps[index].drive_async(angle, self.vels[index]);
+            self.comps[index].drive_async(angle, self.mach.vels[index]);
         }
 
         pub fn drive_rel_async(&mut self, angles : Gammas) {
-            self.comps.drive_async(angles, self.vels);
+            self.comps.drive_async(angles, self.mach.vels);
         }
         
         pub fn drive_abs_async(&mut self, angles : Gammas) {
-            self.comps.drive_async_abs(angles, self.vels);
+            self.comps.drive_async_abs(angles, self.mach.vels);
         }
 
         pub fn measure_async(&mut self, accuracy : u64) {
-            self.comps.measure_async(self.measure_dists(), self.vels, [accuracy; 4]);
+            self.comps.measure_async(self.measure_dists(), self.mach.vels, [accuracy; 4]);
         }
 
         pub fn await_inactive(&self) {
@@ -447,7 +442,9 @@ impl SyArm
         }
 
         pub fn set_endpoint(&mut self) {
-            self.comps.set_endpoint(self.conf.get_meas().try_into().unwrap());
+            self.comps.set_endpoint(
+                self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<f32>>().try_into().unwrap()
+            );
         }
     // 
 

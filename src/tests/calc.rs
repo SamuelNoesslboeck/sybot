@@ -29,4 +29,6 @@ mod postion
 
         dbg!(points);
     }
+
+    
 }
