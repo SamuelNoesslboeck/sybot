@@ -35,18 +35,12 @@
       "sim": {
         "mass": 0.2
       },
-      "ang": {
-        "offset": 0.0,
-        "counter": false
-      }, 
       "meas": {
         "pin": 16,
         "set_val": 0.0,
         "dist": 0.0
       },
       "limit": {
-        "max": 0.0,
-        "min": 0.0,
         "vel": 5.0
       }
     },
@@ -63,14 +57,19 @@
           "rte_ratio": 1.273
         },
         "l_a": 134.0,
-        "l_b": 203.5,
-        "offset_a": 0.43,
-        "offset_b": 0.43
+        "l_b": 203.5
+      },
+      "ang": {
+        "offset": 0.86,
+        "counter": true
+      },
+      "sim": {
+        "mass": 0.5
       },
       "meas": {
         "pin": 25,
-        "set_val": 0.0,
-        "dist": 0.0
+        "set_val": 94.0,
+        "dist": -250.0
       },
       "limit": {
         "max": 0.0,
@@ -91,14 +90,18 @@
           "rte_ratio": 1.273
         },
         "l_a": 152,
-        "l_b": 142.5,
-        "offset_a": 0.36,
-        "offset_b": 0.0
+        "l_b": 142.5
       },
+      "ang": {
+        "offset": 0.36
+      }, 
+      "sim": {
+        "mass": 0.5
+      },  
       "meas": {
         "pin": 7,
-        "set_val": 0.0,
-        "dist": 0.0
+        "set_val": 108.0,
+        "dist": -250.0
       },
       "limit": {
         "max": 0.0,
@@ -117,10 +120,13 @@
         },
         "ratio": 0.1
       },
+      "sim": {
+        "mass": 0.5
+      }, 
       "meas": {
         "pin": 8,
-        "set_val": 0.0,
-        "dist": 0.0
+        "set_val": -1.84,
+        "dist": -6.3
       },
       "limit": {
         "max": 0.0,

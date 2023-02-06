@@ -326,7 +326,7 @@ impl SyArm
             let tool_mass = tool.get_mass();
             let mut point = tool.get_vec();
 
-            for i in 0 .. 4 {
+            for i in 0 .. 4 { 
                 index = 3 - i;
 
                 point += vecs[index];
