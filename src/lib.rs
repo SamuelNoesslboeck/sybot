@@ -129,6 +129,10 @@ impl SyArm
         pub fn valid_phis(&self, phis : Phis) -> bool {
             self.valid_gammas(self.gammas_for_phis(phis))
         }
+
+        pub fn home_pos(&self) -> Gammas {
+            self.mach.home
+        }
     //
 
     // Position calculation
@@ -387,10 +391,6 @@ impl SyArm
     //  
 
     // Control
-        pub fn measure_dists(&self) -> [f32; 4] {
-            self.mach.meas.iter().map(|meas| meas.dist).collect::<Vec<f32>>().try_into().unwrap()
-        }
-
         pub fn drive_comp_rel(&mut self, index : usize, angle : f32) {
             self.comps[index].drive(angle, self.mach.vels[index]);
         }
@@ -409,10 +409,11 @@ impl SyArm
 
         pub fn measure(&mut self, accuracy : u64) -> Result<(), [bool; 4]> {
             // self.ctrl_base.measure(2*PI, self.cons.omega_b, false);
-            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.measure_dists(), self.mach.vels, 
+            let [ _, res_1, res_2, res_3 ] = self.comps.measure(self.mach.meas_dist, self.mach.vels, 
                 self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<f32>>().try_into().unwrap(), [accuracy; 4]);
 
             if res_1 & res_2 & res_3 {
+                self.set_limit();
                 self.update_sim();
                 Ok(())
             } else {
@@ -434,17 +435,21 @@ impl SyArm
         }
 
         pub fn measure_async(&mut self, accuracy : u64) {
-            self.comps.measure_async(self.measure_dists(), self.mach.vels, [accuracy; 4]);
+            self.comps.measure_async(self.mach.meas_dist, self.mach.vels, [accuracy; 4]);
         }
 
         pub fn await_inactive(&self) {
             self.comps.await_inactive();
         }
 
-        pub fn set_endpoint(&mut self) {
-            self.comps.set_endpoint(
-                self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<f32>>().try_into().unwrap()
-            );
+        pub fn set_endpoint(&mut self, gammas : Gammas) {
+            self.comps.set_endpoint(gammas);
+        }
+
+        pub fn set_limit(&mut self) {
+            for i in 0 .. 4 {
+                self.comps[i].set_limit(self.mach.limit[i].min, self.mach.limit[i].max);
+            }
         }
     // 
 
@@ -452,12 +457,5 @@ impl SyArm
         pub fn write_position(&mut self, angles : &Gammas) {
             self.comps.write_dist(angles);
         }
-
-        // pub fn debug_pins(&self) {
-        //     self.ctrl_base.ctrl.debug_pins();
-        //     self.ctrl_a1.cylinder.ctrl.debug_pins();
-        //     self.ctrl_a2.cylinder.ctrl.debug_pins();
-        //     self.ctrl_a3.ctrl.debug_pins();
-        // }
     // 
 }

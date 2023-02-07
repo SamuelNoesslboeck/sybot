@@ -119,7 +119,7 @@ use crate::{SyArm, SyArmResult};
         arm.measure_async(2);
         arm.await_inactive();
         arm.update_sim();
-        arm.set_endpoint();
+        arm.set_endpoint(arm.home_pos());
         Ok(Value::Null)
     }
 //

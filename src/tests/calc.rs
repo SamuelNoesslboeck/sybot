@@ -44,12 +44,14 @@ mod postion
 
     #[test]
     fn angles_for_components_with_meas() {
-        let syarm = SyArm::from_conf(
+        let mut syarm = SyArm::from_conf(
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
         );
 
         let angles = [ 0.0, PI / 2.0, -PI / 2.0, 0.0 ];
         let gammas = syarm.gammas_for_phis(angles);
+
+        syarm.measure(10).unwrap(); 
         
         assert!(syarm.valid_gammas(gammas), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.valid_gammas_verb(gammas));
     }

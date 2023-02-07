@@ -60,7 +60,7 @@
         "l_b": 203.5
       },
       "ang": {
-        "offset": 0.86,
+        "offset": -2.282,
         "counter": true
       },
       "sim": {
@@ -68,12 +68,11 @@
       },
       "meas": {
         "pin": 25,
-        "set_val": 94.0,
+        "set_val": 0.3856,
         "dist": -250.0
       },
       "limit": {
-        "max": 0.0,
-        "min": 0.0,
+        "max": 2.0,
         "vel": 50.0
       }
     },
@@ -93,19 +92,18 @@
         "l_b": 142.5
       },
       "ang": {
-        "offset": 0.36
+        "offset": -2.78
       }, 
       "sim": {
         "mass": 0.5
       },  
       "meas": {
         "pin": 7,
-        "set_val": 108.0,
+        "set_val": 0.75,
         "dist": -250.0
       },
       "limit": {
-        "max": 0.0,
-        "min": 0.0,
+        "max": 2.25,
         "vel": 50.0
       }
     },
@@ -129,8 +127,7 @@
         "dist": -6.3
       },
       "limit": {
-        "max": 0.0,
-        "min": 0.0,
+        "max": 0.3,
         "vel": 2.0
       }
     }
