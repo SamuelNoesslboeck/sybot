@@ -2,6 +2,7 @@ use std::{f32::consts::PI, thread::sleep, time::Duration};
 use crate::*;
 
 mod calc;
+mod movements;
 
 // Test Arm
     #[test]
@@ -60,32 +61,6 @@ mod calc;
         // );
     }
 // 
-
-// Test Deg
-    #[test]
-    fn test_deg() {
-        let mut syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
-        );
-        let dur = Duration::from_secs_f32(0.5);
-        let angle = PI / 8.0;
-    
-        // syarm.debug_pins();
-    
-        println!("Running movement tests ... ");
-
-        syarm.measure(2).unwrap();
-        
-        for i in 0 .. 4 {
-            print!(" -> Moving base ... ");
-            syarm.drive_comp_rel(i, angle);
-            sleep(dur);
-            syarm.drive_comp_rel(i, -angle);
-            println!("Done!");
-            sleep(dur);
-        }
-    }
-//
 
 // Test meas
     #[test]

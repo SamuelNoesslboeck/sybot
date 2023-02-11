@@ -1,10 +1,12 @@
+use stepper_lib::JsonConfig;
 use syarm_lib::{init_interpreter, SyArm, SyArmError, ErrType};
 
 // use std::{time::Duration, thread::sleep, f32::consts::PI};
 
 fn main() {
-    let mut syarm = SyArm::load_json("res/syarm_const.json");
-    syarm.init_meas();
+    let mut syarm = SyArm::from_conf(
+        JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+    );
 
     // DEBUG
         // Select pencil
