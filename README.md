@@ -1,5 +1,3 @@
-# syarm_lib
+# sybot_lib
 
-## SyArm library
-
-Control and calculation library for the SyArm robot
+Control and calculation library for various robots
