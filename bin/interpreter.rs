@@ -1,5 +1,5 @@
 use stepper_lib::JsonConfig;
-use syarm_lib::{init_interpreter, SyArm, SyArmError, ErrType};
+use sybot_lib::{init_interpreter, SyArm, SyArmError, ErrType};
 
 // use std::{time::Duration, thread::sleep, f32::consts::PI};
 

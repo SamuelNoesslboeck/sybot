@@ -1,7 +1,7 @@
-#![crate_name = "syarm_lib"]
-//! # SyArm library
+#![crate_name = "sybot_lib"]
+//! # SyBot Library
 //! 
-//! Control and calculation library for the SyArm robot
+//! Control and calculation library various robots
 
 // Module decleration
     pub mod intpr;

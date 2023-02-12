@@ -116,8 +116,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "syarm_lib"
-version = "0.5.1"
+name = "sybot_lib"
+version = "0.6.0"
 dependencies = [
  "gcode",
  "glam",
