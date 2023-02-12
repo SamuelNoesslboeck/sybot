@@ -5,61 +5,6 @@ mod calc;
 mod movements;
 
 // Test Arm
-    #[test]
-    fn test_arm() {
-        let mut syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
-        );
-
-        const ANGLES : Phis = [0.0, PI / 2.0, -PI / 2.0, 0.0];
-
-        syarm.write_position(&syarm.gammas_for_phis(ANGLES)); 
-
-        syarm.update_sim();
-
-        // let angles = syarm.get_with_fixed_dec(Vec3::new(0.0, 300.0, 120.0), 0.0); 
-        // let vectors = syarm.get_vectors_by_phis(&angles);
-
-        // dbg!(
-        //     angles,
-        //     syarm.get_points_by_phis(&angles)
-        // );
-
-        // const TIMES : u64 = 1000;
-        // let inst = Instant::now();
-        // let mut inertias = INERTIAS_ZERO; 
-        // let mut forces = FORCES_ZERO;
-        
-        // for _ in 0 .. TIMES {
-        //     inertias = syarm.get_inertias(&vectors);
-        //     syarm.apply_inertias(inertias);
-
-        //     forces = syarm.get_forces(&vectors);
-        //     syarm.apply_forces(forces);
-        // }
-
-        // println!("\nCalculation duration: {} for {} times", inst.elapsed().as_secs_f32(), TIMES);
-
-        dbg!(syarm.get_inertias(&syarm.vectors_by_phis(&ANGLES)));
-
-        // println!("Inertias: ");
-        // dbg!(
-        //     // inertias,
-        //     syarm.ctrl.ctrl.driver.lock().unwrap().data.j_load,
-        //     syarm.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.j_load,
-        //     syarm.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.j_load,
-        //     syarm.ctrl_a3.ctrl.driver.lock().unwrap().data.j_load
-        // );
-
-        // println!("Forces: ");
-        // dbg!(
-        //     // forces,
-        //     syarm.ctrl_base.ctrl.driver.lock().unwrap().data.t_load,
-        //     syarm.ctrl_a1.cylinder.ctrl.driver.lock().unwrap().data.t_load,
-        //     syarm.ctrl_a2.cylinder.ctrl.driver.lock().unwrap().data.t_load,
-        //     syarm.ctrl_a3.ctrl.driver.lock().unwrap().data.t_load,
-        // );
-    }
 // 
 
 // Test meas

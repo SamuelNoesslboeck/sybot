@@ -56,3 +56,23 @@ mod postion
         assert!(syarm.valid_gammas(gammas), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.valid_gammas_verb(gammas));
     }
 }
+
+mod load
+{
+    use super::*;
+    
+    #[test]
+    fn test_arm() {
+        let mut syarm = SyArm::from_conf(
+            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+        );
+
+        const ANGLES : Phis = [0.0, PI / 2.0, -PI / 2.0, 0.0];
+
+        syarm.write_position(&syarm.gammas_for_phis(ANGLES)); 
+
+        syarm.update_sim();
+
+        dbg!(syarm.get_inertias(&syarm.vectors_by_phis(&ANGLES)));
+    }
+}

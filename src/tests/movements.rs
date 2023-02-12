@@ -9,6 +9,8 @@ fn all_axes() {
     let dur = std::time::Duration::from_secs_f32(0.5);
     let angle = PI / 8.0;
 
+    // syarm.update_sim();
+
     // syarm.debug_pins();
 
     println!("Running movement tests ... ");
