@@ -5,12 +5,8 @@
 			"path": "../stepper_lib"
 		},
 		{
-			"name": "syarm_lib",
+			"name": "sybot_lib",
 			"path": "."
-		},
-		{
-			"name": "syomat_lib",
-			"path": "../syomat_lib"
 		},
 		{
 			"name": "syarm_app",
