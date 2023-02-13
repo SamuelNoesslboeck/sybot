@@ -1,11 +1,13 @@
 use std::f32::consts::PI;
 use std::thread::sleep;
 
+use crate::Robot;
+
 #[test]
-fn all_axes() {
+fn all_axes() -> std::io::Result<()> {
     let mut syarm = crate::SyArm::from_conf(
         crate::JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
-    );
+    )?;
     let dur = std::time::Duration::from_secs_f32(0.5);
     let angle = PI / 8.0;
 
@@ -25,4 +27,6 @@ fn all_axes() {
         println!("Done!");
         sleep(dur);
     }
+
+    Ok(())
 }

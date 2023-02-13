@@ -5,8 +5,16 @@
 
 // Module decleration
     pub mod intpr;
+    pub use intpr::init_interpreter;
+
+    pub mod robot;
+    pub use robot::*;
+
+    pub mod server;
 
     mod types;
+    pub use types::*;
+
     #[cfg(test)]
     mod tests;
 //
@@ -15,15 +23,12 @@
 use std::vec;
 use std::f32::consts::PI;
 
-use stepper_lib::{
-    Component, ComponentGroup, JsonConfig,
-    comp::Tool,
-    math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint}, conf::MachineConfig, 
-};
+use stepper_lib::{Component, ComponentGroup};
+use stepper_lib::comp::Tool;
+use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint};
 
 // Public imports
-pub use types::*;
-pub use intpr::init_interpreter;
+pub use stepper_lib::{JsonConfig, MachineConfig};
 pub use stepper_lib::gcode::Interpreter;
 
 // Constants
@@ -31,21 +36,13 @@ pub use stepper_lib::gcode::Interpreter;
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 // Structures
-    pub struct Variables
-    {
-        pub load : f32,
-
-        pub dec_angle : f32,
-        pub point : Vec3
-    }
-
     /// Calculation and control struct for the SyArm robot
     pub struct SyArm
     {
         pub conf : JsonConfig,
         pub mach : MachineConfig<4, 4, 4>,
 
-        pub vars : Variables,
+        pub vars : RobotVars,
 
         // Controls
         pub comps : [Box<dyn Component>; 4],
@@ -67,35 +64,7 @@ impl SyArm
 {
     // IO
         /// Creates a new syarm instance by a constants table
-        pub fn from_conf(conf : JsonConfig) -> Self {
-            let (mach, comps) = conf.get_machine().unwrap();
-
-            Self { 
-                conf, 
-                mach: mach,
-                comps: comps,
-
-                vars: Variables {
-                    load: 0.0,
-
-                    dec_angle: 0.0,
-                    point: Vec3::ZERO
-                },
-
-                tool_id: 0
-            }
-        }
     // 
-
-    // Tools
-        pub fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
-            self.mach.tools.get(self.tool_id)
-        }
-
-        pub fn set_tool_id(&mut self, tool_id : usize) {
-            self.tool_id = tool_id;
-        }
-    //
 
     // Angles
         /// Returns the four main angles used by the controls (gammas)
@@ -458,4 +427,43 @@ impl SyArm
             self.comps.write_dist(angles);
         }
     // 
+}
+
+impl Robot for SyArm 
+{   
+    // Conf
+        fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
+            let (mach, comps) = conf.get_machine()?;
+
+            Ok(Self { 
+                conf, 
+                mach: mach,
+                comps: comps,
+
+                vars: RobotVars::default(),
+
+                tool_id: 0
+            })
+        }
+
+        fn json_conf(&self) -> &JsonConfig {
+            &self.conf
+        }
+    //
+
+    // Tools
+        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
+            self.mach.tools.get(self.tool_id)
+        }
+
+        fn set_tool_id(&mut self, tool_id : usize) {
+            self.tool_id = tool_id;
+        }
+    // 
+
+    // Vars
+        fn get_vars(&self) -> &RobotVars {
+            &self.vars
+        }
+    //
 }

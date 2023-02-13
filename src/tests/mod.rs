@@ -9,10 +9,10 @@ mod movements;
 
 // Test meas
     #[test]
-    fn test_meas() {
+    fn test_meas() -> std::io::Result<()> {
         let mut syarm = SyArm::from_conf(
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
-        );
+        )?;
 
         syarm.update_sim();
     
@@ -23,6 +23,8 @@ mod movements;
         sleep(Duration::from_secs(1));
     
         syarm.measure(2).unwrap();
+
+        Ok(())
     }
 // 
 
