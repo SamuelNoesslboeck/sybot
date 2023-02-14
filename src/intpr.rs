@@ -1,7 +1,9 @@
-use serde_json::Value;
 use std::{thread, time::Duration};
+
+use serde_json::Value;
 use stepper_lib::gcode::*;
-use crate::{SyArm, SyArmResult};
+
+use crate::{SyArm, SyArmResult, Robot};
 
 // General Functions
     /// G0 X{Position} Y{Position} Z{Position} D{Angle} \
@@ -13,7 +15,7 @@ use crate::{SyArm, SyArmResult};
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_abs(arm.gammas_for_phis(angles));
+        arm.drive_abs(arm.phis_to_gammas(angles));
         arm.update_sim();
         Ok(serde_json::json!(angles))
     }
@@ -37,7 +39,7 @@ use crate::{SyArm, SyArmResult};
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_abs_async(arm.gammas_for_phis(angles));
+        arm.drive_abs_async(arm.phis_to_gammas(angles));
         arm.await_inactive();
         arm.update_sim();
         Ok(serde_json::json!(angles))
@@ -160,4 +162,36 @@ pub fn init_interpreter(syarm : SyArm) -> Interpreter<SyArm, SyArmResult<Value>>
     ]);
 
     Interpreter::new(syarm, funcs)
+}
+
+
+// New interpreter
+mod funcs 
+{
+    use super::*;
+
+    /// G0 X{Position} Y{Position} Z{Position} D{Angle} \
+    /// Rapid positioning
+    pub fn g0<R : Robot<N>, const N : usize>(arm : &mut R, _code : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
+        let angles = arm.get_with_fixed_dec_s(
+            get_arg_letter(args, 'X'), 
+            get_arg_letter(args, 'Y'), 
+            get_arg_letter(args, 'Z'), 
+            get_arg_letter(args, 'D')
+        )?; 
+        arm.drive_abs(arm.phis_to_gammas(angles));
+        arm.update(&angles);
+        
+        Ok(serde_json::json!(angles))
+    }
+}
+
+pub fn init_intpr<R : Robot<N>, const N : usize>(rob : R) -> Interpreter<R, Result<serde_json::Value, R::Error>> {
+    let funcs = LetterEntries::from([
+        (Letter::General, NumEntries::from([
+            (0, funcs::g0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>)
+        ]))
+    ]);
+
+    Interpreter::new(rob, funcs)
 }

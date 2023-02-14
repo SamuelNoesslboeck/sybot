@@ -4,7 +4,6 @@ pub use glam::Mat3;
 
 // Renamed Types 
 pub type SyArmResult<T> = Result<T, SyArmError>;
-pub type SyArmPath = Vec<Gammas>;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Axes( 
@@ -37,19 +36,6 @@ pub struct CylVectors(
     /// ( Direction, Position )
     pub (Vec3, Vec3)        
 );
-
-/// Exchange type type for forces and torques acting upon the robot
-pub type Forces = [f32; 4];
-
-pub type Gammas = [f32; 4];
-
-pub type Inertias = [f32; 4];
-
-pub type Phis = [f32; 4];
-
-pub type Points = [Vec3; 4];
-
-pub type Vectors = [Vec3; 4];
 
 #[derive(Copy, Clone, Debug)]
 pub enum ErrType {
