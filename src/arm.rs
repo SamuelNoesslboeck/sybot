@@ -265,6 +265,13 @@ impl Robot<4> for SyArm
             self.comps.measure_async(self.mach.meas_dist, self.mach.vels, [acc; 4]);
         }
 
+        fn set_endpoint(&mut self, gammas : &Gammas<4>) -> [bool; 4] {
+            for i in 1 .. 4 {
+                self.comps[i].set_endpoint(gammas[i]);
+            }
+            [true; 4]
+        }
+
         fn set_limit(&mut self) {
             for i in 0 .. 4 {
                 self.comps[i].set_limit(self.mach.limit[i].min, self.mach.limit[i].max);

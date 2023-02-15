@@ -81,7 +81,7 @@ mod funcs
     }
 
     // Misc Functions
-        pub fn m0(_ : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
+        pub fn m0<R : SafeRobot<N>, const N : usize>(_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
             // arm.debug_pins();
             Ok(Value::Null)
         }
