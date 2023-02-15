@@ -187,3 +187,8 @@ pub trait Robot<const N : usize>
         fn set_tool_id(&mut self, tool_id : usize);
     //
 }
+
+pub trait SafeRobot<const N : usize> : Robot<N>
+{
+    
+}
