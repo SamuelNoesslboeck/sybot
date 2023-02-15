@@ -14,7 +14,7 @@ mod movements;
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
         )?;
 
-        syarm.update_sim();
+        syarm.update(None);
     
         // syarm.debug_pins();
     
