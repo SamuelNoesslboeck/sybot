@@ -23,12 +23,8 @@ pub struct RobotVars
     pub point : Vec3
 }
 
-pub trait Robot<const N : usize>
+pub trait ConfRobot<const N : usize>
 {
-    // Type
-        type Error : std::error::Error;
-    // 
-
     // Configuration
         /// Creates a new instance of the robot from a Json-Configuration file if it's format is appropriate
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error>
@@ -50,6 +46,13 @@ pub trait Robot<const N : usize>
         
         fn meas_dists(&self) -> &Gammas<N>;
     //
+}
+
+pub trait Robot<const N : usize> : ConfRobot<N>
+{
+    // Types
+        type Error : std::error::Error;
+    // 
 
     // Position
         /// Returns all the angles used by the controls to represent the components extension/drive distance

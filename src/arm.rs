@@ -4,13 +4,11 @@ use std::vec;
 
 use glam::{Vec3, Mat3};
 
-use stepper_lib::{Component, ComponentGroup};
-use stepper_lib::comp::{Tool, Gammas, Omegas, Inertias, Forces};
+use stepper_lib::ComponentGroup;
+use stepper_lib::comp::{Tool, Gammas, Inertias, Forces};
 use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint};
 
-use stepper_lib::{JsonConfig, MachineConfig};
-
-use crate::{Robot, RobotVars, Phis, Vectors, SafeRobot};
+use crate::{Robot, Phis, Vectors, SafeRobot};
 use crate::types::CylVectors;
 
 // Constants
@@ -18,18 +16,7 @@ use crate::types::CylVectors;
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 /// Calculation and control struct for the SyArm robot
-pub struct SyArm
-{
-    pub conf : Option<JsonConfig>,
-    pub mach : MachineConfig<4, 4, 4>,
-
-    pub vars : RobotVars,
-
-    // Controls
-    pub comps : [Box<dyn Component>; 4],
-
-    tool_id : usize
-}
+pub type SyArm = crate::BasicRobot<4, 4, 4>;
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
 fn top_down_angle(point : Vec3) -> f32 {
@@ -42,55 +29,9 @@ fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
 
 impl Robot<4> for SyArm 
 {   
-    type Error = Error;
-
-    // Conf
-        fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
-            let (mach, comps) = conf.get_machine()?;
-
-            Ok(Self { 
-                conf: Some(conf), 
-                mach: mach,
-                comps: comps,
-
-                vars: RobotVars::default(),
-
-                tool_id: 0
-            })
-        }
-
-        #[inline]
-        fn json_conf(&self) -> &Option<JsonConfig> {
-            &self.conf
-        }
-    //
-
-    // Data 
-        #[inline]
-        fn comps(&self) -> &dyn ComponentGroup<4> {
-            &self.comps
-        }
-
-        #[inline]
-        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<4> {
-            &mut self.comps
-        }
-
-        #[inline]
-        fn vars(&self) -> &RobotVars {
-            &self.vars
-        }
-
-        #[inline]
-        fn max_vels(&self) -> &Omegas<4> {
-            &self.mach.vels
-        }
-
-        #[inline]
-        fn meas_dists(&self) -> &Gammas<4> {
-            &self.mach.meas_dist
-        }
-    //
+    // Types
+        type Error = std::io::Error;
+    // 
 
     // Position
         /// Converts gamma into phi angles
