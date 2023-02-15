@@ -128,18 +128,6 @@ pub trait Robot<const N : usize>
             fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> Phis<N>;
         //
 
-        // Correction
-            #[inline]
-            fn valid_gammas(&self, gammas : &Gammas<N>) -> bool {
-                self.comps().valid_dist(gammas)
-            }  
-
-            #[inline]
-            fn valid_phis(&self, phis : &Phis<N>) -> bool {
-                self.comps().valid_dist(&self.gammas_from_phis(*phis))
-            }
-        //  
-
         // Load
             #[inline]
             fn inertias_from_phis(&self, phis : &Phis<N>) -> Inertias<N> {

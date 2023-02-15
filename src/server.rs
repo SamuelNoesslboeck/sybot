@@ -7,11 +7,11 @@ use actix_web_actors::ws;
 
 use serde_json::json;
 
-use crate::{SyArm, SyArmResult, SyArmError, Robot, JsonConfig};
-use crate::{Interpreter, init_interpreter};
+use crate::{SyArm, Robot, JsonConfig};
+use crate::{Interpreter, init_intpr};
 
 struct AppData {
-    pub intpr : Interpreter<SyArm, SyArmResult<serde_json::Value>>
+    pub intpr : Interpreter<SyArm, Result<serde_json::Value, std::io::Error>>
 }
 
 struct MyWs {
@@ -29,10 +29,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                 let inst = Instant::now();
 
                 let mut data = self.data.lock().unwrap();
-                let results = data.intpr.interpret(&text, |gc_line| {
-                    Err(SyArmError::new(
-                        format!("GCode function [{}{}] not found!", gc_line.mnemonic(), gc_line.major_number()).as_str(), 
-                            crate::types::ErrType::GCodeFuncNotFound))
+                let results = data.intpr.interpret(&text, |_| {
+                    Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, ""))
                 });
 
                 let mut results_json : Vec<serde_json::Value> = vec![];
@@ -41,8 +39,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                     match res {
                         Ok(val) => results_json.push(val),
                         Err(err) => results_json.push(json![{
-                            "code": err.err_type as u64,
-                            "msg": err.msg
+                            "code": err.kind() as u64,
+                            "msg": err.to_string()
                         }])
                     }
                 }
@@ -84,7 +82,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
     }
 //
 
-const ADDR : (&str, u16) = ("127.0.0.1", 8080);
+pub const ADDR : (&str, u16) = ("127.0.0.1", 8080);
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -95,7 +93,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .app_data(web::Data::new(Mutex::new(AppData {
-                intpr: init_interpreter(SyArm::from_conf(JsonConfig::read_from_file("res/syarm_const.json")).unwrap())
+                intpr: init_intpr(SyArm::from_conf(JsonConfig::read_from_file("res/syarm_const.json")).unwrap())
             })))
             .service(api_pos)
             .service(cons)

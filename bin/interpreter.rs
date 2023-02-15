@@ -1,5 +1,5 @@
 use stepper_lib::JsonConfig;
-use sybot_lib::{init_interpreter, SyArm, SyArmError, ErrType, Robot};
+use sybot_lib::{init_intpr, SyArm, Robot};
 
 // use std::{time::Duration, thread::sleep, f32::consts::PI};
 
@@ -13,7 +13,7 @@ fn main() -> std::io::Result<()> {
         syarm.set_tool_id(1);
     // 
 
-    let mut intpr = init_interpreter(syarm);
+    let mut intpr = init_intpr(syarm);
 
     let args : Vec<String> = std::env::args().collect();
 
@@ -22,14 +22,14 @@ fn main() -> std::io::Result<()> {
     if args.len() > 1 {
         println!(" -> Interpreting file '{}'", args[1]);
         intpr.interpret_file(args[1].as_str(), 
-            |_| { Err(SyArmError::new_simple(ErrType::GCodeFuncNotFound)) });
+            |_| { Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")) });
     }
     
     loop {
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
 
-        match intpr.interpret(line.as_str(), |_| { Err(SyArmError::new_simple(ErrType::GCodeFuncNotFound)) }).first().unwrap() {
+        match intpr.interpret(line.as_str(), |_| { Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")) }).first().unwrap() {
             Ok(j) => { 
                 println!("{}", j.to_string());
             },

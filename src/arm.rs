@@ -1,6 +1,6 @@
-// Imports
-use std::vec;
 use std::f32::consts::PI;
+use std::io::Error;
+use std::vec;
 
 use glam::{Vec3, Mat3};
 
@@ -10,7 +10,7 @@ use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inert
 
 use stepper_lib::{JsonConfig, MachineConfig};
 
-use crate::{Robot, RobotVars, Phis, Vectors};
+use crate::{Robot, RobotVars, Phis, Vectors, SafeRobot};
 use crate::types::CylVectors;
 
 // Constants
@@ -42,7 +42,7 @@ fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
 
 impl Robot<4> for SyArm 
 {   
-    type Error = crate::SyArmError;
+    type Error = Error;
 
     // Conf
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
@@ -371,4 +371,19 @@ impl SyArm
                 (a_1 / 2.0 + a_2 / 2.0, a_2 / 2.0)
             )
         }
+}
+
+impl SafeRobot<4> for SyArm {
+    fn valid_gammas(&self, gammas : &Gammas<4>) -> Result<(), ([bool; 4], Self::Error)> {
+        let valids = self.comps.valid_dist_verb(gammas);
+
+        for valid in valids {
+            if !valid {
+                return Err((valids, Error::new(std::io::ErrorKind::InvalidInput, 
+                    format!("The gammas given are not valid {:?}", valids))))
+            }
+        }
+
+        Ok(())
+    }
 }

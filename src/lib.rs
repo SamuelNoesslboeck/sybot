@@ -8,7 +8,7 @@
     pub use arm::*;
 
     pub mod intpr;
-    pub use intpr::init_interpreter;
+    pub use intpr::init_intpr;
 
     mod robot;
     pub use robot::*;
@@ -16,7 +16,6 @@
     pub mod server;
 
     pub mod types;
-    pub use types::{SyArmError, SyArmResult, ErrType};
 
     #[cfg(test)]
     mod tests;
