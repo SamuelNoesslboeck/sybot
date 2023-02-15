@@ -15,7 +15,7 @@ use crate::{SyArm, SyArmResult, Robot};
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_abs(arm.phis_to_gammas(angles));
+        arm.drive_abs(arm.gammas_from_phis(angles));
         arm.update_sim();
         Ok(serde_json::json!(angles))
     }
@@ -39,7 +39,7 @@ use crate::{SyArm, SyArmResult, Robot};
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_abs_async(arm.phis_to_gammas(angles));
+        arm.drive_abs_async(arm.gammas_from_phis(angles));
         arm.await_inactive();
         arm.update_sim();
         Ok(serde_json::json!(angles))
@@ -179,7 +179,7 @@ mod funcs
             get_arg_letter(args, 'Z'), 
             get_arg_letter(args, 'D')
         )?; 
-        arm.drive_abs(arm.phis_to_gammas(angles));
+        arm.drive_abs(arm.gammas_from_phis(angles));
         arm.update(&angles);
         
         Ok(serde_json::json!(angles))

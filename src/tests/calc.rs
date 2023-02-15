@@ -41,7 +41,7 @@ mod postion
         )?;
 
         let angles = [ 0.0, PI / 2.0, -PI / 2.0, 0.0 ];
-        let gammas = syarm.phis_to_gammas(angles);
+        let gammas = syarm.gammas_from_phis(angles);
         
         assert!(syarm.valid_gammas(gammas), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.valid_gammas_verb(gammas));
 
@@ -55,7 +55,7 @@ mod postion
         )?;
 
         let angles = [ 0.0, PI / 2.0, -PI / 2.0, 0.0 ];
-        let gammas = syarm.phis_to_gammas(angles);
+        let gammas = syarm.gammas_from_phis(angles);
 
         syarm.measure(10).unwrap(); 
         
@@ -77,7 +77,7 @@ mod load
 
         const ANGLES : Phis = [0.0, PI / 2.0, -PI / 2.0, 0.0];
 
-        syarm.write_position(&syarm.phis_to_gammas(ANGLES)); 
+        syarm.write_position(&syarm.gammas_from_phis(ANGLES)); 
 
         syarm.update_sim();
 

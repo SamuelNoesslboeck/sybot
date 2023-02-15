@@ -52,19 +52,19 @@ pub trait Robot<const N : usize>
         }
 
         /// Converts all angles (by subtracting an offset in most of the cases)
-        fn phis_to_gammas(&self, phis : Phis<N>) -> Gammas<N>;
+        fn gammas_from_phis(&self, phis : Phis<N>) -> Gammas<N>;
 
         #[inline]
         fn all_phis(&self) -> Phis<N> {
-            self.gammas_to_phis(self.all_gammas())
+            self.phis_from_gammas(self.all_gammas())
         }
 
-        fn gammas_to_phis(&self, gammas : Gammas<N>) -> Phis<N>;
+        fn phis_from_gammas(&self, gammas : Gammas<N>) -> Phis<N>;
 
         // Other
             fn deco_axis(&self) -> Vec3;
             
-            fn anchor(&self) -> Vec3;
+            fn anchor(&self) -> &Vec3;
 
             fn home_pos(&self) -> Gammas<N>;
         //
@@ -72,13 +72,19 @@ pub trait Robot<const N : usize>
 
     // Calculation
         // Position
-            fn gammas_to_vecs(&self, gammas : Gammas<N>) -> Vectors<N>; 
+            #[inline]
+            fn vecs_from_gammas(&self, gammas : &Gammas<N>) -> Vectors<N> {
+                self.vecs_from_phis(self.phis_from_gammas())
+            }
             
-            fn phis_to_vecs(&self, phis : Phis<N>) -> Vectors<N>;
+            fn vecs_from_phis(&self, phis : &Phis<N>) -> Vectors<N>;
 
-            fn vec_to_gammas(&self, pos : Vec3);
+            #[inline]
+            fn gammas_from_def_vec(&self, pos : Vec3) -> Gammas<N> {
+                self.gammas_from_phis(self.phis_from_def_vec(pos))
+            }
 
-            fn vec_to_phis(&self, pos : Vec3);
+            fn phis_from_def_vec(&self, pos : Vec3) -> Phis<N>;
 
             fn vecs_to_points(&self, vecs : &Vectors<N>) -> Points<N> {
                 let mut points : Vectors<N> = [Vec3::ZERO; N];
@@ -100,7 +106,9 @@ pub trait Robot<const N : usize>
                 vecs
             }
 
-            fn reduce_to_defined(&self, pos : Vec3) -> Vec3;
+            fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3;
+
+            fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> Phis<N>;
         //
 
         // Correction
@@ -111,7 +119,7 @@ pub trait Robot<const N : usize>
 
             #[inline]
             fn valid_phis(&self, phis : &Phis<N>) -> bool {
-                self.comp_group().valid_dist(&self.phis_to_gammas(phis))
+                self.comp_group().valid_dist(&self.gammas_from_phis(phis))
             }
         //  
 
@@ -186,9 +194,4 @@ pub trait Robot<const N : usize>
 
         fn set_tool_id(&mut self, tool_id : usize);
     //
-}
-
-pub trait SafeRobot<const N : usize> : Robot<N>
-{
-    
 }

@@ -77,54 +77,59 @@ impl Robot<4> for SyArm
             })
         }
 
+        #[inline]
         fn json_conf(&self) -> &Option<JsonConfig> {
             &self.conf
         }
     //
 
-    // Data
+    // Data 
+        #[inline]
         fn comp_group(&self) -> &mut dyn ComponentGroup<4> {
             &mut self.comps
         }
 
+        #[inline]
         fn get_vars(&self) -> &RobotVars {
             &self.vars
         }
 
+        #[inline]
         fn max_vels(&self) -> &Omegas<4> {
             &self.mach.vels
         }
 
+        #[inline]
         fn meas_dists(&self) -> &Gammas<4> {
             &self.mach.meas_dist
         }
     //
 
     // Position
-        fn all_gammas(&self) -> Gammas<4> {
-            self.comps.get_dist()
-        }
-
         /// Converts gamma into phi angles
-        fn phis_to_gammas(&self, phis : Phis<4>) -> Gammas<4> {
+        #[inline]
+        fn gammas_from_phis(&self, phis : Phis<4>) -> Gammas<4> {
             self.mach.convert_angles(phis, true)
         } 
 
-        /// Returns the four main angles used by the calculations (phis)
-        fn all_phis(&self) -> Phis<4> {
-            self.gammas_to_phis(self.all_gammas())
-        }
-
         /// Converts phi into gamma angles
-        fn gammas_to_phis(&self, gammas : Gammas<4>) -> Phis<4> {
+        #[inline]
+        fn phis_from_gammas(&self, gammas : Gammas<4>) -> Phis<4> {
             self.mach.convert_angles(gammas, false)
         }
 
         // Other
+            #[inline]
             fn deco_axis(&self) -> Vec3 {
                 self.mach.dims[3] + self.get_tool().unwrap().get_vec()
             }
 
+            #[inline]
+            fn anchor(&self) -> &Vec3 {
+                &self.mach.anchor
+            }
+
+            #[inline]
             fn home_pos(&self) -> Gammas<4> {
                 self.mach.home
             }
@@ -133,32 +138,59 @@ impl Robot<4> for SyArm
 
     // Calculation
         // Position
-            fn gammas_to_vecs(&self, gammas : Gammas<4>) -> [Vec3; 4] {
-                todo!()
+            fn vecs_from_phis(&self, phis : &Phis<4>) -> [Vec3; 4] {
+                let mut vecs = vec![];
+                let matr = self.mach.get_axes(&phis);
+    
+                // Create vectors in default position (Pointing along X-Axis) except base
+                for i in 0 .. 4 {
+                    let mut mat_total = matr[i]; 
+    
+                    for n in 0 .. i {
+                        mat_total = matr[i - n - 1] * mat_total;
+                    }
+    
+                    vecs.push(mat_total * self.mach.dims[i]);
+                }
+                
+                vecs.try_into().unwrap()
             }
 
-            fn phis_to_vecs(&self, phis : Phis<4>) -> [Vec3; 4] {
-                todo!()
+            fn phis_from_def_vec(&self, mut pos : Vec3) -> Phis<4> {
+                let phi_b = top_down_angle(pos) - PI/2.0;
+
+                pos = Mat3::from_rotation_z(-phi_b) * pos;
+
+                let phi_h1 = law_of_cosines(pos.length(), self.mach.dims[1].length(), self.mach.dims[2].length());      // Helper angle for phi_1 calc
+                let gamma_2_ = law_of_cosines(self.mach.dims[2].length(), self.mach.dims[1].length(), pos.length());    // Gamma 2 with side angles
+                let mut phi_h = Vec3::Y.angle_between(pos);                                             // Direct angle towards point
+
+                if 0.0 > pos.z {
+                    phi_h = -phi_h;
+                }
+
+                let phi_1 = phi_h + phi_h1;
+                let phi_2 = gamma_2_ - PI;
+                // let phi_3 = dec_angle - (phi_1 + phi_2);
+
+                [ phi_b, phi_1, phi_2, 0.0 ]    
             }
 
-            fn vec_to_gammas(&self, pos : Vec3) {
-                todo!()
+            fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3 {
+                // Rotate onto Y-Z plane
+                let phi_b = top_down_angle(pos) - PI/2.0;
+                let rot_point = Mat3::from_rotation_z(-phi_b) * pos;
+
+                // Calculate the decoration vector
+                let dec = self.deco_axis();
+                let dec_rot = Mat3::from_rotation_x(dec_ang) * dec;
+
+                // Triganlge point
+                let d_point = rot_point - dec_rot - self.mach.anchor - self.mach.dims[0];
             }
 
-            fn vec_to_phis(&self, pos : Vec3) {
-                todo!()
-            }
-
-            fn vecs_to_points(&self, vecs : Vectors<4>) -> Points<4> {
-                todo!()
-            }
-        
-            fn points_to_vecs(&self, points : Vectors<4>) -> Vectors<4> {
-                todo!()
-            }
-        
-            fn reduce_to_defined(&self, pos : Vec3) -> Vec3 {
-                todo!()
+            fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> Phis<N> {
+                self.
             }
         //
 
@@ -214,51 +246,7 @@ impl Robot<4> for SyArm
 
 impl SyArm
 {
-    // Angles
-        pub fn valid_gammas(&self, gammas : Gammas<4>) -> bool {
-            self.comps.valid_dist(gammas)
-        }
-
-        pub fn valid_gammas_verb(&self, gammas : Gammas<4>) -> [bool; 4] {
-            self.comps.valid_dist_verb(gammas)
-        }
-
-        pub fn valid_phis(&self, phis : Phis<4>) -> bool {
-            self.valid_gammas(self.phis_to_gammas(phis))
-        }
-    //
-
     // Position calculation
-        /// Returns the  points by the given  angles
-        pub fn points_by_phis(&self, angles : &Phis<4>) -> Points {
-            let [ a_b, a_1, a_2, a_3 ] = self.vectors_by_phis(angles);
-            [ 
-                self.mach.anchor + a_b,
-                self.mach.anchor + a_b + a_1,
-                self.mach.anchor + a_b + a_1 + a_2,
-                self.mach.anchor + a_b + a_1 + a_2 + a_3
-            ]
-        }
-
-        /// Get the (most relevant, characteristic) vectors of the robot by the  angles
-        pub fn vectors_by_phis(&self, angles : &Phis<4>) -> Vectors {
-            let mut vecs = vec![];
-            let matr = self.mach.get_axes(angles);
-
-            // Create vectors in default position (Pointing along X-Axis) except base
-            for i in 0 .. 4 {
-                let mut mat_total = matr[i]; 
-
-                for n in 0 .. i {
-                    mat_total = matr[i - n - 1] * mat_total;
-                }
-
-                vecs.push(mat_total * self.mach.dims[i]);
-            }
-            
-            vecs.try_into().unwrap()
-        }
-
         /// Get the the angles of the robot when moving to the given point with a fixed decoration axis
         pub fn get_with_fixed_dec(&self, point : Vec3, dec_angle : f32) -> Phis<4> {
             // Rotate onto Y-Z plane
@@ -297,7 +285,7 @@ impl SyArm
             let dec_angle = dec_angle_o.unwrap_or(self.vars.dec_angle);
             
             let phis = self.get_with_fixed_dec(point, dec_angle);
-            let gammas = self.phis_to_gammas(phis);
+            let gammas = self.gammas_from_phis(phis);
         
             if self.valid_gammas(gammas) { 
                 Ok(phis)
@@ -530,12 +518,6 @@ impl SyArm
             for i in 0 .. 4 {
                 self.comps[i].set_limit(self.mach.limit[i].min, self.mach.limit[i].max);
             }
-        }
-    // 
-
-    // Debug
-        pub fn write_position(&mut self, angles : &Gammas<4>) {
-            self.comps.write_dist(angles);
         }
     // 
 }
