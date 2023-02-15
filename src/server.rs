@@ -31,7 +31,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                 let mut data = self.data.lock().unwrap();
                 let results = data.intpr.interpret(&text, |gc_line| {
                     Err(SyArmError::new(
-                        format!("GCode function [{}{}] not found!", gc_line.mnemonic(), gc_line.major_number()).as_str(), SyArmError::ErrType::GCodeFuncNotFound))
+                        format!("GCode function [{}{}] not found!", gc_line.mnemonic(), gc_line.major_number()).as_str(), 
+                            crate::types::ErrType::GCodeFuncNotFound))
                 });
 
                 let mut results_json : Vec<serde_json::Value> = vec![];
@@ -72,7 +73,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
     #[get("/conf")]
     async fn cons(data_mutex : web::Data<Mutex<AppData>>) -> impl Responder {
         let data = data_mutex.lock().unwrap();
-        HttpResponse::Ok().content_type("application/json").body(data.intpr.mach.conf.to_string_pretty())
+        HttpResponse::Ok().content_type("application/json").body(serde_json::to_string_pretty(&data.intpr.mach.conf).unwrap())
     }
 
     #[get("/intpr")]

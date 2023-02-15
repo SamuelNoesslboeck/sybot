@@ -8,15 +8,15 @@ use crate::{SyArm, SyArmResult, Robot};
 // General Functions
     /// G0 X{Position} Y{Position} Z{Position} D{Angle} \
     /// Rapid positioning
-    pub fn g0(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-        let angles = arm.get_with_fixed_dec_s(
-            get_arg_letter(args, 'X'), 
-            get_arg_letter(args, 'Y'), 
-            get_arg_letter(args, 'Z'), 
-            get_arg_letter(args, 'D')
-        )?; 
-        arm.drive_abs(arm.phis_to_gammas(angles));
-        arm.update_sim();
+    pub fn g0(arm : &mut SyArm, _code : &GCode, _ : &Args) -> SyArmResult<Value> {
+        let angles = [0.0; 4]; // arm.get_with_fixed_dec_s(
+        //     get_arg_letter(args, 'X'), 
+        //     get_arg_letter(args, 'Y'), 
+        //     get_arg_letter(args, 'Z'), 
+        //     get_arg_letter(args, 'D')
+        // )?; 
+        arm.drive_abs(arm.gammas_from_phis(angles));
+        arm.update(None);
         Ok(serde_json::json!(angles))
     }
 
@@ -32,16 +32,16 @@ use crate::{SyArm, SyArmResult, Robot};
 
     /// G8 X{Position} Y{Position} Z{Position} D{Angle} \
     /// Rapid positioning async
-    pub fn g8(arm : &mut SyArm, _code : &GCode, args : &Args) -> SyArmResult<Value> {
-        let angles = arm.get_with_fixed_dec_s(
-            get_arg_letter(args, 'X'), 
-            get_arg_letter(args, 'Y'), 
-            get_arg_letter(args, 'Z'), 
-            get_arg_letter(args, 'D')
-        )?; 
-        arm.drive_abs_async(arm.phis_to_gammas(angles));
+    pub fn g8(arm : &mut SyArm, _code : &GCode, _ : &Args) -> SyArmResult<Value> {
+        let angles = [0.0; 4]; // arm.get_with_fixed_dec_s(
+        //     get_arg_letter(args, 'X'), 
+        //     get_arg_letter(args, 'Y'), 
+        //     get_arg_letter(args, 'Z'), 
+        //     get_arg_letter(args, 'D')
+        // )?; 
+        arm.drive_abs_async(arm.gammas_from_phis(angles));
         arm.await_inactive();
-        arm.update_sim();
+        arm.update(None);
         Ok(serde_json::json!(angles))
     }   
 
@@ -120,8 +120,9 @@ use crate::{SyArm, SyArmResult, Robot};
         // arm.measure(2);
         arm.measure_async(2);
         arm.await_inactive();
-        arm.update_sim();
-        arm.set_endpoint(arm.home_pos());
+        arm.update(None);
+        let home = *arm.home_pos();
+        arm.set_endpoint(&home);
         Ok(Value::Null)
     }
 //
@@ -133,7 +134,7 @@ use crate::{SyArm, SyArmResult, Robot};
     }
 
     pub fn m1(arm : &mut SyArm, _ : &GCode, _ : &Args) -> SyArmResult<Value> {
-        println!("{}", arm.points_by_phis(&arm.all_phis())[3]);
+        println!("{}", arm.points_from_phis(&arm.all_phis())[3]);
         Ok(Value::Null)
     }
 // 
@@ -172,17 +173,17 @@ mod funcs
 
     /// G0 X{Position} Y{Position} Z{Position} D{Angle} \
     /// Rapid positioning
-    pub fn g0<R : Robot<N>, const N : usize>(arm : &mut R, _code : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
-        let angles = arm.get_with_fixed_dec_s(
-            get_arg_letter(args, 'X'), 
-            get_arg_letter(args, 'Y'), 
-            get_arg_letter(args, 'Z'), 
-            get_arg_letter(args, 'D')
-        )?; 
-        arm.drive_abs(arm.phis_to_gammas(angles));
-        arm.update(&angles);
+    pub fn g0<R : Robot<N>, const N : usize>(arm : &mut R, _code : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+        let angles = [0.0 as f32; N]; // arm.get_with_fixed_dec_s(
+        //     get_arg_letter(args, 'X'), 
+        //     get_arg_letter(args, 'Y'), 
+        //     get_arg_letter(args, 'Z'), 
+        //     get_arg_letter(args, 'D')
+        // )?; 
+        arm.drive_abs(arm.gammas_from_phis(angles));
+        arm.update(Some(&angles));
         
-        Ok(serde_json::json!(angles))
+        Ok(serde_json::json!(Vec::from(angles)))
     }
 }
 
