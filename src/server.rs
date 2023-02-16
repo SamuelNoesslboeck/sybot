@@ -7,7 +7,7 @@ use actix_web_actors::ws;
 
 use serde_json::json;
 
-use crate::{SyArm, Robot, JsonConfig};
+use crate::{SyArm, JsonConfig, ConfRobot};
 use crate::{Interpreter, init_intpr};
 
 struct AppData {

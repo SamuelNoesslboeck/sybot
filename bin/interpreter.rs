@@ -1,5 +1,5 @@
 use stepper_lib::JsonConfig;
-use sybot_lib::{init_intpr, SyArm, Robot};
+use sybot_lib::{init_intpr, SyArm, Robot, ConfRobot};
 
 // use std::{time::Duration, thread::sleep, f32::consts::PI};
 

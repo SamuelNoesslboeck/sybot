@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 use std::thread::sleep;
 
-use crate::Robot;
+use crate::{Robot, ConfRobot};
 
 #[test]
 fn all_axes() -> std::io::Result<()> {
