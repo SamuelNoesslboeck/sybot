@@ -46,6 +46,12 @@ pub trait ConfRobot<const N : usize>
         
         fn meas_dists(&self) -> &Gammas<N>;
     //
+
+    // Positions
+        fn home_pos(&self) -> &Gammas<N>;
+
+        fn anchor(&self) -> &Vec3;
+    //
 }
 
 pub trait Robot<const N : usize> : ConfRobot<N>
@@ -73,10 +79,6 @@ pub trait Robot<const N : usize> : ConfRobot<N>
 
         // Other
             fn deco_axis(&self) -> Vec3;
-            
-            fn anchor(&self) -> &Vec3;
-
-            fn home_pos(&self) -> &Gammas<N>;
         //
     //
 

@@ -46,7 +46,7 @@ mod funcs
                 get_arg_letter(args, 'Y'), 
                 get_arg_letter(args, 'Z')
             ),
-            robot.safe_deco(get_arg_letter(args, 'D'))
+            robot.safe_deco(get_arg_letter(args, 'D'))  
         ) {
             Ok(ang) => ang,
             Err((_, err)) => return Err(err)

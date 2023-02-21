@@ -1,3 +1,5 @@
+use glam::Vec3;
+
 use crate::Robot;
 
 pub type Syomat = crate::BasicRobot<3, 1, 0>;
@@ -6,39 +8,36 @@ impl Robot<3> for Syomat
 {
     type Error = std::io::Error;
 
-    fn gammas_from_phis(&self, phis : crate::Phis<3>) -> stepper_lib::Gammas<3> {
-        todo!()
-    }
+    // Position
+        #[inline]
+        fn gammas_from_phis(&self, phis : crate::Phis<3>) -> stepper_lib::Gammas<3> {
+            phis
+        }
 
-    fn phis_from_gammas(&self, gammas : stepper_lib::Gammas<3>) -> crate::Phis<3> {
-        todo!()
-    }
+        #[inline]
+        fn phis_from_gammas(&self, gammas : stepper_lib::Gammas<3>) -> crate::Phis<3> {
+            gammas
+        }
 
-    fn deco_axis(&self) -> glam::Vec3 {
-        todo!()
-    }
-
-    fn anchor(&self) -> &glam::Vec3 {
-        todo!()
-    }
-
-    fn home_pos(&self) -> &stepper_lib::Gammas<3> {
-        todo!()
-    }
+        #[inline]
+        fn deco_axis(&self) -> Vec3 {
+            self.get_tool().unwrap().get_vec()
+        }
+    //
 
     fn vecs_from_phis(&self, phis : &crate::Phis<3>) -> crate::Vectors<3> {
         todo!()
     }
 
-    fn phis_from_def_vec(&self, pos : glam::Vec3) -> crate::Phis<3> {
+    fn phis_from_def_vec(&self, pos : Vec3) -> crate::Phis<3> {
         todo!()
     }
 
-    fn reduce_to_def(&self, pos : glam::Vec3, dec_ang : f32) -> glam::Vec3 {
+    fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3 {
         todo!()
     }
 
-    fn phis_from_vec(&self, pos : glam::Vec3, dec_ang : f32) -> crate::Phis<3> {
+    fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> crate::Phis<3> {
         todo!()
     }
 

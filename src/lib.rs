@@ -93,5 +93,15 @@ impl<const N : usize, const D : usize, const A : usize> ConfRobot<N> for BasicRo
         fn meas_dists(&self) -> &Gammas<N> {
             &self.mach.meas_dist
         }
+
+        #[inline]
+        fn home_pos(&self) -> &Gammas<N> {
+            &self.mach.home
+        }
+
+        #[inline]
+        fn anchor(&self) -> &glam::Vec3 {
+            &self.mach.anchor
+        }
     //
 }

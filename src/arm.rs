@@ -9,7 +9,6 @@ use stepper_lib::comp::{Tool, Gammas, Inertias, Forces};
 use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint};
 
 use crate::{Robot, Phis, Vectors, SafeRobot};
-use crate::types::CylVectors;
 
 // Constants
 /// Gravitational acceleration as vector
@@ -26,6 +25,21 @@ fn top_down_angle(point : Vec3) -> f32 {
 fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
     ((a.powi(2) + b.powi(2) - c.powi(2)) / 2.0 / a / b).acos()
 }
+
+/// Exchange tuple type for directional and positional vectors of the robot 
+#[derive(Clone, Copy, Debug)]
+pub struct CylVectors(
+    /// First cylinder for first segment \
+    /// ( Direction, Position )
+    pub (Vec3, Vec3),    
+    /// Second cylinder for first segment \
+    /// ( Direction, Position )
+    pub (Vec3, Vec3),       
+    /// Second cylinder for second segment \
+    /// ( Direction, Position )
+    pub (Vec3, Vec3)        
+);
+
 
 impl Robot<4> for SyArm 
 {   
@@ -50,16 +64,6 @@ impl Robot<4> for SyArm
             #[inline]
             fn deco_axis(&self) -> Vec3 {
                 self.mach.dims[3] + self.get_tool().unwrap().get_vec()
-            }
-
-            #[inline]
-            fn anchor(&self) -> &Vec3 {
-                &self.mach.anchor
-            }
-
-            #[inline]
-            fn home_pos(&self) -> &Gammas<4> {
-                &self.mach.home
             }
         //
     // 
