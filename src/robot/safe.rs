@@ -29,7 +29,7 @@ pub trait SafeRobot<const N : usize> : Robot<N>
     // 
 
     // Validation
-        fn valid_gammas(&self, gammas : &Gammas<N>) -> Result<(), ([bool; N], Self::Error)>;
+        fn valid_gammas(&self, gammas : &[Gamma; N]) -> Result<(), ([bool; N], Self::Error)>;
 
         #[inline]
         fn valid_phis(&self, phis : &Phis<N>) -> Result<(), ([bool; N], Self::Error)> {

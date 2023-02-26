@@ -85,17 +85,17 @@ impl<const N : usize, const D : usize, const A : usize> ConfRobot<N> for BasicRo
         }
 
         #[inline]
-        fn max_vels(&self) -> &Omegas<N> {
+        fn max_vels(&self) -> &[Omega; N] {
             &self.mach.vels
         }
 
         #[inline]
-        fn meas_dists(&self) -> &Gammas<N> {
+        fn meas_dists(&self) -> &[Gamma; N] {
             &self.mach.meas_dist
         }
 
         #[inline]
-        fn home_pos(&self) -> &Gammas<N> {
+        fn home_pos(&self) -> &[Gamma; N] {
             &self.mach.home
         }
 

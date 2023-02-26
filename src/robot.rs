@@ -8,7 +8,7 @@ mod safe;
 pub use safe::*;
 //
 
-pub type Phis<const N : usize> = Gammas<N>;
+pub type Phis<const N : usize> = [Gamma; N];
 
 pub type Vectors<const N : usize> = [Vec3; N];
 pub type Points<const N : usize> = [Vec3; N];
@@ -42,13 +42,13 @@ pub trait ConfRobot<const N : usize>
 
         fn vars(&self) -> &RobotVars;
 
-        fn max_vels(&self) -> &Omegas<N>;
+        fn max_vels(&self) -> &[Omega; N];
         
-        fn meas_dists(&self) -> &Gammas<N>;
+        fn meas_dists(&self) -> &[Gamma; N];
     //
 
     // Positions
-        fn home_pos(&self) -> &Gammas<N>;
+        fn home_pos(&self) -> &[Gamma; N];
 
         fn anchor(&self) -> &Vec3;
     //
@@ -63,19 +63,19 @@ pub trait Robot<const N : usize> : ConfRobot<N>
     // Position
         /// Returns all the angles used by the controls to represent the components extension/drive distance
         #[inline]
-        fn all_gammas(&self) -> Gammas<N> {
+        fn all_gammas(&self) -> [Gamma; N] {
             self.comps().get_dist()
         }
 
         /// Converts all angles (by subtracting an offset in most of the cases)
-        fn gammas_from_phis(&self, phis : Phis<N>) -> Gammas<N>;
+        fn gammas_from_phis(&self, phis : Phis<N>) -> [Gamma; N];
 
         #[inline]
         fn all_phis(&self) -> Phis<N> {
             self.phis_from_gammas(self.all_gammas())
         }
 
-        fn phis_from_gammas(&self, gammas : Gammas<N>) -> Phis<N>;
+        fn phis_from_gammas(&self, gammas : [Gamma; N]) -> Phis<N>;
 
         // Other
             fn deco_axis(&self) -> Vec3;
@@ -85,12 +85,12 @@ pub trait Robot<const N : usize> : ConfRobot<N>
     // Calculation
         // Position
             #[inline]
-            fn vecs_from_gammas(&self, gammas : &Gammas<N>) -> Vectors<N> {
+            fn vecs_from_gammas(&self, gammas : &[Gamma; N]) -> Vectors<N> {
                 self.vecs_from_phis(&self.phis_from_gammas(*gammas))
             }
 
             #[inline]
-            fn points_from_gammas(&self, gammas : &Gammas<N>) -> Points<N> {
+            fn points_from_gammas(&self, gammas : &[Gamma; N]) -> Points<N> {
                 self.points_from_vecs(&self.vecs_from_gammas(gammas))
             }
             
@@ -102,7 +102,7 @@ pub trait Robot<const N : usize> : ConfRobot<N>
             }
 
             #[inline]
-            fn gammas_from_def_vec(&self, pos : Vec3) -> Gammas<N> {
+            fn gammas_from_def_vec(&self, pos : Vec3) -> [Gamma; N] {
                 self.gammas_from_phis(self.phis_from_def_vec(pos))
             }
 
@@ -164,7 +164,7 @@ pub trait Robot<const N : usize> : ConfRobot<N>
         }
 
         #[inline]
-        fn write_gammas(&mut self, gammas : &Gammas<N>) {
+        fn write_gammas(&mut self, gammas : &[Gamma; N]) {
             self.comps_mut().write_dist(gammas);
         }
     // 
@@ -177,7 +177,7 @@ pub trait Robot<const N : usize> : ConfRobot<N>
         }
 
         #[inline]
-        fn drive_abs(&mut self, dist : Gammas<N>) -> [f32; N] {
+        fn drive_abs(&mut self, dist : [Gamma; N]) -> [f32; N] {
             let vels = *self.max_vels();
             self.comps_mut().drive_abs(dist, vels)
         }
@@ -190,7 +190,7 @@ pub trait Robot<const N : usize> : ConfRobot<N>
         }
         
         #[inline]
-        fn drive_abs_async(&mut self, dist : Gammas<N>) {
+        fn drive_abs_async(&mut self, dist : [Gamma; N]) {
             let vels = *self.max_vels();
             self.comps_mut().drive_abs_async(dist, vels);
         }
@@ -233,7 +233,7 @@ pub trait Robot<const N : usize> : ConfRobot<N>
         }
 
         #[inline]
-        fn set_endpoint(&mut self, gammas : &Gammas<N>) -> [bool; N] {
+        fn set_endpoint(&mut self, gammas : &[Gamma; N]) -> [bool; N] {
             self.comps_mut().set_endpoint(gammas)
         }
 
