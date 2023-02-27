@@ -3,8 +3,7 @@
 //! 
 //! Control and calculation library various robots
 
-use stepper_lib::{Component, ComponentGroup};
-use stepper_lib::comp::{Gammas, Omegas};
+use stepper_lib::{Component, ComponentGroup, Omega, Gamma, Delta};
 
 // Module decleration
     mod arm;
@@ -85,17 +84,17 @@ impl<const N : usize, const D : usize, const A : usize> ConfRobot<N> for BasicRo
         }
 
         #[inline]
-        fn max_vels(&self) -> &Omegas<N> {
+        fn max_vels(&self) -> &[Omega; N] {
             &self.mach.vels
         }
 
         #[inline]
-        fn meas_dists(&self) -> &Gammas<N> {
+        fn meas_dists(&self) -> &[Delta; N] {
             &self.mach.meas_dist
         }
 
         #[inline]
-        fn home_pos(&self) -> &Gammas<N> {
+        fn home_pos(&self) -> &[Gamma; N] {
             &self.mach.home
         }
 
