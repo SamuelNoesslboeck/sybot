@@ -1,8 +1,7 @@
 use glam::Vec3;
+use stepper_lib::{Phi, Gamma};
 
-use stepper_lib::comp::Gammas;
-
-use crate::{Robot, Phis};
+use crate::Robot;
 
 pub trait SafeRobot<const N : usize> : Robot<N>
 {
@@ -21,7 +20,7 @@ pub trait SafeRobot<const N : usize> : Robot<N>
             deco.unwrap_or(self.vars().dec_angle)
         }
 
-        fn safe_phis_for_vec(&self, pos : Vec3, dec_ang : f32) -> Result<Phis<N>, ([bool; N], Self::Error)> {
+        fn safe_phis_for_vec(&self, pos : Vec3, dec_ang : f32) -> Result<[Phi; N], ([bool; N], Self::Error)> {
             let phis = self.phis_from_vec(pos, dec_ang);
             self.valid_phis(&phis)?;
             Ok(phis)
@@ -32,7 +31,7 @@ pub trait SafeRobot<const N : usize> : Robot<N>
         fn valid_gammas(&self, gammas : &[Gamma; N]) -> Result<(), ([bool; N], Self::Error)>;
 
         #[inline]
-        fn valid_phis(&self, phis : &Phis<N>) -> Result<(), ([bool; N], Self::Error)> {
+        fn valid_phis(&self, phis : &[Phi; N]) -> Result<(), ([bool; N], Self::Error)> {
             self.valid_gammas(&self.gammas_from_phis(*phis))
         }
     // 

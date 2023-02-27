@@ -1,6 +1,8 @@
 use std::f32::consts::PI;
 use std::thread::sleep;
 
+use stepper_lib::Delta;
+
 use crate::{Robot, ConfRobot};
 
 #[test]
@@ -9,7 +11,7 @@ fn all_axes() -> std::io::Result<()> {
         crate::JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
     )?;
     let dur = std::time::Duration::from_secs_f32(0.5);
-    let angle = PI / 8.0;
+    let angle = Delta(PI / 8.0);
 
     // syarm.update_sim();
 

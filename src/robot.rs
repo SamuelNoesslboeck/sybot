@@ -1,17 +1,14 @@
 use glam::Vec3; 
 
-use stepper_lib::{Tool, JsonConfig, ComponentGroup};
-use stepper_lib::comp::{Gammas, Omegas, Inertias, Forces};
+use stepper_lib::{Tool, JsonConfig, ComponentGroup, Omega, Gamma, Inertia, Force, Phi, Delta};
 
 // Submodules
 mod safe;
 pub use safe::*;
 //
 
-pub type Phis<const N : usize> = [Gamma; N];
-
-pub type Vectors<const N : usize> = [Vec3; N];
 pub type Points<const N : usize> = [Vec3; N];
+pub type Vectors<const N : usize> = [Vec3; N]; 
 
 
 #[derive(Clone, Debug, Default)]
@@ -44,7 +41,7 @@ pub trait ConfRobot<const N : usize>
 
         fn max_vels(&self) -> &[Omega; N];
         
-        fn meas_dists(&self) -> &[Gamma; N];
+        fn meas_dists(&self) -> &[Delta; N];
     //
 
     // Positions
@@ -64,18 +61,18 @@ pub trait Robot<const N : usize> : ConfRobot<N>
         /// Returns all the angles used by the controls to represent the components extension/drive distance
         #[inline]
         fn all_gammas(&self) -> [Gamma; N] {
-            self.comps().get_dist()
+            self.comps().get_gammas()
         }
 
         /// Converts all angles (by subtracting an offset in most of the cases)
-        fn gammas_from_phis(&self, phis : Phis<N>) -> [Gamma; N];
+        fn gammas_from_phis(&self, phis : [Phi; N]) -> [Gamma; N];
 
         #[inline]
-        fn all_phis(&self) -> Phis<N> {
+        fn all_phis(&self) -> [Phi; N] {
             self.phis_from_gammas(self.all_gammas())
         }
 
-        fn phis_from_gammas(&self, gammas : [Gamma; N]) -> Phis<N>;
+        fn phis_from_gammas(&self, gammas : [Gamma; N]) -> [Phi; N];
 
         // Other
             fn deco_axis(&self) -> Vec3;
@@ -94,10 +91,10 @@ pub trait Robot<const N : usize> : ConfRobot<N>
                 self.points_from_vecs(&self.vecs_from_gammas(gammas))
             }
             
-            fn vecs_from_phis(&self, phis : &Phis<N>) -> Vectors<N>;
+            fn vecs_from_phis(&self, phis : &[Phi; N]) -> Vectors<N>;
 
             #[inline]
-            fn points_from_phis(&self, phis : &Phis<N>) -> Points<N> {
+            fn points_from_phis(&self, phis : &[Phi; N]) -> Points<N> {
                 self.points_from_vecs(&self.vecs_from_phis(phis))
             }
 
@@ -106,7 +103,7 @@ pub trait Robot<const N : usize> : ConfRobot<N>
                 self.gammas_from_phis(self.phis_from_def_vec(pos))
             }
 
-            fn phis_from_def_vec(&self, pos : Vec3) -> Phis<N>;
+            fn phis_from_def_vec(&self, pos : Vec3) -> [Phi; N];
 
             fn points_from_vecs(&self, vecs : &Vectors<N>) -> Points<N> {
                 let mut points : Points<N> = [Vec3::ZERO; N];
@@ -130,94 +127,94 @@ pub trait Robot<const N : usize> : ConfRobot<N>
 
             fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3;
 
-            fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> Phis<N>;
+            fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> [Phi; N];
         //
 
         // Load
             #[inline]
-            fn inertias_from_phis(&self, phis : &Phis<N>) -> Inertias<N> {
+            fn inertias_from_phis(&self, phis : &[Phi; N]) -> [Inertia; N] {
                 self.inertias_from_vecs(&self.vecs_from_phis(phis))
             }
 
             #[inline]
-            fn forces_from_phis(&self, phis : &Phis<N>) -> Forces<N> {
+            fn forces_from_phis(&self, phis : &[Phi; N]) -> [Force; N] {
                 self.forces_from_vecs(&self.vecs_from_phis(phis))
             }
 
-            fn inertias_from_vecs(&self, vecs : &Vectors<N>) -> Inertias<N>;
+            fn inertias_from_vecs(&self, vecs : &Vectors<N>) -> [Inertia; N];
 
-            fn forces_from_vecs(&self, vecs : &Vectors<N>) -> Forces<N>;
+            fn forces_from_vecs(&self, vecs : &Vectors<N>) -> [Force; N];
         // 
 
-        fn update(&mut self, phis : Option<&Phis<N>>);
+        fn update(&mut self, phis : Option<&[Phi; N]>);
     //
 
     // Writing values
         #[inline]
-        fn apply_load_inertias(&mut self, inertias : &Inertias<N>) {
+        fn apply_load_inertias(&mut self, inertias : &[Inertia; N]) {
             self.comps_mut().apply_load_inertias(inertias);
         }
 
         #[inline]
-        fn apply_load_forces(&mut self, forces : &Forces<N>) {
+        fn apply_load_forces(&mut self, forces : &[Force; N]) {
             self.comps_mut().apply_load_forces(forces);
         }
 
         #[inline]
         fn write_gammas(&mut self, gammas : &[Gamma; N]) {
-            self.comps_mut().write_dist(gammas);
+            self.comps_mut().write_gammas(gammas);
         }
     // 
 
     // Movement
         #[inline]
-        fn drive_rel(&mut self, dist : [f32; N]) -> [f32; N] {
+        fn drive_rel(&mut self, deltas : [Delta; N]) -> [Gamma; N] {
             let vels = *self.max_vels();
-            self.comps_mut().drive_rel(dist, vels)
+            self.comps_mut().drive_rel(deltas, vels)
         }
 
         #[inline]
-        fn drive_abs(&mut self, dist : [Gamma; N]) -> [f32; N] {
+        fn drive_abs(&mut self, gammas : [Gamma; N]) -> [Gamma; N] {
             let vels = *self.max_vels();
-            self.comps_mut().drive_abs(dist, vels)
+            self.comps_mut().drive_abs(gammas, vels)
         }
 
         // Async 
         #[inline]
-        fn drive_rel_async(&mut self, dist : [f32; N]) {
+        fn drive_rel_async(&mut self, deltas : [Delta; N]) {
             let vels = *self.max_vels();
-            self.comps_mut().drive_rel_async(dist, vels);
+            self.comps_mut().drive_rel_async(deltas, vels);
         }
         
         #[inline]
-        fn drive_abs_async(&mut self, dist : [Gamma; N]) {
+        fn drive_abs_async(&mut self, gammas : [Gamma; N]) {
             let vels = *self.max_vels();
-            self.comps_mut().drive_abs_async(dist, vels);
+            self.comps_mut().drive_abs_async(gammas, vels);
         }
 
         // Single Component
             #[inline]
-            fn drive_comp_rel(&mut self, index : usize, dist : f32) -> f32 {
+            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Gamma {
                 let vels = *self.max_vels();
-                self.comps_mut()[index].drive_rel(dist, vels[index])
+                self.comps_mut()[index].drive_rel(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs(&mut self, index : usize, dist : f32) -> f32 {
+            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Gamma {
                 let vels = *self.max_vels();
-                self.comps_mut()[index].drive_abs(dist, vels[index])
+                self.comps_mut()[index].drive_abs(gamma, vels[index])
             }
 
             #[inline]
-            fn drive_comp_rel_async(&mut self, index : usize, dist : f32) {
+            fn drive_comp_rel_async(&mut self, index : usize, delta : Delta) {
                 let vels = *self.max_vels();
-                self.comps_mut()[index].drive_rel_async(dist, vels[index])
+                self.comps_mut()[index].drive_rel_async(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs_async(&mut self, index : usize, dist : f32) {
+            fn drive_comp_abs_async(&mut self, index : usize, gamma : Gamma) {
                 let vels = *self.max_vels();
-                self.comps_mut()[index].drive_abs_async(dist, vels[index])
+                self.comps_mut()[index].drive_abs_async(gamma, vels[index])
             }
         //
 

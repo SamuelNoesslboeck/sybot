@@ -4,6 +4,8 @@ use glam::Vec3;
 
 mod postion
 {
+    use stepper_lib::Phi;
+
     use super::*;
 
     #[test]
@@ -28,8 +30,8 @@ mod postion
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
         )?;
         
-        let angles = [ 0.0, PI / 2.0, -PI / 2.0, 0.0 ];
-        let points = syarm.points_from_phis(&angles);
+        let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
+        let points = syarm.points_from_phis(&phis);
 
         dbg!(points);
 
@@ -42,8 +44,8 @@ mod postion
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
         )?;
 
-        let angles = [ 0.0, PI / 2.0, -PI / 2.0, 0.0 ];
-        let gammas = syarm.gammas_from_phis(angles);
+        let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
+        let gammas = syarm.gammas_from_phis(phis);
         
         assert!(syarm.valid_gammas(&gammas).is_ok(), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.valid_gammas(&gammas));
 
@@ -56,8 +58,8 @@ mod postion
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
         )?;
 
-        let angles = [ 0.0, PI / 2.0, -PI / 2.0, 0.0 ];
-        let gammas = syarm.gammas_from_phis(angles);
+        let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
+        let gammas = syarm.gammas_from_phis(phis);
 
         syarm.measure(10).unwrap(); 
         
@@ -69,6 +71,8 @@ mod postion
 
 mod load
 {
+    use stepper_lib::Phi;
+
     use super::*;
     
     #[test]
@@ -77,13 +81,13 @@ mod load
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
         )?;
 
-        const ANGLES : Phis<4> = [0.0, PI / 2.0, -PI / 2.0, 0.0];
+        const PHIS : [Phi; 4] = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
 
-        syarm.write_gammas(&syarm.gammas_from_phis(ANGLES)); 
+        syarm.write_gammas(&syarm.gammas_from_phis(PHIS)); 
 
         syarm.update(None);
 
-        dbg!(syarm.inertias_from_phis(&ANGLES));
+        dbg!(syarm.inertias_from_phis(&PHIS));
 
         Ok(())
     }
