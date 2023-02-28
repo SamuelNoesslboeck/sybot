@@ -49,6 +49,24 @@ pub trait ConfRobot<const N : usize>
 
         fn anchor(&self) -> &Vec3;
     //
+
+    // Tools
+        /// Returns the current tool that is being used by the robot
+        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>>;
+
+        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+
+        fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
+
+        fn set_tool_id(&mut self, tool_id : usize);
+
+        // Actions 
+        fn activate_tool(&mut self);
+
+        fn activate_spindle(&mut self, cw : bool);
+
+        fn deactivate_tool(&mut self);
+    //
 }
 
 pub trait Robot<const N : usize> : ConfRobot<N>
@@ -236,11 +254,4 @@ pub trait Robot<const N : usize> : ConfRobot<N>
 
         fn set_limit(&mut self);
     // 
-
-    // Tools
-        /// Returns the current tool that is being used by the robot
-        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>>;
-
-        fn set_tool_id(&mut self, tool_id : usize);
-    //
 }

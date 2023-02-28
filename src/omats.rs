@@ -1,7 +1,7 @@
 use glam::Vec3;
 use stepper_lib::{Gamma, Phi, force_gammas_from_phis, force_phis_from_gammas, Inertia, Force};
 
-use crate::{Robot, Vectors};
+use crate::{Robot, Vectors, ConfRobot};
 
 pub type Syomat = crate::BasicRobot<3, 1, 0>;
 
@@ -64,14 +64,6 @@ impl Robot<3> for Syomat
     }
 
     fn set_limit(&mut self) {
-        todo!()
-    }
-
-    fn get_tool(&self) -> Option<&Box<dyn stepper_lib::Tool + std::marker::Send>> {
-        todo!()
-    }
-
-    fn set_tool_id(&mut self, tool_id : usize) {
         todo!()
     }
 }

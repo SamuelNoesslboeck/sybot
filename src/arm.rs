@@ -5,10 +5,9 @@ use std::vec;
 use glam::{Vec3, Mat3};
 
 use stepper_lib::{ComponentGroup, Phi, Gamma, Inertia, Force};
-use stepper_lib::comp::Tool;
 use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint};
 
-use crate::{Robot, Vectors, SafeRobot};
+use crate::{Robot, Vectors, SafeRobot, ConfRobot};
 
 // Constants
 /// Gravitational acceleration as vector
@@ -221,16 +220,6 @@ impl Robot<4> for SyArm
             for i in 0 .. 4 {
                 self.comps[i].set_limit(self.mach.limit[i].min, self.mach.limit[i].max);
             }
-        }
-    //
-
-    // Tools
-        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
-            self.mach.tools.get(self.tool_id)
-        }
-
-        fn set_tool_id(&mut self, tool_id : usize) {
-            self.tool_id = tool_id;
         }
     //
 }

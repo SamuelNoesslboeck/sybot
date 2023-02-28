@@ -5,7 +5,7 @@ use stepper_lib::gcode::*;
 
 use crate::{SafeRobot};
 
-mod funcs 
+mod gfuncs 
 {
     use super::*;
 
@@ -90,23 +90,52 @@ mod funcs
             println!("{}", robot.points_from_phis(&robot.all_phis())[3]);
             Ok(Value::Null)
         }
+
+        pub fn m3<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            // TODO: Add response
+            robot.activate_tool();
+            robot.activate_spindle(true);
+
+            Ok(Value::Null)
+        }
+
+        pub fn m4<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            robot.activate_spindle(false);
+
+            Ok(Value::Null)
+        }
+
+        pub fn m5<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            robot.deactivate_tool();
+
+            Ok(Value::Null)
+        }
     // 
+
+    // Tool
+    pub fn t<R : SafeRobot<N>, const N : usize>(robot : &mut R, index : usize) -> Result<serde_json::Value, R::Error> {
+        robot.set_tool_id(index);
+        Ok(Value::Null)
+    }
 }
 
 pub fn init_intpr<R : SafeRobot<N>, const N : usize>(rob : R) -> Interpreter<R, Result<serde_json::Value, R::Error>> {
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
-            (0, funcs::g0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
-            (4, funcs::g4::<R, N> ),
-            (8, funcs::g8::<R, N> ),
-            (28, funcs::g28::<R, N> ),
-            (29, funcs::g29::<R, N> )
+            (0, gfuncs::g0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (4, gfuncs::g4::<R, N>),
+            (8, gfuncs::g8::<R, N>),
+            (28, gfuncs::g28::<R, N>),
+            (29, gfuncs::g29::<R, N>)
         ])), 
         (Letter::Miscellaneous, NumEntries::from([
-            (0, funcs::m0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
-            (1, funcs::m1::<R, N> )
+            (0, gfuncs::m0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (1, gfuncs::m1::<R, N>),
+            (3, gfuncs::m3::<R, N>),
+            (4, gfuncs::m4::<R, N>),
+            (5, gfuncs::m5::<R, N>)
         ]))
     ]);
-
-    Interpreter::new(rob, funcs)
+    
+    Interpreter::new(rob, Some(gfuncs::t), funcs)
 }
