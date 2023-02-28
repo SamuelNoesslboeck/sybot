@@ -5,8 +5,7 @@ use crate::{Robot, Vectors};
 
 pub type Syomat = crate::BasicRobot<3, 1, 0>;
 
-#[allow(unused)]
-impl Robot<3> for Syomat 
+impl Robot<3, 0> for Syomat 
 {
     type Error = std::io::Error;
 
@@ -28,18 +27,20 @@ impl Robot<3> for Syomat
     //
 
     fn vecs_from_phis(&self, phis : &[Phi; 3]) -> Vectors<3> {
-        todo!()
+        let [ p_x, p_y, p_z ] = phis;
+        
+        [ Vec3::X * p_x.0, Vec3::Y * p_y.0, Vec3::Z * p_z.0 ]
     }
 
     fn phis_from_def_vec(&self, pos : Vec3) -> [Phi; 3] {
+        [ Phi(pos.x), Phi(pos.y), Phi(pos.z) ]
+    }
+
+    fn reduce_to_def(&self, pos : Vec3, dec_ang : [f32; 0]) -> Vec3 {
         todo!()
     }
 
-    fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3 {
-        todo!()
-    }
-
-    fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> [Phi; 3] {
+    fn phis_from_vec(&self, pos : Vec3, dec_ang : [f32; 0]) -> [Phi; 3] {
         todo!()
     }
 

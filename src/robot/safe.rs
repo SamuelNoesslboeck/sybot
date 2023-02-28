@@ -3,7 +3,7 @@ use stepper_lib::{Phi, Gamma};
 
 use crate::Robot;
 
-pub trait SafeRobot<const N : usize> : Robot<N>
+pub trait SafeRobot<const N : usize, const D : usize> : Robot<N, D>
 {
     // Correction
         fn safe_pos(&self, x : Option<f32>, y : Option<f32>, z : Option<f32>) -> Vec3 {
@@ -20,8 +20,8 @@ pub trait SafeRobot<const N : usize> : Robot<N>
             deco.unwrap_or(self.vars().dec_angle)
         }
 
-        fn safe_phis_for_vec(&self, pos : Vec3, dec_ang : f32) -> Result<[Phi; N], ([bool; N], Self::Error)> {
-            let phis = self.phis_from_vec(pos, dec_ang);
+        fn safe_phis_for_vec(&self, pos : Vec3, deco : [f32; D]) -> Result<[Phi; N], ([bool; N], Self::Error)> {
+            let phis = self.phis_from_vec(pos, deco);
             self.valid_phis(&phis)?;
             Ok(phis)
         }

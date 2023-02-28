@@ -51,7 +51,7 @@ pub trait ConfRobot<const N : usize>
     //
 }
 
-pub trait Robot<const N : usize> : ConfRobot<N>
+pub trait Robot<const N : usize, const D : usize> : ConfRobot<N>
 {
     // Types
         type Error : std::error::Error;
@@ -125,9 +125,9 @@ pub trait Robot<const N : usize> : ConfRobot<N>
                 vecs
             }
 
-            fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3;
+            fn reduce_to_def(&self, pos : Vec3, deco : [f32; D]) -> Vec3;
 
-            fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> [Phi; N];
+            fn phis_from_vec(&self, pos : Vec3, deco : [f32; D]) -> [Phi; N];
         //
 
         // Load

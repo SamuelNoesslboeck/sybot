@@ -11,7 +11,7 @@ mod funcs
 
     /// G0 X{Position} Y{Position} Z{Position} D{Angle} \
     /// Rapid positioning
-    pub fn g0<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g0<R : SafeRobot<N, D>, const N : usize, const D : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
         let angles =  match robot.safe_phis_for_vec(robot.safe_pos(
                 get_arg_letter(args, 'X'), 
                 get_arg_letter(args, 'Y'), 
@@ -30,7 +30,7 @@ mod funcs
 
     /// G4 X{Seconds} P{Milliseconds}
     /// Dwell (sleeping)
-    pub fn g4<R : SafeRobot<N>, const N : usize>(_ : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g4<R : SafeRobot<N, D>, const N : usize, const D : usize>(_ : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
         let seconds = 
             get_arg_letter(args, 'X').unwrap_or(0.0)            // Seconds
             + get_arg_letter(args, 'P').unwrap_or(0.0)/1000.0;  // Milliseconds
@@ -40,13 +40,13 @@ mod funcs
 
     /// G8 X{Position} Y{Position} Z{Position} D{Angle} \
     /// Rapid positioning async
-    pub fn g8<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g8<R : SafeRobot<N, D>, const N : usize, const D : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
         let angles =  match robot.safe_phis_for_vec(robot.safe_pos(
                 get_arg_letter(args, 'X'), 
                 get_arg_letter(args, 'Y'), 
                 get_arg_letter(args, 'Z')
             ),
-            robot.safe_deco(get_arg_letter(args, 'D'))  
+            [ 0.0; D ]
         ) {
             Ok(ang) => ang,
             Err((_, err)) => return Err(err)
@@ -59,7 +59,7 @@ mod funcs
 
         /// G28 \
     /// Return to home position
-    pub fn g28<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g28<R : SafeRobot<N, D>, const N : usize, const D : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
         // arm.measure(2);
         match robot.measure(2) {
             Ok(_) => { },
@@ -70,7 +70,7 @@ mod funcs
 
     /// G29 \
     /// Return to home position async
-    pub fn g29<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g29<R : SafeRobot<N, D>, const N : usize, const D : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
         // arm.measure(2);
         robot.measure_async(2);
         robot.await_inactive();
@@ -81,19 +81,19 @@ mod funcs
     }
 
     // Misc Functions
-        pub fn m0<R : SafeRobot<N>, const N : usize>(_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+        pub fn m0<R : SafeRobot<N, D>, const N : usize, const D : usize>(_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
             // arm.debug_pins();
             Ok(Value::Null)
         }
 
-        pub fn m1<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+        pub fn m1<R : SafeRobot<N, D>, const N : usize, const D : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
             println!("{}", robot.points_from_phis(&robot.all_phis())[3]);
             Ok(Value::Null)
         }
     // 
 }
 
-pub fn init_intpr<R : SafeRobot<N>, const N : usize>(rob : R) -> Interpreter<R, Result<serde_json::Value, R::Error>> {
+pub fn init_intpr<R : SafeRobot<N, D>, const N : usize, const D : usize>(rob : R) -> Interpreter<R, Result<serde_json::Value, R::Error>> {
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
             (0, funcs::g0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),

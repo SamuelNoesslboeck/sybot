@@ -12,7 +12,7 @@ pub mod conf;
 pub mod websocket;
 // 
 
-pub struct AppData<R : Robot<N>, const N : usize> {
+pub struct AppData<R : Robot<N, D>, const N : usize, const D : usize> {
     pub intpr : Interpreter<R, Result<serde_json::Value, R::Error>>
 }
 
@@ -21,27 +21,27 @@ pub struct AppData<R : Robot<N>, const N : usize> {
     {
         use super::*;
 
-        pub async fn conf<R : Robot<N>, const N : usize>(data_mutex : web::Data<Mutex<AppData<R, N>>>) -> impl Responder {
+        pub async fn conf<R : Robot<N, D>, const N : usize, const D : usize>(data_mutex : web::Data<Mutex<AppData<R, N, D>>>) -> impl Responder {
             let data = data_mutex.lock().unwrap();
             HttpResponse::Ok().content_type("application/json").body(serde_json::to_string_pretty(data.intpr.mach.json_conf()).unwrap())
         }   
 
-        pub async fn pos<R : Robot<N>, const N : usize>(_ : web::Data<Mutex<AppData<R, N>>>) -> impl Responder {
+        pub async fn pos<R : Robot<N, D>, const N : usize, const D : usize>(_ : web::Data<Mutex<AppData<R, N, D>>>) -> impl Responder {
             // let data = data_mutex.lock().unwrap();
             let point = glam::Vec3::ZERO;
             HttpResponse::Ok().content_type("application/json").body(serde_json::to_string_pretty(&point.to_array()).unwrap())
         }   
     }
 
-    async fn intpr<R : Robot<N, Error = std::io::Error> + 'static, const N : usize>
-        (data_mutex : web::Data<Mutex<AppData<R, N>>>, req: HttpRequest, stream: web::Payload) -> impl Responder {
+    async fn intpr<R : Robot<N, D, Error = std::io::Error> + 'static, const N : usize, const D : usize>
+        (data_mutex : web::Data<Mutex<AppData<R, N, D>>>, req: HttpRequest, stream: web::Payload) -> impl Responder {
         ws::start(websocket::WSHandler {
             data: data_mutex.into_inner().clone()
         }, &req, stream)
     }
 //
 
-pub fn create_robot_webserver<R : SafeRobot<N, Error = std::io::Error> + 'static, T, const N : usize>(conf : JsonConfig, app : App<T>) -> App<T>
+pub fn create_robot_webserver<R : SafeRobot<N, D, Error = std::io::Error> + 'static, T, const N : usize, const D : usize>(conf : JsonConfig, app : App<T>) -> App<T>
     where
         T : ServiceFactory<ServiceRequest, Config = (), Error = actix_web::Error, InitError = ()> 
     {
