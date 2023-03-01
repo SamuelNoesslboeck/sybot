@@ -14,7 +14,7 @@ use crate::{Robot, Vectors, SafeRobot, ConfRobot};
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 /// Calculation and control struct for the SyArm robot
-pub type SyArm = crate::BasicRobot<4, 4, 4>;
+pub type SyArm = crate::BasicRobot<4, 1, 4, 4>;
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
 fn top_down_angle(point : Vec3) -> f32 {
@@ -40,7 +40,7 @@ pub struct CylVectors(
 );
 
 
-impl Robot<4, 1> for SyArm 
+impl Robot<4, 1, 4, 4> for SyArm 
 {   
     // Types
         type Error = std::io::Error;
@@ -215,12 +215,6 @@ impl Robot<4, 1> for SyArm
             }
             [true; 4]
         }
-
-        fn set_limit(&mut self) {
-            for i in 0 .. 4 {
-                self.comps[i].set_limit(self.mach.limit[i].min, self.mach.limit[i].max);
-            }
-        }
     //
 }
 
@@ -315,7 +309,7 @@ impl SyArm
         }
 }
 
-impl SafeRobot<4, 1> for SyArm {
+impl SafeRobot<4, 1, 4, 4> for SyArm {
     fn valid_gammas(&self, gammas : &[Gamma; 4]) -> Result<(), ([bool; 4], Self::Error)> {
         let valids = self.comps.valid_gammas_verb(gammas);
 

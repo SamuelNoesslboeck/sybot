@@ -31,12 +31,12 @@ pub use stepper_lib::{JsonConfig, MachineConfig};
 pub use stepper_lib::gcode::Interpreter;
 
 // Basic robot
-pub struct BasicRobot<const N : usize, const D : usize, const A : usize>
+pub struct BasicRobot<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>
 {
     pub conf : Option<JsonConfig>,
-    pub mach : MachineConfig<N, D, A>,
+    pub mach : MachineConfig<N, DIM, ROT>,
 
-    pub vars : RobotVars,
+    pub vars : RobotVars<DECO>,
 
     // Controls
     pub comps : [Box<dyn Component>; N],
@@ -44,7 +44,7 @@ pub struct BasicRobot<const N : usize, const D : usize, const A : usize>
     tool_id : usize
 }
 
-impl<const N : usize, const D : usize, const A : usize> ConfRobot<N> for BasicRobot<N, D, A>
+impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<N, DECO, DIM, ROT> for BasicRobot<N, DECO, DIM, ROT>
 {
     // Conf
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
@@ -79,8 +79,12 @@ impl<const N : usize, const D : usize, const A : usize> ConfRobot<N> for BasicRo
         }
 
         #[inline]
-        fn vars(&self) -> &RobotVars {
+        fn vars(&self) -> &RobotVars<DECO> {
             &self.vars
+        }
+
+        fn mach(&self) -> &MachineConfig<N, DIM, ROT> {
+            &self.mach
         }
 
         #[inline]

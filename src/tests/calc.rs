@@ -16,7 +16,7 @@ mod postion
 
         let pos = Vec3::new(0.0, 350.0, 400.0);
         
-        let angles = syarm.phis_from_vec(pos, 0.0);
+        let angles = syarm.phis_from_vec(pos, [ 0.0 ]);
         let points = syarm.points_from_phis(&angles);
 
         assert!((pos - points[3]).length() > f32::EPSILON);

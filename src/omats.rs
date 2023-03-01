@@ -3,9 +3,9 @@ use stepper_lib::{Gamma, Phi, force_gammas_from_phis, force_phis_from_gammas, In
 
 use crate::{Robot, Vectors, ConfRobot};
 
-pub type Syomat = crate::BasicRobot<3, 1, 0>;
+pub type Syomat = crate::BasicRobot<3, 0, 1, 0>;
 
-impl Robot<3, 0> for Syomat 
+impl Robot<3, 0, 1, 0> for Syomat 
 {
     type Error = std::io::Error;
 
@@ -36,12 +36,14 @@ impl Robot<3, 0> for Syomat
         [ Phi(pos.x), Phi(pos.y), Phi(pos.z) ]
     }
 
-    fn reduce_to_def(&self, pos : Vec3, dec_ang : [f32; 0]) -> Vec3 {
-        todo!()
+    #[inline]
+    fn reduce_to_def(&self, pos : Vec3, _ : [f32; 0]) -> Vec3 {
+        pos
     }
 
-    fn phis_from_vec(&self, pos : Vec3, dec_ang : [f32; 0]) -> [Phi; 3] {
-        todo!()
+    #[inline]
+    fn phis_from_vec(&self, pos : Vec3, deco : [f32; 0]) -> [Phi; 3] {
+        self.phis_from_def_vec(self.reduce_to_def(pos, deco))
     }
 
     fn inertias_from_vecs(&self, vecs : &Vectors<3>) -> [Inertia; 3] {
@@ -61,10 +63,6 @@ impl Robot<3, 0> for Syomat
     }
 
     fn measure_async(&mut self, acc : u64) {
-        todo!()
-    }
-
-    fn set_limit(&mut self) {
         todo!()
     }
 }
