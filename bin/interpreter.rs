@@ -10,7 +10,7 @@ fn main() -> std::io::Result<()> {
 
     // DEBUG
         // Select pencil
-        syarm.set_tool_id(1);
+        syarm.set_tool_id(4);
     // 
 
     let mut intpr = init_intpr(syarm);
