@@ -110,6 +110,15 @@ mod gfuncs
 
             Ok(Value::Null)
         }
+
+        // Debug functions
+        pub fn m1006<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            Ok(serde_json::to_value(
+                robot.get_tools().iter().map(
+                    |t| t.get_json()
+                ).collect::<Vec<serde_json::Value>>()
+            ).unwrap())
+        }
     // 
 
     // Tool
@@ -126,14 +135,15 @@ pub fn init_intpr<R : SafeRobot<N>, const N : usize>(rob : R) -> Interpreter<R, 
             (4, gfuncs::g4::<R, N>),
             (8, gfuncs::g8::<R, N>),
             (28, gfuncs::g28::<R, N>),
-            (29, gfuncs::g29::<R, N>)
+            (29, gfuncs::g29::<R, N>),
         ])), 
         (Letter::Miscellaneous, NumEntries::from([
             (0, gfuncs::m0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
             (1, gfuncs::m1::<R, N>),
             (3, gfuncs::m3::<R, N>),
             (4, gfuncs::m4::<R, N>),
-            (5, gfuncs::m5::<R, N>)
+            (5, gfuncs::m5::<R, N>),
+            (1006, gfuncs::m1006::<R, N>),
         ]))
     ]);
     
