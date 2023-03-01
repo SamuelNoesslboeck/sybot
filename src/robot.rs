@@ -7,8 +7,8 @@ mod safe;
 pub use safe::*;
 //
 
-pub type Points<const N : usize> = [Vec3; N];
-pub type Vectors<const N : usize> = [Vec3; N]; 
+pub type Points<const COMP : usize> = [Vec3; COMP];
+pub type Vectors<const COMP : usize> = [Vec3; COMP]; 
 
 
 #[derive(Clone, Debug)]
@@ -30,7 +30,7 @@ impl<const DECO : usize> Default for RobotVars<DECO> {
     }
 }
 
-pub trait ConfRobot<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
+pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
     // Configuration
         /// Creates a new instance of the robot from a Json-Configuration file if it's format is appropriate
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error>
@@ -42,21 +42,21 @@ pub trait ConfRobot<const N : usize, const DECO : usize, const DIM : usize, cons
     // 
 
     // Stats and Data
-        fn comps(&self) -> &dyn ComponentGroup<N>;
+        fn comps(&self) -> &dyn ComponentGroup<COMP>;
         
-        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<N>;
+        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<COMP>;
 
         fn vars(&self) -> &RobotVars<DECO>;
 
-        fn mach(&self) -> &MachineConfig<N, DIM, ROT>;
+        fn mach(&self) -> &MachineConfig<COMP, DIM, ROT>;
 
-        fn max_vels(&self) -> &[Omega; N];
+        fn max_vels(&self) -> &[Omega; COMP];
         
-        fn meas_dists(&self) -> &[Delta; N];
+        fn meas_dists(&self) -> &[Delta; COMP];
     //
 
     // Positions
-        fn home_pos(&self) -> &[Gamma; N];
+        fn home_pos(&self) -> &[Gamma; COMP];
 
         fn anchor(&self) -> &Vec3;
     //
@@ -80,7 +80,7 @@ pub trait ConfRobot<const N : usize, const DECO : usize, const DIM : usize, cons
     //
 }
 
-pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> : ConfRobot<N, DECO, DIM, ROT>
+pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> : ConfRobot<COMP, DECO, DIM, ROT>
 {
     // Types
         type Error : std::error::Error;
@@ -89,19 +89,19 @@ pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const RO
     // Position
         /// Returns all the angles used by the controls to represent the components extension/drive distance
         #[inline]
-        fn all_gammas(&self) -> [Gamma; N] {
+        fn all_gammas(&self) -> [Gamma; COMP] {
             self.comps().get_gammas()
         }
 
         /// Converts all angles (by subtracting an offset in most of the cases)
-        fn gammas_from_phis(&self, phis : [Phi; N]) -> [Gamma; N];
+        fn gammas_from_phis(&self, phis : [Phi; COMP]) -> [Gamma; COMP];
 
         #[inline]
-        fn all_phis(&self) -> [Phi; N] {
+        fn all_phis(&self) -> [Phi; COMP] {
             self.phis_from_gammas(self.all_gammas())
         }
 
-        fn phis_from_gammas(&self, gammas : [Gamma; N]) -> [Phi; N];
+        fn phis_from_gammas(&self, gammas : [Gamma; COMP]) -> [Phi; COMP];
 
         // Other
             fn deco_axis(&self) -> Vec3;
@@ -111,32 +111,32 @@ pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const RO
     // Calculation
         // Position
             #[inline]
-            fn vecs_from_gammas(&self, gammas : &[Gamma; N]) -> Vectors<N> {
+            fn vecs_from_gammas(&self, gammas : &[Gamma; COMP]) -> Vectors<COMP> {
                 self.vecs_from_phis(&self.phis_from_gammas(*gammas))
             }
 
             #[inline]
-            fn points_from_gammas(&self, gammas : &[Gamma; N]) -> Points<N> {
+            fn points_from_gammas(&self, gammas : &[Gamma; COMP]) -> Points<COMP> {
                 self.points_from_vecs(&self.vecs_from_gammas(gammas))
             }
             
-            fn vecs_from_phis(&self, phis : &[Phi; N]) -> Vectors<N>;
+            fn vecs_from_phis(&self, phis : &[Phi; COMP]) -> Vectors<COMP>;
 
             #[inline]
-            fn points_from_phis(&self, phis : &[Phi; N]) -> Points<N> {
+            fn points_from_phis(&self, phis : &[Phi; COMP]) -> Points<COMP> {
                 self.points_from_vecs(&self.vecs_from_phis(phis))
             }
 
             #[inline]
-            fn gammas_from_def_vec(&self, pos : Vec3) -> [Gamma; N] {
+            fn gammas_from_def_vec(&self, pos : Vec3) -> [Gamma; COMP] {
                 self.gammas_from_phis(self.phis_from_def_vec(pos))
             }
 
-            fn phis_from_def_vec(&self, pos : Vec3) -> [Phi; N];
+            fn phis_from_def_vec(&self, pos : Vec3) -> [Phi; COMP];
 
-            fn points_from_vecs(&self, vecs : &Vectors<N>) -> Points<N> {
-                let mut points : Points<N> = [Vec3::ZERO; N];
-                for i in 0 .. N {
+            fn points_from_vecs(&self, vecs : &Vectors<COMP>) -> Points<COMP> {
+                let mut points : Points<COMP> = [Vec3::ZERO; COMP];
+                for i in 0 .. COMP {
                     points[i] += *self.anchor();
                     for n in 0 .. (i + 1) {
                         points[i] += vecs[n];
@@ -145,10 +145,10 @@ pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const RO
                 points
             }
 
-            fn vecs_from_points(&self, points : &Vectors<N>) -> Vectors<N> {
-                let mut vecs : Points<N> = [Vec3::ZERO; N];
+            fn vecs_from_points(&self, points : &Vectors<COMP>) -> Vectors<COMP> {
+                let mut vecs : Points<COMP> = [Vec3::ZERO; COMP];
                 vecs[0] = points[0] - *self.anchor();
-                for i in 1 .. N {
+                for i in 1 .. COMP {
                     vecs[i] = points[i] - points[i - 1];
                 }
                 vecs
@@ -156,67 +156,67 @@ pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const RO
 
             fn reduce_to_def(&self, pos : Vec3, deco : [f32; DECO]) -> Vec3;
 
-            fn phis_from_vec(&self, pos : Vec3, deco : [f32; DECO]) -> [Phi; N];
+            fn phis_from_vec(&self, pos : Vec3, deco : [f32; DECO]) -> [Phi; COMP];
         //
 
         // Load
             #[inline]
-            fn inertias_from_phis(&self, phis : &[Phi; N]) -> [Inertia; N] {
+            fn inertias_from_phis(&self, phis : &[Phi; COMP]) -> [Inertia; COMP] {
                 self.inertias_from_vecs(&self.vecs_from_phis(phis))
             }
 
             #[inline]
-            fn forces_from_phis(&self, phis : &[Phi; N]) -> [Force; N] {
+            fn forces_from_phis(&self, phis : &[Phi; COMP]) -> [Force; COMP] {
                 self.forces_from_vecs(&self.vecs_from_phis(phis))
             }
 
-            fn inertias_from_vecs(&self, vecs : &Vectors<N>) -> [Inertia; N];
+            fn inertias_from_vecs(&self, vecs : &Vectors<COMP>) -> [Inertia; COMP];
 
-            fn forces_from_vecs(&self, vecs : &Vectors<N>) -> [Force; N];
+            fn forces_from_vecs(&self, vecs : &Vectors<COMP>) -> [Force; COMP];
         // 
 
-        fn update(&mut self, phis : Option<&[Phi; N]>);
+        fn update(&mut self, phis : Option<&[Phi; COMP]>);
     //
 
     // Writing values
         #[inline]
-        fn apply_load_inertias(&mut self, inertias : &[Inertia; N]) {
+        fn apply_load_inertias(&mut self, inertias : &[Inertia; COMP]) {
             self.comps_mut().apply_load_inertias(inertias);
         }
 
         #[inline]
-        fn apply_load_forces(&mut self, forces : &[Force; N]) {
+        fn apply_load_forces(&mut self, forces : &[Force; COMP]) {
             self.comps_mut().apply_load_forces(forces);
         }
 
         #[inline]
-        fn write_gammas(&mut self, gammas : &[Gamma; N]) {
+        fn write_gammas(&mut self, gammas : &[Gamma; COMP]) {
             self.comps_mut().write_gammas(gammas);
         }
     // 
 
     // Movement
         #[inline]
-        fn drive_rel(&mut self, deltas : [Delta; N]) -> [Gamma; N] {
+        fn drive_rel(&mut self, deltas : [Delta; COMP]) -> [Gamma; COMP] {
             let vels = *self.max_vels();
             self.comps_mut().drive_rel(deltas, vels)
         }
 
         #[inline]
-        fn drive_abs(&mut self, gammas : [Gamma; N]) -> [Gamma; N] {
+        fn drive_abs(&mut self, gammas : [Gamma; COMP]) -> [Gamma; COMP] {
             let vels = *self.max_vels();
             self.comps_mut().drive_abs(gammas, vels)
         }
 
         // Async 
         #[inline]
-        fn drive_rel_async(&mut self, deltas : [Delta; N]) {
+        fn drive_rel_async(&mut self, deltas : [Delta; COMP]) {
             let vels = *self.max_vels();
             self.comps_mut().drive_rel_async(deltas, vels);
         }
         
         #[inline]
-        fn drive_abs_async(&mut self, gammas : [Gamma; N]) {
+        fn drive_abs_async(&mut self, gammas : [Gamma; COMP]) {
             let vels = *self.max_vels();
             self.comps_mut().drive_abs_async(gammas, vels);
         }
@@ -248,7 +248,7 @@ pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const RO
         //
 
         // Measure
-            fn measure(&mut self, acc : u64) -> Result<(), [bool; N]>;
+            fn measure(&mut self, acc : u64) -> Result<(), [bool; COMP]>;
 
             fn measure_async(&mut self, acc : u64);
         // 
@@ -259,7 +259,7 @@ pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const RO
         }
 
         #[inline]
-        fn set_endpoint(&mut self, gammas : &[Gamma; N]) -> [bool; N] {
+        fn set_endpoint(&mut self, gammas : &[Gamma; COMP]) -> [bool; COMP] {
             self.comps_mut().set_endpoint(gammas)
         }
 
