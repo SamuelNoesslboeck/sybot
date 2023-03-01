@@ -5,19 +5,19 @@ use stepper_lib::gcode::*;
 
 use crate::{SafeRobot};
 
-mod funcs 
+mod gfuncs 
 {
     use super::*;
 
-    /// G0 X{Position} Y{Position} Z{Position} D{Angle} \
+    /// G0 X{Position} Y{Position} Z{Position} DECO{Angle} \
     /// Rapid positioning
-    pub fn g0<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g0<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
         let angles =  match robot.safe_phis_for_vec(robot.safe_pos(
                 get_arg_letter(args, 'X'), 
                 get_arg_letter(args, 'Y'), 
                 get_arg_letter(args, 'Z')
             ),
-            robot.safe_deco(get_arg_letter(args, 'D'))
+            [ 0.0; DECO ]   // TODO: Enable 
         ) {
             Ok(ang) => ang,
             Err((_, err)) => return Err(err)
@@ -30,7 +30,7 @@ mod funcs
 
     /// G4 X{Seconds} P{Milliseconds}
     /// Dwell (sleeping)
-    pub fn g4<R : SafeRobot<N>, const N : usize>(_ : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g4<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(_ : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
         let seconds = 
             get_arg_letter(args, 'X').unwrap_or(0.0)            // Seconds
             + get_arg_letter(args, 'P').unwrap_or(0.0)/1000.0;  // Milliseconds
@@ -38,15 +38,15 @@ mod funcs
         Ok(serde_json::json!(seconds))
     }
 
-    /// G8 X{Position} Y{Position} Z{Position} D{Angle} \
+    /// G8 X{Position} Y{Position} Z{Position} DECO{Angle} \
     /// Rapid positioning async
-    pub fn g8<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g8<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> {
         let angles =  match robot.safe_phis_for_vec(robot.safe_pos(
                 get_arg_letter(args, 'X'), 
                 get_arg_letter(args, 'Y'), 
                 get_arg_letter(args, 'Z')
             ),
-            robot.safe_deco(get_arg_letter(args, 'D'))  
+            [ 0.0; DECO ]
         ) {
             Ok(ang) => ang,
             Err((_, err)) => return Err(err)
@@ -59,7 +59,7 @@ mod funcs
 
         /// G28 \
     /// Return to home position
-    pub fn g28<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g28<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
         // arm.measure(2);
         match robot.measure(2) {
             Ok(_) => { },
@@ -70,7 +70,7 @@ mod funcs
 
     /// G29 \
     /// Return to home position async
-    pub fn g29<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+    pub fn g29<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
         // arm.measure(2);
         robot.measure_async(2);
         robot.await_inactive();
@@ -81,32 +81,71 @@ mod funcs
     }
 
     // Misc Functions
-        pub fn m0<R : SafeRobot<N>, const N : usize>(_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+        pub fn m0<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
             // arm.debug_pins();
             Ok(Value::Null)
         }
 
-        pub fn m1<R : SafeRobot<N>, const N : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+        pub fn m1<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
             println!("{}", robot.points_from_phis(&robot.all_phis())[3]);
             Ok(Value::Null)
         }
+
+        pub fn m3<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            // TODO: Add response
+            robot.activate_tool();
+            robot.activate_spindle(true);
+
+            Ok(Value::Null)
+        }
+
+        pub fn m4<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            robot.activate_spindle(false);
+
+            Ok(Value::Null)
+        }
+
+        pub fn m5<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            robot.deactivate_tool();
+
+            Ok(Value::Null)
+        }
+
+        // Debug functions
+        pub fn m1006<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> {
+            Ok(serde_json::to_value(
+                robot.get_tools().iter().map(
+                    |t| t.get_json()
+                ).collect::<Vec<serde_json::Value>>()
+            ).unwrap())
+        }
     // 
+
+    // Tool
+    pub fn t<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(robot : &mut R, index : usize) -> Result<serde_json::Value, R::Error> {
+        robot.set_tool_id(index);
+        Ok(Value::Null)
+    }
 }
 
-pub fn init_intpr<R : SafeRobot<N>, const N : usize>(rob : R) -> Interpreter<R, Result<serde_json::Value, R::Error>> {
+pub fn init_intpr<R : SafeRobot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>(rob : R) -> Interpreter<R, Result<serde_json::Value, R::Error>> {
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
-            (0, funcs::g0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
-            (4, funcs::g4::<R, N> ),
-            (8, funcs::g8::<R, N> ),
-            (28, funcs::g28::<R, N> ),
-            (29, funcs::g29::<R, N> )
+            (0, gfuncs::g0::<R, N, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (4, gfuncs::g4::<R, N, DECO, DIM, ROT>),
+            (8, gfuncs::g8::<R, N, DECO, DIM, ROT>),
+            (28, gfuncs::g28::<R, N, DECO, DIM, ROT>),
+            (29, gfuncs::g29::<R, N, DECO, DIM, ROT>),
         ])), 
         (Letter::Miscellaneous, NumEntries::from([
-            (0, funcs::m0::<R, N> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
-            (1, funcs::m1::<R, N> )
+            (0, gfuncs::m0::<R, N, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (1, gfuncs::m1::<R, N, DECO, DIM, ROT>),
+            (3, gfuncs::m3::<R, N, DECO, DIM, ROT>),
+            (4, gfuncs::m4::<R, N, DECO, DIM, ROT>),
+            (5, gfuncs::m5::<R, N, DECO, DIM, ROT>),
+            (1006, gfuncs::m1006::<R, N, DECO, DIM, ROT>),
         ]))
     ]);
-
-    Interpreter::new(rob, funcs)
+    
+    Interpreter::new(rob, Some(gfuncs::t), funcs)
 }

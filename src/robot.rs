@@ -1,6 +1,6 @@
 use glam::Vec3; 
 
-use stepper_lib::{Tool, JsonConfig, ComponentGroup, Omega, Gamma, Inertia, Force, Phi, Delta};
+use stepper_lib::{Tool, JsonConfig, ComponentGroup, Omega, Gamma, Inertia, Force, Phi, Delta, MachineConfig};
 
 // Submodules
 mod safe;
@@ -11,17 +11,26 @@ pub type Points<const N : usize> = [Vec3; N];
 pub type Vectors<const N : usize> = [Vec3; N]; 
 
 
-#[derive(Clone, Debug, Default)]
-pub struct RobotVars
-{
+#[derive(Clone, Debug)]
+pub struct RobotVars<const DECO : usize> {
     pub load : f32,
 
-    pub dec_angle : f32,
+    pub decos : [f32; DECO],
     pub point : Vec3
 }
 
-pub trait ConfRobot<const N : usize>
-{
+impl<const DECO : usize> Default for RobotVars<DECO> {
+    fn default() -> Self {
+        Self {
+            load: Default::default(),
+
+            decos: [Default::default(); DECO],
+            point: Default::default()
+        }
+    }
+}
+
+pub trait ConfRobot<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
     // Configuration
         /// Creates a new instance of the robot from a Json-Configuration file if it's format is appropriate
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error>
@@ -37,7 +46,9 @@ pub trait ConfRobot<const N : usize>
         
         fn comps_mut(&mut self) -> &mut dyn ComponentGroup<N>;
 
-        fn vars(&self) -> &RobotVars;
+        fn vars(&self) -> &RobotVars<DECO>;
+
+        fn mach(&self) -> &MachineConfig<N, DIM, ROT>;
 
         fn max_vels(&self) -> &[Omega; N];
         
@@ -49,9 +60,27 @@ pub trait ConfRobot<const N : usize>
 
         fn anchor(&self) -> &Vec3;
     //
+
+    // Tools
+        /// Returns the current tool that is being used by the robot
+        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>>;
+
+        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+
+        fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
+
+        fn set_tool_id(&mut self, tool_id : usize);
+
+        // Actions 
+        fn activate_tool(&mut self);
+
+        fn activate_spindle(&mut self, cw : bool);
+
+        fn deactivate_tool(&mut self);
+    //
 }
 
-pub trait Robot<const N : usize> : ConfRobot<N>
+pub trait Robot<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> : ConfRobot<N, DECO, DIM, ROT>
 {
     // Types
         type Error : std::error::Error;
@@ -125,9 +154,9 @@ pub trait Robot<const N : usize> : ConfRobot<N>
                 vecs
             }
 
-            fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3;
+            fn reduce_to_def(&self, pos : Vec3, deco : [f32; DECO]) -> Vec3;
 
-            fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> [Phi; N];
+            fn phis_from_vec(&self, pos : Vec3, deco : [f32; DECO]) -> [Phi; N];
         //
 
         // Load
@@ -234,13 +263,13 @@ pub trait Robot<const N : usize> : ConfRobot<N>
             self.comps_mut().set_endpoint(gammas)
         }
 
-        fn set_limit(&mut self);
+        fn set_limit(&mut self) {
+            for i in 0 .. 4 {
+                let min = self.mach().limit[i].min;
+                let max = self.mach().limit[i].max;
+
+                self.comps_mut()[i].set_limit(min, max);
+            }
+        }
     // 
-
-    // Tools
-        /// Returns the current tool that is being used by the robot
-        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>>;
-
-        fn set_tool_id(&mut self, tool_id : usize);
-    //
 }

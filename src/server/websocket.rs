@@ -10,15 +10,17 @@ use crate::Robot;
 
 use super::AppData;
 
-pub struct WSHandler<R : Robot<N>, const N : usize> {
-    pub data : Arc<Mutex<AppData<R, N>>>
+pub struct WSHandler<R : Robot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
+    pub data : Arc<Mutex<AppData<R, N, DECO, DIM, ROT>>>
 }
 
-impl<R : Robot<N> + 'static, const N : usize> Actor for WSHandler<R, N> {
+impl<R : Robot<N, DECO, DIM, ROT> + 'static, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> Actor for WSHandler<R, N, DECO, DIM, ROT> {
     type Context = ws::WebsocketContext<Self>;
 }
 
-impl<R : Robot<N, Error = std::io::Error> + 'static, const N : usize> StreamHandler<Result<ws::Message, ws::ProtocolError>> for WSHandler<R, N> {
+impl<R : Robot<N, DECO, DIM, ROT, Error = std::io::Error> + 'static, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
+    StreamHandler<Result<ws::Message, ws::ProtocolError>> for WSHandler<R, N, DECO, DIM, ROT> 
+{
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Text(text)) => { 

@@ -1,12 +1,11 @@
 use glam::Vec3;
 use stepper_lib::{Gamma, Phi, force_gammas_from_phis, force_phis_from_gammas, Inertia, Force};
 
-use crate::{Robot, Vectors};
+use crate::{Robot, Vectors, ConfRobot};
 
-pub type Syomat = crate::BasicRobot<3, 1, 0>;
+pub type Syomat = crate::BasicRobot<3, 0, 1, 0>;
 
-#[allow(unused)]
-impl Robot<3> for Syomat 
+impl Robot<3, 0, 1, 0> for Syomat 
 {
     type Error = std::io::Error;
 
@@ -28,19 +27,23 @@ impl Robot<3> for Syomat
     //
 
     fn vecs_from_phis(&self, phis : &[Phi; 3]) -> Vectors<3> {
-        todo!()
+        let [ p_x, p_y, p_z ] = phis;
+        
+        [ Vec3::X * p_x.0, Vec3::Y * p_y.0, Vec3::Z * p_z.0 ]
     }
 
     fn phis_from_def_vec(&self, pos : Vec3) -> [Phi; 3] {
-        todo!()
+        [ Phi(pos.x), Phi(pos.y), Phi(pos.z) ]
     }
 
-    fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3 {
-        todo!()
+    #[inline]
+    fn reduce_to_def(&self, pos : Vec3, _ : [f32; 0]) -> Vec3 {
+        pos
     }
 
-    fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> [Phi; 3] {
-        todo!()
+    #[inline]
+    fn phis_from_vec(&self, pos : Vec3, deco : [f32; 0]) -> [Phi; 3] {
+        self.phis_from_def_vec(self.reduce_to_def(pos, deco))
     }
 
     fn inertias_from_vecs(&self, vecs : &Vectors<3>) -> [Inertia; 3] {
@@ -60,18 +63,6 @@ impl Robot<3> for Syomat
     }
 
     fn measure_async(&mut self, acc : u64) {
-        todo!()
-    }
-
-    fn set_limit(&mut self) {
-        todo!()
-    }
-
-    fn get_tool(&self) -> Option<&Box<dyn stepper_lib::Tool + std::marker::Send>> {
-        todo!()
-    }
-
-    fn set_tool_id(&mut self, tool_id : usize) {
         todo!()
     }
 }

@@ -5,17 +5,16 @@ use std::vec;
 use glam::{Vec3, Mat3};
 
 use stepper_lib::{ComponentGroup, Phi, Gamma, Inertia, Force};
-use stepper_lib::comp::Tool;
 use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint};
 
-use crate::{Robot, Vectors, SafeRobot};
+use crate::{Robot, Vectors, SafeRobot, ConfRobot};
 
 // Constants
 /// Gravitational acceleration as vector
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 /// Calculation and control struct for the SyArm robot
-pub type SyArm = crate::BasicRobot<4, 4, 4>;
+pub type SyArm = crate::BasicRobot<4, 1, 4, 4>;
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
 fn top_down_angle(point : Vec3) -> f32 {
@@ -41,7 +40,7 @@ pub struct CylVectors(
 );
 
 
-impl Robot<4> for SyArm 
+impl Robot<4, 1, 4, 4> for SyArm 
 {   
     // Types
         type Error = std::io::Error;
@@ -108,23 +107,23 @@ impl Robot<4> for SyArm
                 [ Phi(phi_b), Phi(phi_1), Phi(phi_2), Phi::ZERO ]    
             }
 
-            fn reduce_to_def(&self, pos : Vec3, dec_ang : f32) -> Vec3 {
+            fn reduce_to_def(&self, pos : Vec3, dec_ang : [f32; 1]) -> Vec3 {
                 // Rotate onto Y-Z plane
                 let phi_b = top_down_angle(pos) - PI/2.0;
                 let rot_point = Mat3::from_rotation_z(-phi_b) * pos;
 
                 // Calculate the decoration vector
                 let dec = self.deco_axis();
-                let dec_rot = Mat3::from_rotation_x(dec_ang) * dec;
+                let dec_rot = Mat3::from_rotation_x(dec_ang[0]) * dec;
 
                 // Triganlge point
                 rot_point - dec_rot - self.mach.anchor - self.mach.dims[0]
             }
 
-            fn phis_from_vec(&self, pos : Vec3, dec_ang : f32) -> [Phi; 4] {
+            fn phis_from_vec(&self, pos : Vec3, dec_ang : [f32; 1]) -> [Phi; 4] {
                 let pos_def = self.reduce_to_def(pos, dec_ang);
                 let mut phis = self.phis_from_def_vec(pos_def);
-                phis[3] = Phi(dec_ang - (phis[1].0 + phis[2].0));
+                phis[3] = Phi(dec_ang[0] - (phis[1].0 + phis[2].0));
                 phis
             }
         //
@@ -215,22 +214,6 @@ impl Robot<4> for SyArm
                 self.comps[i].set_endpoint(gammas[i]);
             }
             [true; 4]
-        }
-
-        fn set_limit(&mut self) {
-            for i in 0 .. 4 {
-                self.comps[i].set_limit(self.mach.limit[i].min, self.mach.limit[i].max);
-            }
-        }
-    //
-
-    // Tools
-        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
-            self.mach.tools.get(self.tool_id)
-        }
-
-        fn set_tool_id(&mut self, tool_id : usize) {
-            self.tool_id = tool_id;
         }
     //
 }
@@ -326,7 +309,7 @@ impl SyArm
         }
 }
 
-impl SafeRobot<4> for SyArm {
+impl SafeRobot<4, 1, 4, 4> for SyArm {
     fn valid_gammas(&self, gammas : &[Gamma; 4]) -> Result<(), ([bool; 4], Self::Error)> {
         let valids = self.comps.valid_gammas_verb(gammas);
 
