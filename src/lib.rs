@@ -3,7 +3,7 @@
 //! 
 //! Control and calculation library various robots
 
-use stepper_lib::{Component, ComponentGroup, Omega, Gamma, Delta};
+use stepper_lib::{Component, ComponentGroup, Omega, Gamma, Delta, Tool};
 
 // Module decleration
     mod arm;
@@ -101,6 +101,61 @@ impl<const N : usize, const D : usize, const A : usize> ConfRobot<N> for BasicRo
         #[inline]
         fn anchor(&self) -> &glam::Vec3 {
             &self.mach.anchor
+        }
+    //
+    
+    // Tools
+        /// Returns the current tool that is being used by the robot
+        #[inline]
+        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
+            self.mach.tools.get(self.tool_id)
+        }
+
+        #[inline]
+        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>> {
+            self.mach.tools.get_mut(self.tool_id)
+        }
+
+        #[inline]
+        fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>> {
+            &self.mach.tools
+        }
+
+        fn set_tool_id(&mut self, tool_id : usize) {
+            if tool_id < self.mach.tools.len() {
+                self.tool_id = tool_id;
+            }
+
+            // TODO: Report error in tool selection
+        }
+
+        // Actions
+        fn activate_tool(&mut self) {
+            if let Some(any_tool) = self.get_tool_mut() {
+                if let Some(tool) = any_tool.simple_tool_mut() {
+                    tool.activate();
+                }
+            }
+        }
+
+        fn activate_spindle(&mut self, cw : bool) {
+            if let Some(any_tool) = self.get_tool_mut() {
+                if let Some(spindle) = any_tool.spindle_tool_mut() {
+                    spindle.activate(cw);
+                }
+            }
+        }
+
+        fn deactivate_tool(&mut self) {
+            if let Some(any_tool) = self.get_tool_mut() {
+                if let Some(tool) = any_tool.simple_tool_mut() {
+                    tool.deactivate();
+                }
+
+                if let Some(spindle) = any_tool.spindle_tool_mut() {
+                    spindle.deactivate();
+                }
+            }
         }
     //
 }

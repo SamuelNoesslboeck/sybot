@@ -137,16 +137,66 @@
   ],
   "tools": [
     {
+      "name": "AxisBearing_Mk1",
+      "type_name": "stepper_lib::comp::tool::axial_joint::AxialJoint",
+      "obj": {
+        "servo": {
+          "data": "MG996R",
+          "pwm": 12
+        }, 
+        "length": 50.0,
+        "mass": 0.1
+      }
+    },
+    {
+      "name": "AxisTongs_Mk1",
+      "type_name": "stepper_lib::comp::tool::axis_tongs::AxisTongs",
+      "obj": {
+        "axis": {
+          "servo": {
+            "data": "MG996R",
+            "pwm": 12
+          }, 
+          "length": 50.0,
+          "mass": 0.1
+        },
+        "tongs": {
+          "servo": {
+            "data": "MG996R",
+            "pwm": 13
+          }, 
+          "perc_open": 0.7,
+          "perc_close": 0.4,
+          "length": 50.0,
+          "mass": 0.1
+        }
+      }
+    },
+    {
       "name": "No_Tool",
-      "type_name": "stepper_lib::comp::tool::NoTool",
+      "type_name": "stepper_lib::comp::tool::no_tool::NoTool",
       "obj": { }
     },
     {
       "name": "Edding_Tool",
-      "type_name": "stepper_lib::comp::tool::PencilTool",
+      "type_name": "stepper_lib::comp::tool::pencil_tool::PencilTool",
       "obj": {
         "length": 100.0,
         "mass": 0.25
+      }
+    },
+    {
+      "name": "SimpleTongs_Mk2",
+      "type_name": "stepper_lib::comp::tool::tongs::Tongs",
+      "obj": {
+        "servo": {
+          "data": "MG996R",
+          "pwm": 13
+        }, 
+        "perc_open": 0.7,
+        "perc_close": 0.4,
+        "length": 50.0,
+        "mass": 0.1
       }
     }
   ]
