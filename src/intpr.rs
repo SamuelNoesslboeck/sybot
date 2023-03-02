@@ -118,7 +118,11 @@ mod gfuncs
         pub fn g1000<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
             (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
         {
-            Ok(serde_json::to_value(robot.pos().to_array()).unwrap())
+            Ok(serde_json::json!({ 
+                "phis": Vec::from(robot.all_phis()),
+                "gammas": Vec::from(robot.all_gammas()),
+                "pos": robot.pos().to_array()
+            }))
         }
 
         pub fn g1100<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
