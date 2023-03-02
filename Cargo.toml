@@ -22,6 +22,7 @@ actix = "0.13.0"
 actix-web = "4"
 actix-web-actors = "4.1.0"
 
+colored_json = "3.0.1"
 gcode = "0.6.1"
 glam = "0.21.3"
 serde = { version = "1.0.104", features = ["derive"] }

@@ -142,6 +142,8 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
                         points[i] += vecs[n];
                     }
                 }
+
+                *points.last_mut().unwrap() += self.deco_axis();
                 points
             }
 
@@ -157,6 +159,11 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
             fn reduce_to_def(&self, pos : Vec3, deco : [f32; DECO]) -> Vec3;
 
             fn phis_from_vec(&self, pos : Vec3, deco : [f32; DECO]) -> [Phi; COMP];
+
+            // Current
+            fn pos(&self) -> Vec3 {
+                *self.points_from_phis(&self.all_phis()).last().unwrap()
+            }
         //
 
         // Load
@@ -189,21 +196,28 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
             self.comps_mut().apply_load_forces(forces);
         }
 
-        #[inline]
-        fn write_gammas(&mut self, gammas : &[Gamma; COMP]) {
-            self.comps_mut().write_gammas(gammas);
-        }
+        // Position
+            #[inline]
+            fn write_gammas(&mut self, gammas : &[Gamma; COMP]) {
+                self.comps_mut().write_gammas(gammas);
+            }
+
+            fn write_phis(&mut self, phis : &[Phi; COMP]) {
+                let gammas = self.gammas_from_phis(*phis);
+                self.comps_mut().write_gammas(&gammas)
+            }
+        // 
     // 
 
     // Movement
         #[inline]
-        fn drive_rel(&mut self, deltas : [Delta; COMP]) -> [Gamma; COMP] {
+        fn drive_rel(&mut self, deltas : [Delta; COMP]) -> [Delta; COMP] {
             let vels = *self.max_vels();
             self.comps_mut().drive_rel(deltas, vels)
         }
 
         #[inline]
-        fn drive_abs(&mut self, gammas : [Gamma; COMP]) -> [Gamma; COMP] {
+        fn drive_abs(&mut self, gammas : [Gamma; COMP]) -> [Delta; COMP] {
             let vels = *self.max_vels();
             self.comps_mut().drive_abs(gammas, vels)
         }
@@ -223,13 +237,13 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
 
         // Single Component
             #[inline]
-            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Gamma {
+            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Delta {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_rel(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Gamma {
+            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Delta {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_abs(gamma, vels[index])
             }

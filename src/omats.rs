@@ -5,6 +5,7 @@ use crate::{Robot, Vectors, ConfRobot};
 
 pub type Syomat = crate::BasicRobot<3, 0, 1, 0>;
 
+#[allow(unused)]
 impl Robot<3, 0, 1, 0> for Syomat 
 {
     type Error = std::io::Error;

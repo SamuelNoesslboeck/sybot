@@ -1,5 +1,5 @@
 use glam::Vec3;
-use stepper_lib::{Phi, Gamma};
+use stepper_lib::{Phi, Gamma, Delta};
 
 use crate::Robot;
 
@@ -16,6 +16,16 @@ pub trait SafeRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
             )
         }
 
+        fn safe_phis(&self, phi_opts : [Option<f32>; COMP]) -> Result<[Phi; COMP], ([Delta; COMP], Self::Error)> {
+            let mut phis = self.all_phis();
+
+            for i in 0 .. COMP {
+                phis[i] = Phi(phi_opts[i].unwrap_or(phis[i].0));
+            }
+
+            self.check_phis(phis)
+        }
+
         fn safe_deco(&self, decos : [Option<f32>; DECO]) -> [f32; DECO] {
             let mut safe_deco = [0.0; DECO];
 
@@ -26,19 +36,18 @@ pub trait SafeRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
             safe_deco
         }
 
-        fn safe_phis_for_vec(&self, pos : Vec3, deco : [f32; DECO]) -> Result<[Phi; COMP], ([bool; COMP], Self::Error)> {
+        fn safe_phis_for_vec(&self, pos : Vec3, deco : [f32; DECO]) -> Result<[Phi; COMP], ([Delta; COMP], Self::Error)> {
             let phis = self.phis_from_vec(pos, deco);
-            self.valid_phis(&phis)?;
-            Ok(phis)
+            self.check_phis(phis)
         }
     // 
 
     // Validation
-        fn valid_gammas(&self, gammas : &[Gamma; COMP]) -> Result<(), ([bool; COMP], Self::Error)>;
+        fn check_gammas(&self, gammas : [Gamma; COMP]) -> Result<[Gamma; COMP], ([Delta; COMP], Self::Error)>;
 
         #[inline]
-        fn valid_phis(&self, phis : &[Phi; COMP]) -> Result<(), ([bool; COMP], Self::Error)> {
-            self.valid_gammas(&self.gammas_from_phis(*phis))
+        fn check_phis(&self, phis : [Phi; COMP]) -> Result<[Phi; COMP], ([Delta; COMP], Self::Error)> {
+            Ok(self.phis_from_gammas(self.check_gammas(self.gammas_from_phis(phis))?))
         }
     // 
 }
