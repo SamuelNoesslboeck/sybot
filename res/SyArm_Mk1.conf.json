@@ -142,7 +142,7 @@
       "obj": {
         "servo": {
           "data": "MG996R",
-          "pwm": 12
+          "pwm": 23
         }, 
         "length": 50.0,
         "mass": 0.1
@@ -155,7 +155,7 @@
         "axis": {
           "servo": {
             "data": "MG996R",
-            "pwm": 12
+            "pwm": 23
           }, 
           "length": 50.0,
           "mass": 0.1

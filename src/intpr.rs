@@ -166,6 +166,19 @@ mod gfuncs
             Ok(Value::Null)
         }
 
+        // Additional functions
+        pub fn m119<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
+            (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+        {
+            let gamma_opt = robot.gamma_tool();
+
+            if let Some(gamma) = gamma_opt {
+                robot.rotate_tool_abs(gamma)
+            }
+
+            Ok(Value::Null)
+        }
+
         // Debug functions
         pub fn m1006<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
             (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
@@ -213,6 +226,7 @@ pub fn init_intpr<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const
             (3, gfuncs::m3::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
             (4, gfuncs::m4::<R, COMP, DECO, DIM, ROT>),
             (5, gfuncs::m5::<R, COMP, DECO, DIM, ROT>),
+            (119, gfuncs::m119::<R, COMP, DECO, DIM, ROT>),
             (1006, gfuncs::m1006::<R, COMP, DECO, DIM, ROT>),
         ])), 
         (Letter::ProgramNumber, NumEntries::from([

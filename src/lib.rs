@@ -134,6 +134,16 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
             // TODO: Report error in tool selection
         }
 
+        fn gamma_tool(&self) -> Option<Gamma> {
+            if let Some(any_tool) = self.get_tool() {
+                if let Some(tool) = any_tool.axis_tool() {
+                    return Some(tool.gamma()) 
+                }
+            }
+
+            None
+        }
+
         // Actions
         #[inline]
         fn activate_tool(&mut self) {
@@ -162,6 +172,15 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
 
                 if let Some(spindle) = any_tool.spindle_tool_mut() {
                     spindle.deactivate();
+                }
+            }
+        }
+
+        #[inline]
+        fn rotate_tool_abs(&mut self, gamma : Gamma) {
+            if let Some(any_tool) = self.get_tool_mut() {
+                if let Some(tool) = any_tool.axis_tool_mut() {
+                    tool.rotate_abs(gamma)
                 }
             }
         }

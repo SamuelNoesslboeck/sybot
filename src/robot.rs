@@ -71,12 +71,16 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
 
         fn set_tool_id(&mut self, tool_id : usize);
 
+        fn gamma_tool(&self) -> Option<Gamma>;
+
         // Actions 
         fn activate_tool(&mut self);
 
         fn activate_spindle(&mut self, cw : bool);
 
         fn deactivate_tool(&mut self);
+
+        fn rotate_tool_abs(&mut self, gamma : Gamma);
     //
 }
 
