@@ -69,18 +69,18 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
 
         fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
 
-        fn set_tool_id(&mut self, tool_id : usize);
+        fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
 
         fn gamma_tool(&self) -> Option<Gamma>;
 
         // Actions 
-        fn activate_tool(&mut self);
+        fn activate_tool(&mut self) -> Option<bool>;
 
-        fn activate_spindle(&mut self, cw : bool);
+        fn activate_spindle(&mut self, cw : bool) -> Option<bool>;
 
-        fn deactivate_tool(&mut self);
+        fn deactivate_tool(&mut self) -> Option<bool>;
 
-        fn rotate_tool_abs(&mut self, gamma : Gamma);
+        fn rotate_tool_abs(&mut self, gamma : Gamma) -> Option<Gamma>;
     //
 }
 

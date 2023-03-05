@@ -3,10 +3,12 @@ use std::{thread, time::Duration};
 use serde_json::Value;
 use stepper_lib::gcode::*;
 
-use crate::{SafeRobot};
+use crate::SafeRobot;
 
 mod gfuncs 
 {
+    use stepper_lib::Gamma;
+
     use super::*;
 
     // General functions
@@ -153,29 +155,25 @@ mod gfuncs
         pub fn m4<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
             (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
         {
-            robot.activate_spindle(false);
-
-            Ok(Value::Null)
+            Ok(serde_json::json!(robot.activate_spindle(false)))
         }
 
         pub fn m5<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
             (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
         {
-            robot.deactivate_tool();
-
-            Ok(Value::Null)
+            Ok(serde_json::json!(robot.deactivate_tool()))
         }
 
         // Additional functions
         pub fn m119<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
-            (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+            (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
         {
             let gamma_opt = robot.gamma_tool();
 
             if let Some(gamma) = gamma_opt {
-                robot.rotate_tool_abs(gamma)
+                return Ok(serde_json::json!(robot.rotate_tool_abs(Gamma(arg_by_letter(args, 'A').unwrap_or(gamma.0)))));
             }
-
+            
             Ok(Value::Null)
         }
 
@@ -205,8 +203,12 @@ mod gfuncs
     pub fn t<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
         (robot : &mut R, index : usize) -> Result<serde_json::Value, R::Error> 
     {
-        robot.set_tool_id(index);
-        Ok(Value::Null)
+        if let Some(tool) = robot.set_tool_id(index) {
+            return Ok(tool.get_json())
+        }
+
+        Ok(serde_json::Value::Null)
+        // Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, " -> No tool has been found for this index!"))
     }
 }
 

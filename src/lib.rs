@@ -3,6 +3,8 @@
 //! 
 //! Control and calculation library various robots
 
+use colored::Colorize;
+
 use stepper_lib::{Component, ComponentGroup, Omega, Gamma, Delta, Tool};
 
 // Module decleration
@@ -31,8 +33,7 @@ pub use stepper_lib::{JsonConfig, MachineConfig};
 pub use stepper_lib::gcode::Interpreter;
 
 // Basic robot
-pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
-{
+pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
     conf : Option<JsonConfig>,
     mach : MachineConfig<COMP, DIM, ROT>,
 
@@ -44,8 +45,33 @@ pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize,
     tool_id : usize
 }
 
-impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> for BasicRobot<COMP, DECO, DIM, ROT>
-{
+impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> BasicRobot<COMP, DECO, DIM, ROT> {
+    #[cfg(feature = "dbg-funcs")]
+    pub fn print_conf_header(&self) {
+        if let Some(conf) = &self.conf {
+            println!("{}", format!("[{}]", conf.name).bright_blue().bold());
+            println!("| {} {}", "Version:".bold(), conf.conf_version.italic().truecolor(0xEA, 0x8C, 0x43));
+
+            if let Some(author) = &conf.author {
+                println!("| {} {}", "Author:".bold(), author.italic().yellow());
+            }
+
+            println!("|");
+            println!("| {}", "[Components]".bright_blue().bold());
+            for i in 0 .. COMP {
+                println!("| | {}: {}", conf.comps[i].name, format!("\"{}\"", conf.comps[i].type_name.split("::").last().unwrap()).green());
+            }
+
+            println!("|");
+            println!("| {}", "[Tools]".bright_blue().bold());
+            for i in 0 .. conf.tools.len() {
+                println!("| | {}: {}", conf.tools[i].name, format!("\"{}\"", conf.tools[i].type_name.split("::").last().unwrap()).green());
+            }
+        }
+    }
+}
+
+impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> for BasicRobot<COMP, DECO, DIM, ROT> {
     // Conf
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
             let (mach, comps) = conf.get_machine()?;
@@ -126,12 +152,13 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
         }
 
         #[inline]
-        fn set_tool_id(&mut self, tool_id : usize) {
+        fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>> {
             if tool_id < self.mach.tools.len() {
                 self.tool_id = tool_id;
+                return self.get_tool_mut()
             }
 
-            // TODO: Report error in tool selection
+            None
         }
 
         fn gamma_tool(&self) -> Option<Gamma> {
@@ -146,43 +173,61 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
 
         // Actions
         #[inline]
-        fn activate_tool(&mut self) {
+        fn activate_tool(&mut self) -> Option<bool> {
             if let Some(any_tool) = self.get_tool_mut() {
                 if let Some(tool) = any_tool.simple_tool_mut() {
                     tool.activate();
+
+                    return Some(tool.is_active())
                 }
             }
+
+            None
         }
 
         #[inline]
-        fn activate_spindle(&mut self, cw : bool) {
+        fn activate_spindle(&mut self, cw : bool) -> Option<bool> {
             if let Some(any_tool) = self.get_tool_mut() {
                 if let Some(spindle) = any_tool.spindle_tool_mut() {
                     spindle.activate(cw);
+
+                    return spindle.is_active()
                 }
             }
+            
+            None
         }
 
         #[inline]
-        fn deactivate_tool(&mut self) {
+        fn deactivate_tool(&mut self) -> Option<bool> {
             if let Some(any_tool) = self.get_tool_mut() {
                 if let Some(tool) = any_tool.simple_tool_mut() {
                     tool.deactivate();
+
+                    return Some(tool.is_active())
                 }
 
                 if let Some(spindle) = any_tool.spindle_tool_mut() {
                     spindle.deactivate();
+
+                    return spindle.is_active()
                 }
             }
+
+            None
         }
 
         #[inline]
-        fn rotate_tool_abs(&mut self, gamma : Gamma) {
+        fn rotate_tool_abs(&mut self, gamma : Gamma) -> Option<Gamma> {
             if let Some(any_tool) = self.get_tool_mut() {
                 if let Some(tool) = any_tool.axis_tool_mut() {
-                    tool.rotate_abs(gamma)
+                    tool.rotate_abs(gamma);
+
+                    return Some(gamma)
                 }
             }
+
+            None
         }
     //
 }
