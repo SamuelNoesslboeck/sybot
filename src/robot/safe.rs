@@ -1,5 +1,6 @@
 use glam::Vec3;
-use stepper_lib::{Phi, Gamma, Delta};
+
+use stepper_lib::units::*;
 
 use crate::Robot;
 

@@ -1,13 +1,15 @@
 use std::{thread, time::Duration};
 
 use serde_json::Value;
-use stepper_lib::gcode::*;
 
 use crate::SafeRobot;
+use crate::gcode::*; 
 
 mod gfuncs 
 {
-    use stepper_lib::Gamma;
+    use std::process::exit;
+
+    use stepper_lib::units::*;
 
     use super::*;
 
@@ -164,6 +166,13 @@ mod gfuncs
             Ok(serde_json::json!(robot.deactivate_tool()))
         }
 
+        pub fn m30<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
+        (_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+        {
+            println!("Program finished!");
+            exit(0);
+        }
+
         // Additional functions
         pub fn m119<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
             (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
@@ -228,6 +237,7 @@ pub fn init_intpr<R : SafeRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const
             (3, gfuncs::m3::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
             (4, gfuncs::m4::<R, COMP, DECO, DIM, ROT>),
             (5, gfuncs::m5::<R, COMP, DECO, DIM, ROT>),
+            (30, gfuncs::m30::<R, COMP, DECO, DIM, ROT>),
             (119, gfuncs::m119::<R, COMP, DECO, DIM, ROT>),
             (1006, gfuncs::m1006::<R, COMP, DECO, DIM, ROT>),
         ])), 

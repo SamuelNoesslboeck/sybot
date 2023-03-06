@@ -1,6 +1,19 @@
 use glam::Vec3; 
 
-use stepper_lib::{Tool, JsonConfig, ComponentGroup, Omega, Gamma, Inertia, Force, Phi, Delta, MachineConfig};
+use stepper_lib::Tool;
+use stepper_lib::comp::asyn::AsyncComp;
+use stepper_lib::comp::group::AsyncCompGroup;
+use stepper_lib::units::*;
+
+use crate::{JsonConfig, MachineConfig};
+
+// Robots
+mod arm;
+pub use arm::SyArm;
+
+mod omat;
+pub use omat::Syomat;
+//
 
 // Submodules
 mod safe;
@@ -42,9 +55,9 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
     // 
 
     // Stats and Data
-        fn comps(&self) -> &dyn ComponentGroup<COMP>;
+        fn comps(&self) -> &dyn AsyncCompGroup<dyn AsyncComp, COMP>;
         
-        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<COMP>;
+        fn comps_mut(&mut self) -> &mut dyn AsyncCompGroup<dyn AsyncComp, COMP>;
 
         fn vars(&self) -> &RobotVars<DECO>;
 

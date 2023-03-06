@@ -4,7 +4,7 @@ use glam::Vec3;
 
 mod postion
 {
-    use stepper_lib::Phi;
+    use stepper_lib::units::*;
 
     use super::*;
 
@@ -71,7 +71,7 @@ mod postion
 
 mod load
 {
-    use stepper_lib::Phi;
+    use stepper_lib::units::*;
 
     use super::*;
     
