@@ -31,20 +31,20 @@ pub use stepper_lib::{JsonConfig, MachineConfig};
 pub use stepper_lib::gcode::Interpreter;
 
 // Basic robot
-pub struct BasicRobot<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize>
+pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
 {
-    pub conf : Option<JsonConfig>,
-    pub mach : MachineConfig<N, DIM, ROT>,
+    conf : Option<JsonConfig>,
+    mach : MachineConfig<COMP, DIM, ROT>,
 
-    pub vars : RobotVars<DECO>,
+    vars : RobotVars<DECO>,
 
     // Controls
-    pub comps : [Box<dyn Component>; N],
+    comps : [Box<dyn Component>; COMP],
 
     tool_id : usize
 }
 
-impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<N, DECO, DIM, ROT> for BasicRobot<N, DECO, DIM, ROT>
+impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> for BasicRobot<COMP, DECO, DIM, ROT>
 {
     // Conf
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
@@ -69,12 +69,12 @@ impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
 
     // Data 
         #[inline]
-        fn comps(&self) -> &dyn ComponentGroup<N> {
+        fn comps(&self) -> &dyn ComponentGroup<COMP> {
             &self.comps
         }
 
         #[inline]
-        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<N> {
+        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<COMP> {
             &mut self.comps
         }
 
@@ -83,22 +83,22 @@ impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
             &self.vars
         }
 
-        fn mach(&self) -> &MachineConfig<N, DIM, ROT> {
+        fn mach(&self) -> &MachineConfig<COMP, DIM, ROT> {
             &self.mach
         }
 
         #[inline]
-        fn max_vels(&self) -> &[Omega; N] {
+        fn max_vels(&self) -> &[Omega; COMP] {
             &self.mach.vels
         }
 
         #[inline]
-        fn meas_dists(&self) -> &[Delta; N] {
+        fn meas_dists(&self) -> &[Delta; COMP] {
             &self.mach.meas_dist
         }
 
         #[inline]
-        fn home_pos(&self) -> &[Gamma; N] {
+        fn home_pos(&self) -> &[Gamma; COMP] {
             &self.mach.home
         }
 
@@ -125,6 +125,7 @@ impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
             &self.mach.tools
         }
 
+        #[inline]
         fn set_tool_id(&mut self, tool_id : usize) {
             if tool_id < self.mach.tools.len() {
                 self.tool_id = tool_id;
@@ -134,6 +135,7 @@ impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
         }
 
         // Actions
+        #[inline]
         fn activate_tool(&mut self) {
             if let Some(any_tool) = self.get_tool_mut() {
                 if let Some(tool) = any_tool.simple_tool_mut() {
@@ -142,6 +144,7 @@ impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
             }
         }
 
+        #[inline]
         fn activate_spindle(&mut self, cw : bool) {
             if let Some(any_tool) = self.get_tool_mut() {
                 if let Some(spindle) = any_tool.spindle_tool_mut() {
@@ -150,6 +153,7 @@ impl<const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
             }
         }
 
+        #[inline]
         fn deactivate_tool(&mut self) {
             if let Some(any_tool) = self.get_tool_mut() {
                 if let Some(tool) = any_tool.simple_tool_mut() {

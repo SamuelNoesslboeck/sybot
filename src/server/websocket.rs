@@ -10,16 +10,16 @@ use crate::Robot;
 
 use super::AppData;
 
-pub struct WSHandler<R : Robot<N, DECO, DIM, ROT>, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
-    pub data : Arc<Mutex<AppData<R, N, DECO, DIM, ROT>>>
+pub struct WSHandler<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
+    pub data : Arc<Mutex<AppData<R, COMP, DECO, DIM, ROT>>>
 }
 
-impl<R : Robot<N, DECO, DIM, ROT> + 'static, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> Actor for WSHandler<R, N, DECO, DIM, ROT> {
+impl<R : Robot<COMP, DECO, DIM, ROT> + 'static, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Actor for WSHandler<R, COMP, DECO, DIM, ROT> {
     type Context = ws::WebsocketContext<Self>;
 }
 
-impl<R : Robot<N, DECO, DIM, ROT, Error = std::io::Error> + 'static, const N : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
-    StreamHandler<Result<ws::Message, ws::ProtocolError>> for WSHandler<R, N, DECO, DIM, ROT> 
+impl<R : Robot<COMP, DECO, DIM, ROT, Error = std::io::Error> + 'static, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
+    StreamHandler<Result<ws::Message, ws::ProtocolError>> for WSHandler<R, COMP, DECO, DIM, ROT> 
 {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
