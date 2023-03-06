@@ -4,8 +4,10 @@ use std::vec;
 
 use glam::{Vec3, Mat3};
 
-use stepper_lib::{ComponentGroup, Phi, Gamma, Inertia, Force};
+use stepper_lib::ComponentGroup;
+use stepper_lib::comp::group::AsyncCompGroup;
 use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint};
+use stepper_lib::units::*;
 
 use crate::{Robot, Vectors, SafeRobot, ConfRobot};
 
@@ -18,7 +20,20 @@ pub type SyArm = crate::BasicRobot<4, 1, 4, 4>;
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
 fn top_down_angle(point : Vec3) -> f32 {
-    Vec3::new(point.x, point.y, 0.0).angle_between(Vec3::X)
+
+    if point.x > 0.0 {
+        (point.y / point.x).atan()
+    } else if point.x < 0.0 {
+        (point.y / point.x).atan() + PI
+    } else {
+        if point.y > 0.0 {
+            PI / 2.0
+        } else if point.y < 0.0 {
+            -PI / 2.0
+        } else {
+            0.0
+        }
+    }
 }
 
 fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
@@ -110,14 +125,13 @@ impl Robot<4, 1, 4, 4> for SyArm
             fn reduce_to_def(&self, pos : Vec3, dec_ang : [f32; 1]) -> Vec3 {
                 // Rotate onto Y-Z plane
                 let phi_b = top_down_angle(pos) - PI/2.0;
-                let rot_point = Mat3::from_rotation_z(-phi_b) * pos;
 
                 // Calculate the decoration vector
                 let dec = self.deco_axis();
-                let dec_rot = Mat3::from_rotation_x(dec_ang[0]) * dec;
+                let dec_rot = Mat3::from_rotation_z(-phi_b) * Mat3::from_rotation_x(dec_ang[0]) * dec;
 
                 // Triganlge point
-                rot_point - dec_rot - self.mach.anchor - self.mach.dims[0]
+                pos - dec_rot - self.mach.anchor - self.mach.dims[0]
             }
 
             fn phis_from_vec(&self, pos : Vec3, dec_ang : [f32; 1]) -> [Phi; 4] {
@@ -186,6 +200,7 @@ impl Robot<4, 1, 4, 4> for SyArm
             self.apply_load_inertias(&self.inertias_from_vecs(&vectors));
 
             self.vars.point = points[3];
+            self.vars.decos = [ phis[1].0 + phis[2].0 + phis[3].0 ];
 
             // vectors
         }
@@ -206,7 +221,8 @@ impl Robot<4, 1, 4, 4> for SyArm
         }
 
         fn measure_async(&mut self, acc : u64) {
-            self.comps.measure_async(self.mach.meas_dist, self.mach.vels, [acc; 4]);
+            self.comps.measure_async(self.mach.meas_dist, self.mach.vels, 
+                self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap(), [acc; 4]);
         }
 
         fn set_endpoint(&mut self, gammas : &[Gamma; 4]) -> [bool; 4] {
@@ -220,80 +236,6 @@ impl Robot<4, 1, 4, 4> for SyArm
 
 impl SyArm
 {
-    // Advanced velocity calculation
-        // pub fn actor_vectors(&self, vecs : &Vectors, phis : &Phis) -> Actors {
-        //     let Vectors( a_b, a_1, a_2, a_3 ) = *vecs;
-        //     let Axes( x_b, x_1, x_2, x_3 ) = self.stepper_axes(phis.0);
-
-        //     let a_23 = a_2 + a_3;
-        //     let a_123 = a_1 + a_23;
-        //     let a_b123 = a_b + a_123;
-
-        //     Actors(
-        //         ( a_b123 ).cross( x_b ),
-        //         ( a_123 ).cross( x_1 ),
-        //         ( a_23 ).cross( x_2 ),
-        //         ( a_3 ).cross( x_3 )
-        //     )
-        // }
-
-        // pub fn accel_dyn(&self, phis : &Phis, omegas : Vec3) -> Vec3 {
-        //     let Gammas( g_b, g_1, g_2, _ ) = self.gammas_for_phis(phis);
-
-        //     Vec3::new(
-        //         self.ctrl_base.accel_dyn(omegas.x, g_b),
-        //         self.ctrl_a1.accel_dyn(omegas.y, g_1),
-        //         self.ctrl_a2.accel_dyn(omegas.z, g_2)
-        //     ) 
-        // }
-
-        // pub fn omegas_from_vel(&self, vel : Vec3, phis : &Phis) -> Vec3 {
-        //     let vecs = self.vectors_by_phis(phis);
-        //     let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
-        //     // let Vectors( a_b, a_1, a_2, a_3 ) = vecs;
-
-        //     // let a_23 = a_2 + a_3;
-        //     // let a_123 = a_1 + a_23;
-        //     // let a_b123 = a_b + a_123;
-
-        //     let eta_m = Mat3 {
-        //         x_axis: eta_b,
-        //         y_axis: eta_1,
-        //         z_axis: eta_2
-        //     };
-            
-        //     // let vel_red = (a_b123.cross(vel) * a_b123.length().powi(-2)).cross(a_b + a_1 + a_2);
-            
-        //     eta_m.inverse().mul_vec3(vel)
-        // }
-
-        // pub fn vel_from_omegas(&self, omegas : Vec3, phis : &Phis) -> Vec3 {
-        //     let vecs = self.vectors_by_phis(phis);
-        //     let Actors( eta_b, eta_1, eta_2, _ ) = self.actor_vectors(&vecs, phis);
-
-        //     eta_b * omegas.x + eta_1 * omegas.y + eta_2 * omegas.z
-        // }
-    // 
-
-    // Path generaton
-        // pub fn gen_lin_path(&self, pos_0 : Vec3, pos : Vec3, dec_angle : f32, accuracy : f32) -> SyArmResult<SyArmPath> {
-        //     let mut path = SyArmPath::new();
-        //     let delta_pos = pos - pos_0;
-
-        //     let n_seg = (delta_pos.length() / accuracy).ceil();
-
-        //     for i in 0 .. (n_seg as u64 + 1) {  // +1 for endposition included
-        //         let gammas = self.gammas_for_phis(self.get_with_fixed_dec(pos_0 + (i as f32)/n_seg * delta_pos, dec_angle));
-        //         if !self.valid_gammas(gammas) {
-        //             return Err(SyArmError::new_simple(ErrType::OutOfRange))
-        //         }
-        //         path.push(gammas)
-        //     }
-
-        //     Ok(path)
-        // }
-    //
-
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors<4>) -> CylVectors {
             let [ _, a_1, a_2, _ ] = *vecs;
@@ -310,16 +252,16 @@ impl SyArm
 }
 
 impl SafeRobot<4, 1, 4, 4> for SyArm {
-    fn valid_gammas(&self, gammas : &[Gamma; 4]) -> Result<(), ([bool; 4], Self::Error)> {
-        let valids = self.comps.valid_gammas_verb(gammas);
-
+    fn check_gammas(&self, gammas : [Gamma; 4]) -> Result<[Gamma; 4], ([Delta; 4], Self::Error)> {
+        let valids = self.comps.get_limit_dest(&gammas);
+        
         for valid in valids {
-            if !valid {
+            if valid.is_normal() {
                 return Err((valids, Error::new(std::io::ErrorKind::InvalidInput, 
-                    format!("The gammas given are not valid {:?}", valids))))
+                    format!("The Gammas/Phis given are not valid {:?}", valids))))
             }
         }
 
-        Ok(())
+        Ok(gammas)
     }
 }

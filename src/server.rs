@@ -5,7 +5,8 @@ use actix_web::{web, App, HttpResponse, HttpRequest, Responder};
 use actix_web_actors::ws;
 
 use crate::{JsonConfig, Robot, SafeRobot};
-use crate::{Interpreter, init_intpr};
+use crate::init_intpr;
+use crate::gcode::Interpreter;
 
 // Submodules
 pub mod conf;

@@ -4,7 +4,7 @@ use glam::Vec3;
 
 mod postion
 {
-    use stepper_lib::Phi;
+    use stepper_lib::units::*;
 
     use super::*;
 
@@ -47,7 +47,7 @@ mod postion
         let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
         let gammas = syarm.gammas_from_phis(phis);
         
-        assert!(syarm.valid_gammas(&gammas).is_ok(), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.valid_gammas(&gammas));
+        assert!(syarm.check_gammas(gammas).is_ok(), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.check_gammas(gammas));
 
         Ok(())
     }    
@@ -63,7 +63,7 @@ mod postion
 
         syarm.measure(10).unwrap(); 
         
-        assert!(syarm.valid_gammas(&gammas).is_ok(), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.valid_gammas(&gammas));
+        assert!(syarm.check_gammas(gammas).is_ok(), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.check_gammas(gammas));
 
         Ok(())
     }
@@ -71,7 +71,7 @@ mod postion
 
 mod load
 {
-    use stepper_lib::Phi;
+    use stepper_lib::units::*;
 
     use super::*;
     

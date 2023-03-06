@@ -1,6 +1,19 @@
 use glam::Vec3; 
 
-use stepper_lib::{Tool, JsonConfig, ComponentGroup, Omega, Gamma, Inertia, Force, Phi, Delta, MachineConfig};
+use stepper_lib::Tool;
+use stepper_lib::comp::asyn::AsyncComp;
+use stepper_lib::comp::group::AsyncCompGroup;
+use stepper_lib::units::*;
+
+use crate::{JsonConfig, MachineConfig};
+
+// Robots
+mod arm;
+pub use arm::SyArm;
+
+mod omat;
+pub use omat::Syomat;
+//
 
 // Submodules
 mod safe;
@@ -42,9 +55,9 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
     // 
 
     // Stats and Data
-        fn comps(&self) -> &dyn ComponentGroup<COMP>;
+        fn comps(&self) -> &dyn AsyncCompGroup<dyn AsyncComp, COMP>;
         
-        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<COMP>;
+        fn comps_mut(&mut self) -> &mut dyn AsyncCompGroup<dyn AsyncComp, COMP>;
 
         fn vars(&self) -> &RobotVars<DECO>;
 
@@ -69,14 +82,18 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
 
         fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
 
-        fn set_tool_id(&mut self, tool_id : usize);
+        fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+
+        fn gamma_tool(&self) -> Option<Gamma>;
 
         // Actions 
-        fn activate_tool(&mut self);
+        fn activate_tool(&mut self) -> Option<bool>;
 
-        fn activate_spindle(&mut self, cw : bool);
+        fn activate_spindle(&mut self, cw : bool) -> Option<bool>;
 
-        fn deactivate_tool(&mut self);
+        fn deactivate_tool(&mut self) -> Option<bool>;
+
+        fn rotate_tool_abs(&mut self, gamma : Gamma) -> Option<Gamma>;
     //
 }
 
@@ -142,6 +159,8 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
                         points[i] += vecs[n];
                     }
                 }
+
+                *points.last_mut().unwrap() += self.deco_axis();
                 points
             }
 
@@ -157,6 +176,11 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
             fn reduce_to_def(&self, pos : Vec3, deco : [f32; DECO]) -> Vec3;
 
             fn phis_from_vec(&self, pos : Vec3, deco : [f32; DECO]) -> [Phi; COMP];
+
+            // Current
+            fn pos(&self) -> Vec3 {
+                *self.points_from_phis(&self.all_phis()).last().unwrap()
+            }
         //
 
         // Load
@@ -189,21 +213,28 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
             self.comps_mut().apply_load_forces(forces);
         }
 
-        #[inline]
-        fn write_gammas(&mut self, gammas : &[Gamma; COMP]) {
-            self.comps_mut().write_gammas(gammas);
-        }
+        // Position
+            #[inline]
+            fn write_gammas(&mut self, gammas : &[Gamma; COMP]) {
+                self.comps_mut().write_gammas(gammas);
+            }
+
+            fn write_phis(&mut self, phis : &[Phi; COMP]) {
+                let gammas = self.gammas_from_phis(*phis);
+                self.comps_mut().write_gammas(&gammas)
+            }
+        // 
     // 
 
     // Movement
         #[inline]
-        fn drive_rel(&mut self, deltas : [Delta; COMP]) -> [Gamma; COMP] {
+        fn drive_rel(&mut self, deltas : [Delta; COMP]) -> [Delta; COMP] {
             let vels = *self.max_vels();
             self.comps_mut().drive_rel(deltas, vels)
         }
 
         #[inline]
-        fn drive_abs(&mut self, gammas : [Gamma; COMP]) -> [Gamma; COMP] {
+        fn drive_abs(&mut self, gammas : [Gamma; COMP]) -> [Delta; COMP] {
             let vels = *self.max_vels();
             self.comps_mut().drive_abs(gammas, vels)
         }
@@ -223,13 +254,13 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
 
         // Single Component
             #[inline]
-            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Gamma {
+            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Delta {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_rel(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Gamma {
+            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Delta {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_abs(gamma, vels[index])
             }

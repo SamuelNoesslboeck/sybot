@@ -1,10 +1,11 @@
 use glam::Vec3;
-use stepper_lib::{Gamma, Phi, force_gammas_from_phis, force_phis_from_gammas, Inertia, Force};
+use stepper_lib::units::*; 
 
 use crate::{Robot, Vectors, ConfRobot};
 
 pub type Syomat = crate::BasicRobot<3, 0, 1, 0>;
 
+#[allow(unused)]
 impl Robot<3, 0, 1, 0> for Syomat 
 {
     type Error = std::io::Error;
