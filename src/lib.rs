@@ -5,32 +5,30 @@
 
 use colored::Colorize;
 
-use stepper_lib::{Component, ComponentGroup, Omega, Gamma, Delta, Tool};
+use stepper_lib::Tool;
+use stepper_lib::comp::asyn::AsyncComp;
+use stepper_lib::comp::group::AsyncCompGroup;
+use stepper_lib::units::*;
 
 // Module decleration
-    mod arm;
-    pub use arm::SyArm;
+    /// I/O of configuration files to parse whole component groups out of text
+    pub mod conf;
+    pub use conf::{JsonConfig, MachineConfig};
+
+    /// Resources required to process and generate G-Code
+    pub mod gcode;
 
     pub mod intpr;
     pub use intpr::init_intpr;
-
-    mod omats;
-    pub use omats::Syomat;
 
     mod robot;
     pub use robot::*;
 
     pub mod server;
 
-    pub mod types;
-
     #[cfg(test)]
     mod tests;
 //
-
-// Public imports
-pub use stepper_lib::{JsonConfig, MachineConfig};
-pub use stepper_lib::gcode::Interpreter;
 
 // Basic robot
 pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
@@ -40,7 +38,7 @@ pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize,
     vars : RobotVars<DECO>,
 
     // Controls
-    comps : [Box<dyn Component>; COMP],
+    comps : [Box<dyn AsyncComp>; COMP],
 
     tool_id : usize
 }
@@ -74,12 +72,13 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
 impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> for BasicRobot<COMP, DECO, DIM, ROT> {
     // Conf
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
-            let (mach, comps) = conf.get_machine()?;
+            let mach = conf.get_machine()?;
+            let comps = conf.get_async_comps()?;
 
             Ok(Self { 
                 conf: Some(conf), 
-                mach: mach,
-                comps: comps,
+                mach,
+                comps,
 
                 vars: RobotVars::default(),
 
@@ -95,12 +94,12 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
 
     // Data 
         #[inline]
-        fn comps(&self) -> &dyn ComponentGroup<COMP> {
+        fn comps(&self) -> &dyn AsyncCompGroup<dyn AsyncComp, COMP> {
             &self.comps
         }
 
         #[inline]
-        fn comps_mut(&mut self) -> &mut dyn ComponentGroup<COMP> {
+        fn comps_mut(&mut self) -> &mut dyn AsyncCompGroup<dyn AsyncComp, COMP> {
             &mut self.comps
         }
 

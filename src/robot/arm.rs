@@ -4,8 +4,10 @@ use std::vec;
 
 use glam::{Vec3, Mat3};
 
-use stepper_lib::{ComponentGroup, Phi, Gamma, Inertia, Force, Delta};
+use stepper_lib::ComponentGroup;
+use stepper_lib::comp::group::AsyncCompGroup;
 use stepper_lib::math::{inertia_point, inertia_rod_constr, forces_segment, inertia_to_mass, forces_joint};
+use stepper_lib::units::*;
 
 use crate::{Robot, Vectors, SafeRobot, ConfRobot};
 
@@ -219,7 +221,8 @@ impl Robot<4, 1, 4, 4> for SyArm
         }
 
         fn measure_async(&mut self, acc : u64) {
-            self.comps.measure_async(self.mach.meas_dist, self.mach.vels, [acc; 4]);
+            self.comps.measure_async(self.mach.meas_dist, self.mach.vels, 
+                self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap(), [acc; 4]);
         }
 
         fn set_endpoint(&mut self, gammas : &[Gamma; 4]) -> [bool; 4] {

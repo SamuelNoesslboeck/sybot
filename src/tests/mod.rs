@@ -2,6 +2,7 @@ use std::{f32::consts::PI, thread::sleep, time::Duration};
 use crate::*;
 
 mod calc;
+mod data;
 mod movements;
 
 // Test Arm
