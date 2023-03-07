@@ -3,6 +3,8 @@
 //! 
 //! Control and calculation library various robots
 
+extern crate alloc;
+
 use colored::Colorize;
 
 use stepper_lib::Tool;

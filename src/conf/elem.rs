@@ -1,7 +1,6 @@
 #![doc = r"File"]
 //! 
-
-extern crate alloc;
+//! 
 use std::sync::Mutex;
 
 use alloc::string::String;
