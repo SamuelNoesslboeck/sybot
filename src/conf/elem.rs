@@ -18,7 +18,7 @@ use stepper_lib::units::*;
 // Sub-Structs
     #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
     pub struct MeasInstance {
-        pub pin : u16,
+        pub pin : u8,
         pub set_val : Gamma,
         pub dist : Delta
     }
