@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{StepperCtrl, Component, StepperConst};
-use stepper_lib::ctrl::types::PIN_ERR;
 
 use crate::gcode::{GCodeFunc, GCode, Args};
 
 mod configs 
 {
+    use stepper_lib::ctrl::pin::ERR_PIN;
+
     use super::*;
 
     #[derive(Debug, Serialize, Deserialize)]
@@ -35,12 +36,12 @@ mod configs
             Box::new(
                 stepper_lib::comp::CylinderTriangle::new(
                     stepper_lib::comp::Cylinder::new(
-                        StepperCtrl::new(StepperConst::MOT_17HE15_1504S, PIN_ERR, PIN_ERR), 
+                        StepperCtrl::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN), 
                     1.5),
                 100.0, 200.0)),
             Box::new(
                 stepper_lib::comp::GearBearing {
-                    ctrl: StepperCtrl::new(StepperConst::MOT_17HE15_1504S, PIN_ERR, PIN_ERR),
+                    ctrl: StepperCtrl::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN),
                     ratio: 1.5
                 })
         ]; 
