@@ -155,8 +155,19 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
         #[inline]
         fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>> {
             if tool_id < self.mach.tools.len() {
+                if let Some(t) = self.get_tool_mut() {
+                    t.dismount();
+                }
+
                 self.tool_id = tool_id;
-                return self.get_tool_mut()
+
+                return match self.get_tool_mut() {
+                    Some(t) => {
+                        t.mount(); 
+                        Some(t)
+                    },
+                    None => None
+                }
             }
 
             None
