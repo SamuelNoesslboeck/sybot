@@ -160,7 +160,7 @@ impl JsonConfig
 
     pub fn tool_id_by_name(&self, name : &str) -> Option<usize> {
         for i in 0 .. self.tools.len() {
-            if self.comps[i].name == name {
+            if self.tools[i].name == name {
                 return Some(i)
             }
         }

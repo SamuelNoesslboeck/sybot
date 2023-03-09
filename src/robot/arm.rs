@@ -128,7 +128,7 @@ impl Robot<4, 1, 4, 4> for SyArm
 
                 // Calculate the decoration vector
                 let dec = self.deco_axis();
-                let dec_rot = Mat3::from_rotation_z(-phi_b) * Mat3::from_rotation_x(dec_ang[0]) * dec;
+                let dec_rot = Mat3::from_rotation_z(phi_b) * Mat3::from_rotation_x(dec_ang[0]) * dec;
 
                 // Triganlge point
                 pos - dec_rot - self.mach.anchor - self.mach.dims[0]

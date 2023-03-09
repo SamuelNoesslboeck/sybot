@@ -97,8 +97,11 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
         }
 
         #[inline]
-        fn json_conf(&self) -> &Option<JsonConfig> {
-            &self.conf
+        fn json_conf<'a>(&'a self) -> Option<&'a JsonConfig> {
+            match &self.conf {
+                Some(conf) => Some(conf),
+                None => None
+            }
         }
     //
 

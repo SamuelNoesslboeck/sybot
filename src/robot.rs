@@ -57,7 +57,7 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
                 Self: Sized;    
 
         /// Returns the 
-        fn json_conf(&self) -> &Option<JsonConfig>;
+        fn json_conf<'a>(&'a self) -> Option<&'a JsonConfig>;
     // 
 
     // Stats and Data
@@ -166,7 +166,7 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
                     }
                 }
 
-                *points.last_mut().unwrap() += self.deco_axis();
+                *points.last_mut().unwrap() += self.get_tool().unwrap().get_vec();
                 points
             }
 
