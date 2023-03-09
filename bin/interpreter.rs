@@ -8,6 +8,9 @@ fn main() -> std::io::Result<()> {
         JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
     )?;
 
+    syarm.setup();
+    syarm.setup_async();
+
     // Print Header
     println!("{}", "\n[SyArm - GCode Interpreter]".bold()); 
     println!("Version: {}, (c) {}\n", "0.0.1".truecolor(0xEA, 0x8C, 0x43), "Samuel Nösslböck (Sy)".truecolor(0xEA, 0x8C, 0x43));
@@ -64,7 +67,9 @@ fn main() -> std::io::Result<()> {
 
                 match res {
                     Ok(j) => { 
-                        println!("{}\n", to_colored_json_auto(&j).unwrap());
+                        if !j.is_null() {
+                            println!("{}\n", to_colored_json_auto(&j).unwrap());
+                        }
                     },
                     Err(err) => {
                         println!("{}\n", err);

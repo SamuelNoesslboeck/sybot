@@ -59,11 +59,7 @@ impl Robot<3, 0, 1, 0> for Syomat
         todo!()
     }
 
-    fn measure(&mut self, acc : u64) -> Result<(), [bool; 3]> {
-        todo!()
-    }
-
-    fn measure_async(&mut self, acc : u64) {
+    fn measure(&mut self) -> Result<[Delta; 4], stepper_lib::Error> {
         todo!()
     }
 }

@@ -61,7 +61,7 @@ mod postion
         let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
         let gammas = syarm.gammas_from_phis(phis);
 
-        syarm.measure(10).unwrap(); 
+        syarm.measure()?; 
         
         assert!(syarm.check_gammas(gammas).is_ok(), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.check_gammas(gammas));
 

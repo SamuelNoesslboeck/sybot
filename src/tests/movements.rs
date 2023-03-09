@@ -19,13 +19,13 @@ fn all_axes() -> std::io::Result<()> {
 
     println!("Running movement tests ... ");
 
-    syarm.measure(2).unwrap();
+    syarm.measure()?;
     
     for i in 0 .. 4 {
         print!(" -> Moving Component {i} ... ");
-        syarm.drive_comp_rel(i, angle);
+        syarm.drive_comp_rel(i, angle)?;
         sleep(dur);
-        syarm.drive_comp_rel(i, -angle);
+        syarm.drive_comp_rel(i, -angle)?;
         println!("Done!");
         sleep(dur);
     }

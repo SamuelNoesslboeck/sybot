@@ -28,7 +28,7 @@
       "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
       "obj": {
         "ctrl": {
-          "data": "MOT_17HE15_1504S",
+          "consts": "MOT_17HE15_1504S",
           "pin_dir": 17,
           "pin_step": 26
         },
@@ -54,7 +54,7 @@
       "obj": {
         "cylinder": {
           "ctrl": {
-            "data": "MOT_17HE15_1504S",
+            "consts": "MOT_17HE15_1504S",
             "pin_dir": 5,
             "pin_step": 9
           },
@@ -86,7 +86,7 @@
       "obj": {
         "cylinder": {
           "ctrl": {
-            "data": "MOT_17HE15_1504S",
+            "consts": "MOT_17HE15_1504S",
             "pin_dir": 22,
             "pin_step": 11
           },
@@ -116,7 +116,7 @@
       "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
       "obj": {
         "ctrl": {
-          "data": "MOT_17HE15_1504S",
+          "consts": "MOT_17HE15_1504S",
           "pin_dir": 27,
           "pin_step": 19
         },
@@ -142,7 +142,7 @@
       "type_name": "stepper_lib::comp::tool::axial_joint::AxialJoint",
       "obj": {
         "servo": {
-          "data": "MG996R",
+          "consts": "MG996R",
           "pwm": 23
         }, 
         "length": 50.0,
@@ -155,7 +155,7 @@
       "obj": {
         "axis": {
           "servo": {
-            "data": "MG996R",
+            "consts": "MG996R",
             "pwm": 23
           }, 
           "length": 50.0,
@@ -163,7 +163,7 @@
         },
         "tongs": {
           "servo": {
-            "data": "MG996R",
+            "consts": "MG996R",
             "pwm": 13
           }, 
           "perc_open": 0.7,
@@ -191,7 +191,7 @@
       "type_name": "stepper_lib::comp::tool::tongs::Tongs",
       "obj": {
         "servo": {
-          "data": "MG996R",
+          "consts": "MG996R",
           "pwm": 13
         }, 
         "perc_open": 0.7,

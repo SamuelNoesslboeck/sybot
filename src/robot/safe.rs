@@ -18,7 +18,7 @@ pub trait SafeRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
         }
 
         fn safe_phis(&self, phi_opts : [Option<f32>; COMP]) -> Result<[Phi; COMP], ([Delta; COMP], Self::Error)> {
-            let mut phis = self.all_phis();
+            let mut phis = self.phis();
 
             for i in 0 .. COMP {
                 phis[i] = Phi(phi_opts[i].unwrap_or(phis[i].0));

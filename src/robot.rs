@@ -1,8 +1,8 @@
 use glam::Vec3; 
 
+use stepper_lib::SyncComp;
+use stepper_lib::SyncCompGroup;
 use stepper_lib::Tool;
-use stepper_lib::comp::asyn::AsyncComp;
-use stepper_lib::comp::group::AsyncCompGroup;
 use stepper_lib::units::*;
 
 use crate::{JsonConfig, MachineConfig};
@@ -44,6 +44,12 @@ impl<const DECO : usize> Default for RobotVars<DECO> {
 }
 
 pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
+    // Setup
+        fn setup(&mut self); 
+
+        fn setup_async(&mut self);
+    // 
+
     // Configuration
         /// Creates a new instance of the robot from a Json-Configuration file if it's format is appropriate
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error>
@@ -55,9 +61,9 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
     // 
 
     // Stats and Data
-        fn comps(&self) -> &dyn AsyncCompGroup<dyn AsyncComp, COMP>;
+        fn comps(&self) -> &dyn SyncCompGroup<dyn SyncComp, COMP>;
         
-        fn comps_mut(&mut self) -> &mut dyn AsyncCompGroup<dyn AsyncComp, COMP>;
+        fn comps_mut(&mut self) -> &mut dyn SyncCompGroup<dyn SyncComp, COMP>;
 
         fn vars(&self) -> &RobotVars<DECO>;
 
@@ -65,7 +71,7 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
 
         fn max_vels(&self) -> &[Omega; COMP];
         
-        fn meas_dists(&self) -> &[Delta; COMP];
+        fn meas_deltas(&self) -> &[Delta; COMP];
     //
 
     // Positions
@@ -106,16 +112,16 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
     // Position
         /// Returns all the angles used by the controls to represent the components extension/drive distance
         #[inline]
-        fn all_gammas(&self) -> [Gamma; COMP] {
-            self.comps().get_gammas()
+        fn gammas(&self) -> [Gamma; COMP] {
+            self.comps().gammas()
         }
 
         /// Converts all angles (by subtracting an offset in most of the cases)
         fn gammas_from_phis(&self, phis : [Phi; COMP]) -> [Gamma; COMP];
 
         #[inline]
-        fn all_phis(&self) -> [Phi; COMP] {
-            self.phis_from_gammas(self.all_gammas())
+        fn phis(&self) -> [Phi; COMP] {
+            self.phis_from_gammas(self.gammas())
         }
 
         fn phis_from_gammas(&self, gammas : [Gamma; COMP]) -> [Phi; COMP];
@@ -179,7 +185,7 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
 
             // Current
             fn pos(&self) -> Vec3 {
-                *self.points_from_phis(&self.all_phis()).last().unwrap()
+                *self.points_from_phis(&self.phis()).last().unwrap()
             }
         //
 
@@ -204,13 +210,13 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
 
     // Writing values
         #[inline]
-        fn apply_load_inertias(&mut self, inertias : &[Inertia; COMP]) {
-            self.comps_mut().apply_load_inertias(inertias);
+        fn apply_inertias(&mut self, inertias : &[Inertia; COMP]) {
+            self.comps_mut().apply_inertias(inertias);
         }
 
         #[inline]
-        fn apply_load_forces(&mut self, forces : &[Force; COMP]) {
-            self.comps_mut().apply_load_forces(forces);
+        fn apply_forces(&mut self, forces : &[Force; COMP]) {
+            self.comps_mut().apply_forces(forces);
         }
 
         // Position
@@ -228,70 +234,68 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
 
     // Movement
         #[inline]
-        fn drive_rel(&mut self, deltas : [Delta; COMP]) -> [Delta; COMP] {
+        fn drive_rel(&mut self, deltas : [Delta; COMP]) -> Result<[Delta; COMP], stepper_lib::Error> {
             let vels = *self.max_vels();
             self.comps_mut().drive_rel(deltas, vels)
         }
 
         #[inline]
-        fn drive_abs(&mut self, gammas : [Gamma; COMP]) -> [Delta; COMP] {
+        fn drive_abs(&mut self, gammas : [Gamma; COMP]) -> Result<[Delta; COMP], stepper_lib::Error> {
             let vels = *self.max_vels();
             self.comps_mut().drive_abs(gammas, vels)
         }
 
         // Async 
         #[inline]
-        fn drive_rel_async(&mut self, deltas : [Delta; COMP]) {
+        fn drive_rel_async(&mut self, deltas : [Delta; COMP]) -> Result<(), stepper_lib::Error> {
             let vels = *self.max_vels();
-            self.comps_mut().drive_rel_async(deltas, vels);
+            self.comps_mut().drive_rel_async(deltas, vels)
         }
         
         #[inline]
-        fn drive_abs_async(&mut self, gammas : [Gamma; COMP]) {
+        fn drive_abs_async(&mut self, gammas : [Gamma; COMP]) -> Result<(), stepper_lib::Error> {
             let vels = *self.max_vels();
-            self.comps_mut().drive_abs_async(gammas, vels);
+            self.comps_mut().drive_abs_async(gammas, vels)
         }
 
         // Single Component
             #[inline]
-            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Delta {
+            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Result<Delta, stepper_lib::Error> {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_rel(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Delta {
+            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Result<Delta, stepper_lib::Error> {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_abs(gamma, vels[index])
             }
 
             #[inline]
-            fn drive_comp_rel_async(&mut self, index : usize, delta : Delta) {
+            fn drive_comp_rel_async(&mut self, index : usize, delta : Delta) -> Result<(), stepper_lib::Error> {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_rel_async(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs_async(&mut self, index : usize, gamma : Gamma) {
+            fn drive_comp_abs_async(&mut self, index : usize, gamma : Gamma) -> Result<(), stepper_lib::Error> {
                 let vels = *self.max_vels();
                 self.comps_mut()[index].drive_abs_async(gamma, vels[index])
             }
         //
 
         // Measure
-            fn measure(&mut self, acc : u64) -> Result<(), [bool; COMP]>;
-
-            fn measure_async(&mut self, acc : u64);
+            fn measure(&mut self) -> Result<[Delta; 4], stepper_lib::Error>;
         // 
 
         #[inline]
-        fn await_inactive(&self) {
-            self.comps().await_inactive()
+        fn await_inactive(&mut self) -> Result<(), stepper_lib::Error> {
+            self.comps_mut().await_inactive()
         }
 
         #[inline]
-        fn set_endpoint(&mut self, gammas : &[Gamma; COMP]) -> [bool; COMP] {
-            self.comps_mut().set_endpoint(gammas)
+        fn set_end(&mut self, gammas : &[Gamma; COMP]) {
+            self.comps_mut().set_end(gammas)
         }
 
         fn set_limit(&mut self) {

@@ -23,7 +23,7 @@ mod movements;
     
         sleep(Duration::from_secs(1));
     
-        syarm.measure(2).unwrap();
+        syarm.measure()?;
 
         Ok(())
     }
