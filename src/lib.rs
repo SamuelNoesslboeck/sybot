@@ -7,9 +7,7 @@ extern crate alloc;
 
 use colored::Colorize;
 
-use stepper_lib::Tool;
-use stepper_lib::comp::asyn::AsyncComp;
-use stepper_lib::comp::group::AsyncCompGroup;
+use stepper_lib::{Tool, SyncComp, SyncCompGroup};
 use stepper_lib::units::*;
 
 // Module decleration
@@ -40,7 +38,7 @@ pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize,
     vars : RobotVars<DECO>,
 
     // Controls
-    comps : [Box<dyn AsyncComp>; COMP],
+    comps : [Box<dyn SyncComp>; COMP],
 
     tool_id : usize
 }
@@ -72,6 +70,16 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
 }
 
 impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> for BasicRobot<COMP, DECO, DIM, ROT> {
+    // Setup
+        fn setup(&mut self) {
+            self.comps.setup();
+        }
+
+        fn setup_async(&mut self) {
+            self.comps.setup_async();
+        }
+    // 
+
     // Conf
         fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
             let mach = conf.get_machine()?;
@@ -89,19 +97,22 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
         }
 
         #[inline]
-        fn json_conf(&self) -> &Option<JsonConfig> {
-            &self.conf
+        fn json_conf<'a>(&'a self) -> Option<&'a JsonConfig> {
+            match &self.conf {
+                Some(conf) => Some(conf),
+                None => None
+            }
         }
     //
 
     // Data 
         #[inline]
-        fn comps(&self) -> &dyn AsyncCompGroup<dyn AsyncComp, COMP> {
+        fn comps(&self) -> &dyn SyncCompGroup<dyn SyncComp, COMP> {
             &self.comps
         }
 
         #[inline]
-        fn comps_mut(&mut self) -> &mut dyn AsyncCompGroup<dyn AsyncComp, COMP> {
+        fn comps_mut(&mut self) -> &mut dyn SyncCompGroup<dyn SyncComp, COMP> {
             &mut self.comps
         }
 
@@ -120,7 +131,7 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
         }
 
         #[inline]
-        fn meas_dists(&self) -> &[Delta; COMP] {
+        fn meas_deltas(&self) -> &[Delta; COMP] {
             &self.mach.meas_dist
         }
 

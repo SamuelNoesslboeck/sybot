@@ -1,17 +1,13 @@
 #![doc = r"File"]
 //! 
 //! 
-use std::sync::Mutex;
 
 use alloc::string::String;
 use alloc::boxed::Box;
 
-use alloc::sync::Arc;
 use serde::{Serialize, Deserialize};
 
-use stepper_lib::ctrl::asyn::AsyncCtrl;
-use stepper_lib::{Component, Tool};
-use stepper_lib::comp::asyn::AsyncComp;
+use stepper_lib::{SyncComp, Tool};
 use stepper_lib::units::*;
 
 // Sub-Structs
@@ -61,7 +57,7 @@ pub struct ConfigElement {
 }
 
 impl ConfigElement {
-    pub fn get_comp(&self) -> Option<Box<dyn Component + Send>> {
+    pub fn get_comp(&self) -> Option<Box<dyn SyncComp + Send>> {
         match self.type_name.as_str() {
             "stepper_lib::ctrl::StepperCtrl" => Some(Box::new(
                     serde_json::from_value::<stepper_lib::StepperCtrl>(self.obj.clone()).unwrap()
@@ -76,13 +72,6 @@ impl ConfigElement {
                 serde_json::from_value::<stepper_lib::comp::GearBearing>(self.obj.clone()).unwrap()
             )), 
             _ => None
-        }
-    }
-
-    pub fn get_async_comp(&self) -> Option<Box<dyn AsyncComp>> {
-        match self.get_comp() {     // TODO: Remove dirty
-            Some(comp) => Some(Box::new(AsyncCtrl::new(Arc::new(Mutex::new(comp))))),
-            None => None
         }
     }
 
@@ -110,8 +99,8 @@ impl ConfigElement {
     }
 }
 
-impl From<&Box<dyn Component>> for ConfigElement {
-    fn from(comp: &Box<dyn Component>) -> Self {
+impl From<&Box<dyn SyncComp>> for ConfigElement {
+    fn from(comp: &Box<dyn SyncComp>) -> Self {
         Self {
             name: String::new(),
             type_name: String::from(comp.get_type_name()),

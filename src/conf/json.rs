@@ -3,8 +3,7 @@ use alloc::sync::Arc;
 use glam::Vec3;
 use serde::{Serialize, Deserialize};
 
-use stepper_lib::comp::asyn::AsyncComp;
-use stepper_lib::{Tool, Component, ComponentGroup};
+use stepper_lib::{Tool, SyncComp, SyncCompGroup};
 use stepper_lib::data::LinkedData;
 
 use crate::MachineConfig;
@@ -30,11 +29,11 @@ pub struct JsonConfig
 
 impl JsonConfig 
 {
-    pub fn get_comps<const N : usize>(&self) -> Result<[Box<dyn Component>; N], std::io::Error> {
+    pub fn get_comps<const N : usize>(&self) -> Result<[Box<dyn SyncComp>; N], std::io::Error> {
         let mut comps = vec![];
 
         for i in 0 .. N {
-            let mut comp : Box<dyn Component> = self.comps[i].get_comp().unwrap();
+            let mut comp : Box<dyn SyncComp> = self.comps[i].get_comp().unwrap();
 
 
             match self.comps[i].meas {
@@ -47,17 +46,17 @@ impl JsonConfig
             comps.push(comp);
         }
 
-        let mut comp_group : [Box<dyn Component>; N] = comps.try_into().unwrap();
-        comp_group.link_all(self.lk.clone());
+        let mut comp_group : [Box<dyn SyncComp>; N] = comps.try_into().unwrap();
+        comp_group.link(self.lk.clone());
 
         Ok(comp_group)
     }
 
-    pub fn get_async_comps<const N : usize>(&self) -> Result<[Box<dyn AsyncComp>; N], std::io::Error> {
+    pub fn get_async_comps<const N : usize>(&self) -> Result<[Box<dyn SyncComp>; N], std::io::Error> {
         let mut comps = vec![];
 
         for i in 0 .. N {
-            let mut comp : Box<dyn AsyncComp> = self.comps[i].get_async_comp().unwrap();
+            let mut comp : Box<dyn SyncComp> = self.comps[i].get_comp().unwrap();
 
 
             match self.comps[i].meas {
@@ -70,8 +69,8 @@ impl JsonConfig
             comps.push(comp);
         }
 
-        let mut comp_group : [Box<dyn AsyncComp>; N] = comps.try_into().unwrap();
-        comp_group.link_all(self.lk.clone());
+        let mut comp_group : [Box<dyn SyncComp>; N] = comps.try_into().unwrap();
+        comp_group.link(self.lk.clone());
 
         Ok(comp_group)
     }
@@ -161,7 +160,7 @@ impl JsonConfig
 
     pub fn tool_id_by_name(&self, name : &str) -> Option<usize> {
         for i in 0 .. self.tools.len() {
-            if self.comps[i].name == name {
+            if self.tools[i].name == name {
                 return Some(i)
             }
         }
@@ -184,7 +183,7 @@ impl JsonConfig
     // 
 }
 
-pub fn create_conf_comps<const N : usize>(comps : &[Box<dyn Component>; N]) -> Vec<ConfigElement> {
+pub fn create_conf_comps<const N : usize>(comps : &[Box<dyn SyncComp>; N]) -> Vec<ConfigElement> {
     let mut values = vec![];
     for i in 0 .. N {
         values.push(

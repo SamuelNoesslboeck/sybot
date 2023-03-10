@@ -10,16 +10,33 @@ mod postion
 
     #[test]
     fn double_convert() -> std::io::Result<()> {
-        let syarm = SyArm::from_conf(
+        let mut syarm = SyArm::from_conf(
             JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
         )?;
 
-        let pos = Vec3::new(0.0, 350.0, 400.0);
-        
-        let angles = syarm.phis_from_vec(pos, [ 0.0 ]);
-        let points = syarm.points_from_phis(&angles);
+        dbg!(syarm.set_tool_id(
+            syarm.json_conf().unwrap().tool_id_by_name("No_Tool").unwrap()
+        ));
 
-        assert!((pos - points[3]).length() > f32::EPSILON);
+        let positions = [
+            Vec3::new(0.0, 330.0, 400.0),
+            Vec3::new(0.0, -330.0, 400.0),
+            Vec3::new(330.0, 0.0, 400.0),
+            Vec3::new(-330.0, 0.0, 400.0),
+
+            Vec3::new(200.0, 200.0, 400.0),
+            Vec3::new(-100.0, 300.0, 400.0),
+        ];
+        
+        for pos in positions {
+            let angles = syarm.phis_from_vec(pos, [ 0.0 ]);
+            let points = syarm.points_from_phis(&angles);
+
+            println!("{:?}", angles);
+            println!("Original: {:?} | Generated: {:?}", pos, points[3]);
+    
+            assert!((pos - points[3]).length() < 0.01); // 0.01 allow a small tolerance
+        }
 
         Ok(())
     }
@@ -61,7 +78,7 @@ mod postion
         let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
         let gammas = syarm.gammas_from_phis(phis);
 
-        syarm.measure(10).unwrap(); 
+        syarm.measure()?; 
         
         assert!(syarm.check_gammas(gammas).is_ok(), "The gammas generated are not valid! Gammas: {:?}, Valids: {:?}", gammas, syarm.check_gammas(gammas));
 

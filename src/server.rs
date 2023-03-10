@@ -25,7 +25,7 @@ pub struct AppData<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DE
         pub async fn conf<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
             (data_mutex : web::Data<Mutex<AppData<R, COMP, DECO, DIM, ROT>>>) -> impl Responder {
             let data = data_mutex.lock().unwrap();
-            HttpResponse::Ok().content_type("application/json").body(serde_json::to_string_pretty(data.intpr.mach.json_conf()).unwrap())
+            HttpResponse::Ok().content_type("application/json").body(serde_json::to_string_pretty(&data.intpr.mach.json_conf()).unwrap())
         }   
 
         pub async fn pos<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>

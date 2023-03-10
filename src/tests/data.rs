@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Serialize, Deserialize};
 
-use stepper_lib::{StepperCtrl, Component, StepperConst};
+use stepper_lib::{StepperCtrl, SyncComp, StepperConst};
 
 use crate::gcode::{GCodeFunc, GCode, Args};
 
@@ -32,7 +32,7 @@ mod configs
 
     #[test]
     fn conf_io() {
-        let comps : [Box<dyn Component>; 2] = [ 
+        let comps : [Box<dyn SyncComp>; 2] = [ 
             Box::new(
                 stepper_lib::comp::CylinderTriangle::new(
                     stepper_lib::comp::Cylinder::new(
