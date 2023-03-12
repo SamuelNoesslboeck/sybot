@@ -4,6 +4,7 @@ use crate::*;
 mod calc;
 mod data;
 mod movements;
+mod robots;
 
 // Test Arm
 // 
