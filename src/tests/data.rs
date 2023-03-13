@@ -14,7 +14,6 @@ mod configs
 
     #[derive(Debug, Serialize, Deserialize)]
     struct Test {
-        #[serde(serialize_with = "StepperConst::to_standard", deserialize_with = "StepperConst::from_standard")]
         data: StepperConst
     }
 

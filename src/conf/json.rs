@@ -7,7 +7,8 @@ use stepper_lib::{Tool, SyncComp, SyncCompGroup};
 use stepper_lib::data::LinkedData;
 
 use crate::MachineConfig;
-use crate::conf::ConfigElement; 
+use crate::conf::ConfigElement;
+use crate::conf::partlib;
 
 
 #[derive(Serialize, Deserialize)]
@@ -173,8 +174,11 @@ impl JsonConfig
             std::fs::write(path, self.to_string_pretty()).unwrap()
         }
 
-        pub fn read_from_file(path : &str) -> Self {
-            serde_json::from_str(std::fs::read_to_string(path).unwrap().as_str()).unwrap()
+        pub fn read_from_file(libs : &partlib::StdLibs, path : &str) -> Self {
+            let mut obj : serde_json::Value = serde_json::from_str(std::fs::read_to_string(path).unwrap().as_str()).unwrap();
+            partlib::scan_obj(libs, &mut obj, &String::from("consts"));     // Replace std-strings
+
+            serde_json::from_value(obj).unwrap()
         }
     // 
 

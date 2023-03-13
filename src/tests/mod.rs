@@ -12,8 +12,9 @@ mod robots;
 // Test meas
     #[test]
     fn test_meas() -> std::io::Result<()> {
+        let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+            JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;
 
         syarm.update(None);
