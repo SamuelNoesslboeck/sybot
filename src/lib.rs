@@ -14,6 +14,7 @@ use stepper_lib::units::*;
     /// I/O of configuration files to parse whole component groups out of text
     pub mod conf;
     pub use conf::{JsonConfig, MachineConfig};
+    pub use conf::partlib;
 
     /// Resources required to process and generate G-Code
     pub mod gcode;
@@ -29,6 +30,9 @@ use stepper_lib::units::*;
     #[cfg(test)]
     mod tests;
 //
+
+// Types
+pub type Error = std::io::Error;
 
 // Basic robot
 pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {

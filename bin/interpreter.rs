@@ -3,9 +3,13 @@ use colored_json::to_colored_json_auto;
 
 use sybot_lib::{init_intpr, SyArm, ConfRobot, JsonConfig};
 
+const AUTHOR : &str = "Samuel Nösslböck (Sy)";
+const VERSION : &str = "0.1.0";
+
 fn main() -> std::io::Result<()> {
+    let libs = sybot_lib::partlib::create_std_libs();
     let mut syarm = SyArm::from_conf(
-        JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+        JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
     )?;
 
     syarm.setup();
@@ -13,7 +17,7 @@ fn main() -> std::io::Result<()> {
 
     // Print Header
     println!("{}", "\n[SyArm - GCode Interpreter]".bold()); 
-    println!("Version: {}, (c) {}\n", "0.0.1".truecolor(0xEA, 0x8C, 0x43), "Samuel Nösslböck (Sy)".truecolor(0xEA, 0x8C, 0x43));
+    println!("Version: {}, (c) {}\n", VERSION.truecolor(0xEA, 0x8C, 0x43), AUTHOR.truecolor(0xEA, 0x8C, 0x43));
 
     if cfg!(feature = "dbg-funcs") {
         syarm.print_conf_header();

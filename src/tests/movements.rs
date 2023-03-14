@@ -7,9 +7,11 @@ use crate::{Robot, ConfRobot};
 
 #[test]
 fn all_axes() -> std::io::Result<()> {
+    let libs = crate::partlib::create_std_libs();
     let mut syarm = crate::SyArm::from_conf(
-        crate::JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+        crate::JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
     )?;
+
     let dur = std::time::Duration::from_secs_f32(0.5);
     let angle = Delta(PI / 8.0);
 

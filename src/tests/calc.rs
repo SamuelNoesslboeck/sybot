@@ -10,8 +10,9 @@ mod postion
 
     #[test]
     fn double_convert() -> std::io::Result<()> {
+        let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+            JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;
 
         dbg!(syarm.set_tool_id(
@@ -43,8 +44,9 @@ mod postion
 
     #[test]
     fn single_convert() -> std::io::Result<()>  {
+        let libs = crate::partlib::create_std_libs();
         let syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+            JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;
         
         let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
@@ -57,8 +59,9 @@ mod postion
 
     #[test]
     fn angles_for_components_without_meas() -> std::io::Result<()>  {
+        let libs = crate::partlib::create_std_libs();
         let syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+            JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;
 
         let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
@@ -71,8 +74,9 @@ mod postion
 
     #[test]
     fn angles_for_components_with_meas() -> std::io::Result<()> {
+        let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+            JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;
 
         let phis = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];
@@ -94,8 +98,9 @@ mod load
     
     #[test]
     fn inertias() -> std::io::Result<()> {
+        let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(
-            JsonConfig::read_from_file("res/SyArm_Mk1.conf.json")
+            JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;
 
         const PHIS : [Phi; 4] = [ Phi::ZERO, Phi(PI / 2.0), Phi(-PI / 2.0), Phi::ZERO ];

@@ -1,4 +1,4 @@
-; Basic Pickup script
+; More advanced pick up script
 ; 06/03/2023
 
 ; Setup
