@@ -55,7 +55,7 @@ impl Robot<3, 0, 1, 0> for Syomat
         todo!()
     }
 
-    fn update(&mut self, phis : Option<&[Phi; 3]>) {
+    fn update(&mut self, phis : Option<&[Phi; 3]>) -> Result<(), crate::Error> {
         todo!()
     }
 

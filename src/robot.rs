@@ -5,7 +5,7 @@ use stepper_lib::SyncCompGroup;
 use stepper_lib::Tool;
 use stepper_lib::units::*;
 
-use crate::{JsonConfig, MachineConfig};
+use crate::{JsonConfig, MachineConfig, Remote};
 
 // Robots
 mod arm;
@@ -101,6 +101,16 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
 
         fn rotate_tool_abs(&mut self, gamma : Gamma) -> Option<Gamma>;
     //
+
+    // Remotes
+        fn add_remote<T>(&mut self, remote : T) 
+        where 
+            T: Remote<COMP> + 'static;
+
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn Remote<COMP>>>;
+
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn Remote<COMP>>>;
+    // 
 }
 
 pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> : ConfRobot<COMP, DECO, DIM, ROT>
@@ -205,7 +215,7 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
             fn forces_from_vecs(&self, vecs : &Vectors<COMP>) -> [Force; COMP];
         // 
 
-        fn update(&mut self, phis : Option<&[Phi; COMP]>);
+        fn update(&mut self, phis : Option<&[Phi; COMP]>) -> Result<(), crate::Error>;
     //
 
     // Writing values

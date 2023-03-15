@@ -19,13 +19,18 @@ use stepper_lib::units::*;
     /// Resources required to process and generate G-Code
     pub mod gcode;
 
+    pub mod http;
+
     pub mod intpr;
     pub use intpr::init_intpr;
 
+    pub mod mqtt;
+
+    pub mod remote;
+    pub use remote::Remote;
+
     mod robot;
     pub use robot::*;
-
-    pub mod server;
 
     #[cfg(test)]
     mod tests;
@@ -40,6 +45,8 @@ pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize,
     mach : MachineConfig<COMP, DIM, ROT>,
 
     vars : RobotVars<DECO>,
+
+    rem : Vec<Box<dyn Remote<COMP>>>,
 
     // Controls
     comps : [Box<dyn SyncComp>; COMP],
@@ -73,7 +80,8 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
     }
 }
 
-impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> for BasicRobot<COMP, DECO, DIM, ROT> {
+impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> 
+    for BasicRobot<COMP, DECO, DIM, ROT> {
     // Setup
         fn setup(&mut self) {
             self.comps.setup();
@@ -85,7 +93,7 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
     // 
 
     // Conf
-        fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error> {
+        fn from_conf(conf : JsonConfig) -> Result<Self, crate::Error> {
             let mach = conf.get_machine()?;
             let comps = conf.get_async_comps()?;
 
@@ -93,6 +101,8 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
                 conf: Some(conf), 
                 mach,
                 comps,
+
+                rem: vec![],
 
                 vars: RobotVars::default(),
 
@@ -257,4 +267,20 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
             None
         }
     //
+
+    // Remotes
+        fn add_remote<T>(&mut self, remote : T) 
+            where 
+                T: Remote<COMP> + 'static {
+            self.rem.push(Box::new(remote));
+        }
+
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn Remote<COMP>>> {
+            &self.rem
+        }
+
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn Remote<COMP>>> {
+            &mut self.rem
+        }
+    // 
 }

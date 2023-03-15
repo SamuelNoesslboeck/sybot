@@ -107,7 +107,7 @@ mod load
 
         syarm.write_gammas(&syarm.gammas_from_phis(PHIS)); 
 
-        syarm.update(None);
+        syarm.update(None)?;
 
         dbg!(syarm.inertias_from_phis(&PHIS));
 

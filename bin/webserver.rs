@@ -1,5 +1,7 @@
 use actix_web::{HttpServer, App};
-use sybot_lib::{server::create_robot_webserver, JsonConfig, SyArm};
+
+use sybot_lib::{JsonConfig, SyArm};
+use sybot_lib::http::create_robot_webserver;
 
 #[actix::main]
 async fn main() -> Result<(), std::io::Error> {

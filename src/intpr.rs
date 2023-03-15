@@ -33,7 +33,7 @@ mod gfuncs
             }; 
 
             let deltas = robot.drive_abs(robot.gammas_from_phis(phis))?;
-            robot.update(None);
+            robot.update(None)?;
             Ok(serde_json::json!({ 
                 "points": pos.to_array(), 
                 "phis": Vec::from(phis),
@@ -70,7 +70,7 @@ mod gfuncs
             }; 
             robot.drive_abs_async(robot.gammas_from_phis(angles))?;
             robot.await_inactive()?;
-            robot.update(None);
+            robot.update(None)?;
             Ok(serde_json::json!(Vec::from(angles)))
         }   
 
@@ -112,7 +112,7 @@ mod gfuncs
             }; 
 
             let deltas = robot.drive_abs(robot.gammas_from_phis(phis))?;
-            robot.update(None);
+            robot.update(None)?;
             Ok(serde_json::json!({ 
                 "phis": Vec::from(phis),
                 "deltas": Vec::from(deltas)
@@ -139,7 +139,7 @@ mod gfuncs
             }; 
 
             robot.write_phis(&phis);
-            robot.update(None);
+            robot.update(None)?;
             Ok(serde_json::json!(Vec::from(phis)))
         }
     //

@@ -4,7 +4,9 @@ use actix_web::dev::{ServiceFactory, ServiceRequest};
 use actix_web::{web, App, HttpResponse, HttpRequest, Responder};
 use actix_web_actors::ws;
 
-use crate::{JsonConfig, Robot, SafeRobot};
+use stepper_lib::units::*;
+
+use crate::{JsonConfig, Robot, SafeRobot, Remote};
 use crate::init_intpr;
 use crate::gcode::Interpreter;
 
@@ -14,7 +16,38 @@ pub mod websocket;
 // 
 
 pub struct AppData<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
-    pub intpr : Interpreter<R, Result<serde_json::Value, R::Error>>
+    pub intpr : Interpreter<R, Result<serde_json::Value, R::Error>>,
+    pub pos : [Phi; COMP]
+}
+
+impl<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Remote<COMP> 
+    for AppData<R, COMP, DECO, DIM, ROT>
+{
+    fn pub_phis(&mut self, phis : &[Phi; COMP]) -> Result<(), crate::Error> {
+        self.pos = *phis;
+
+        Ok(())
+    }
+
+    fn pub_drive(&mut self) {
+        todo!()
+    }
+}
+
+impl<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Remote<COMP> 
+    for Mutex<AppData<R, COMP, DECO, DIM, ROT>>
+{
+    fn pub_phis(&mut self, phis : &[Phi; COMP]) -> Result<(), crate::Error> {
+        let mut data = self.lock().unwrap(); 
+
+        data.pos = *phis;
+
+        Ok(())
+    }
+
+    fn pub_drive(&mut self) {
+        todo!()
+    }
 }
 
 // Paths
@@ -48,9 +81,10 @@ pub fn create_robot_webserver<R : SafeRobot<COMP, DECO, DIM, ROT, Error = std::i
     (conf : JsonConfig, app : App<T>) -> App<T>
     where
         T : ServiceFactory<ServiceRequest, Config = (), Error = actix_web::Error, InitError = ()> 
-    {
+{
     app.app_data(web::Data::new(Mutex::new(AppData {
-        intpr: init_intpr(R::from_conf(conf).unwrap())
+        intpr: init_intpr(R::from_conf(conf).unwrap()),
+        pos: [Phi::ZERO; COMP]
     })))
     .service(web::scope("/")
         .route("/intpr", web::get().to(intpr::<R, COMP, DECO, DIM, ROT>))
