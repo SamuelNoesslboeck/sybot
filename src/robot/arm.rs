@@ -210,7 +210,7 @@ impl Robot<4, 1, 4, 4> for SyArm
             self.vars.point = points[3];
             self.vars.decos = [ phis[1].0 + phis[2].0 + phis[3].0 ];
 
-            for rem in self.remotes() {
+            for rem in self.remotes_mut() {
                 rem.pub_phis(phis)?;
             }
 

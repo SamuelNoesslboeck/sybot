@@ -5,7 +5,7 @@ use stepper_lib::SyncCompGroup;
 use stepper_lib::Tool;
 use stepper_lib::units::*;
 
-use crate::{JsonConfig, MachineConfig, Remote};
+use crate::{JsonConfig, MachineConfig, PushRemote};
 
 // Robots
 mod arm;
@@ -103,13 +103,18 @@ pub trait ConfRobot<const COMP : usize, const DECO : usize, const DIM : usize, c
     //
 
     // Remotes
-        fn add_remote<T>(&mut self, remote : T) 
-        where 
-            T: Remote<COMP> + 'static;
+        fn add_remote(&mut self, remote : Box<dyn PushRemote<COMP> + 'static>);
 
-        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn Remote<COMP>>>;
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote<COMP>>>;
 
-        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn Remote<COMP>>>;
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<COMP>>>;
+    // 
+
+    // Interpreter
+        fn interpret(&mut self)
+        fn set_intpr(&mut self, intpr :)
+
+        fn intpr()
     // 
 }
 

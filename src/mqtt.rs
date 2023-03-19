@@ -4,7 +4,7 @@ use core::time::Duration;
 use paho_mqtt::{Client, ServerResponse, MessageBuilder};
 use stepper_lib::units::*;
 
-use crate::Remote;
+use crate::PushRemote;
 
 // Topics
 const TOPIC_PHIS : &str = "pos/phis";
@@ -49,7 +49,7 @@ impl Publisher {
     }
 }
 
-impl<const DIM : usize> Remote<DIM> for Publisher {
+impl<const DIM : usize> PushRemote<DIM> for Publisher {
     fn pub_phis(&mut self, phis : &[Phi; DIM]) -> Result<(), crate::Error> {
         let msg = MessageBuilder::new()
             .topic(TOPIC_PHIS)

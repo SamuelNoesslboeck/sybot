@@ -60,10 +60,7 @@ fn main() -> std::io::Result<()> {
             std::io::stdin().read_line(&mut line).unwrap();
         }
 
-        match intpr.interpret(line.as_str(), 
-        |_| { 
-            Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")) 
-        }).first() {
+        match intpr.interpret(line.as_str()).first() {
             Some(res) => {
                 if lines_len > 0 {
                     println!("{} {}", format!("{} |", lines_init_len - lines_len).bold(), line);

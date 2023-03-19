@@ -16,18 +16,15 @@ use stepper_lib::units::*;
     pub use conf::{JsonConfig, MachineConfig};
     pub use conf::partlib;
 
-    /// Resources required to process and generate G-Code
-    pub mod gcode;
-
     pub mod http;
 
     pub mod intpr;
-    pub use intpr::init_intpr;
+    pub use intpr::Interpreter;
 
     pub mod mqtt;
 
     pub mod remote;
-    pub use remote::Remote;
+    pub use remote::PushRemote;
 
     mod robot;
     pub use robot::*;
@@ -46,7 +43,7 @@ pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize,
 
     vars : RobotVars<DECO>,
 
-    rem : Vec<Box<dyn Remote<COMP>>>,
+    rem : Vec<Box<dyn PushRemote<COMP>>>,
 
     // Controls
     comps : [Box<dyn SyncComp>; COMP],
@@ -269,17 +266,15 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
     //
 
     // Remotes
-        fn add_remote<T>(&mut self, remote : T) 
-            where 
-                T: Remote<COMP> + 'static {
-            self.rem.push(Box::new(remote));
+        fn add_remote(&mut self, remote : Box<dyn PushRemote<COMP> + 'static>) {
+            self.rem.push(remote);
         }
 
-        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn Remote<COMP>>> {
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote<COMP>>> {
             &self.rem
         }
 
-        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn Remote<COMP>>> {
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<COMP>>> {
             &mut self.rem
         }
     // 

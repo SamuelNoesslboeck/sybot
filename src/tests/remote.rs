@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use stepper_lib::units::*;
 
-use crate::{mqtt::Publisher, Remote, ConfRobot, Robot};
+use crate::{mqtt::Publisher, PushRemote, ConfRobot, Robot};
 
 #[test]
 fn mqtt() -> Result<(), std::io::Error> {
