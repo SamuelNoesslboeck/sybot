@@ -186,7 +186,13 @@ impl Robot<4, 1, 4, 4> for SyArm
                 let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fgs[2], a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);
                 let (f_c1, _ ) = forces_segment(&vec![ (f_2, a_1), (f_c2, c2_pos_1), (fgs[1], a_1 / 2.0) ], Vec3::ZERO, c1_pos, c1_dir);
 
-                [ Force::ZERO, Force(f_c1.length()), Force(f_c2.length()), Force(t_3.length() / 1_000.0) ]
+                let mut forces = [ Force::ZERO, Force(f_c1.length()), Force(f_c2.length()), Force(t_3.length() / 1_000.0) ];
+
+                for i in 0 .. 4 {
+                    forces[i] += self.mach.sim[i].fric;
+                }
+
+                forces
             }
         //
 

@@ -207,6 +207,18 @@ mod gfuncs
             println!("test");
             Ok(serde_json::Value::Null)
         }
+
+        pub fn o100<R : SafeRobot<COMP, DECO, DIM, ROT, Error = stepper_lib::Error>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
+            (rob : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+        {
+            let comps = rob.comps();
+
+            for i in 0 .. COMP {
+                dbg!(comps[i].vars());
+            }
+
+            Ok(serde_json::Value::Null)
+        }
     //
 
     // Tool
@@ -243,7 +255,8 @@ pub fn init_intpr<R : SafeRobot<COMP, DECO, DIM, ROT, Error = stepper_lib::Error
             (1006, gfuncs::m1006::<R, COMP, DECO, DIM, ROT>),
         ])), 
         (Letter::ProgramNumber, NumEntries::from([
-            (0, gfuncs::o0::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>)
+            (0, gfuncs::o0::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (100, gfuncs::o100::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>)
         ]))
     ]);
     
