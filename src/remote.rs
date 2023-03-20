@@ -1,4 +1,5 @@
 use alloc::rc::Rc;
+use alloc::sync::Arc;
 use core::cell::RefCell;
 
 use std::sync::Mutex;
@@ -25,7 +26,7 @@ pub trait PullRemote<const COMP : usize> : PushRemote<COMP> {
             R : ConfRobot<COMP, DECO, DIM, ROT>;
 }   
 
-impl<T : PushRemote<COMP>, const COMP : usize> PushRemote<COMP> for Mutex<T> {
+impl<T : PushRemote<COMP>, const COMP : usize> PushRemote<COMP> for Arc<Mutex<T>> {
     fn pub_phis(&mut self, phis : &[Phi; COMP]) -> Result<(), crate::Error> {
         let mut rem = self.lock().unwrap(); 
         rem.pub_phis(phis)
