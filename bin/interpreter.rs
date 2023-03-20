@@ -7,6 +7,8 @@ const AUTHOR : &str = "Samuel Nösslböck (Sy)";
 const VERSION : &str = "0.1.0";
 
 fn main() -> std::io::Result<()> {
+    std::env::set_var("RUST_BACKTRACE", "1");
+    
     let libs = sybot_lib::partlib::create_std_libs();
     let mut syarm = SyArm::from_conf(
         JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
