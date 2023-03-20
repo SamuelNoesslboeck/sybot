@@ -2,9 +2,9 @@ use glam::Vec3;
 
 use stepper_lib::units::*;
 
-use crate::Robot;
+use crate::ActRobot;
 
-pub trait SafeRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> : Robot<COMP, DECO, DIM, ROT>
+pub trait SafeRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> : ActRobot<COMP, DECO, DIM, ROT>
 {
     // Correction
         fn safe_pos(&self, x : Option<f32>, y : Option<f32>, z : Option<f32>) -> Vec3 {
