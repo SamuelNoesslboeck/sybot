@@ -77,7 +77,7 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
     }
 }
 
-impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> ConfRobot<COMP, DECO, DIM, ROT> 
+impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Robot<COMP, DECO, DIM, ROT> 
     for BasicRobot<COMP, DECO, DIM, ROT> {
     // Setup
         fn setup(&mut self) {

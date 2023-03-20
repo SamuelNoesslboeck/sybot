@@ -9,7 +9,7 @@ use stepper_lib::math::force::{forces_segment, forces_joint};
 use stepper_lib::math::inertia::{inertia_point, inertia_rod_constr, inertia_to_mass, };
 use stepper_lib::units::*;
 
-use crate::{Robot, Vectors, SafeRobot, ConfRobot};
+use crate::{ActRobot, Vectors, SafeRobot, Robot};
 
 // Constants
 /// Gravitational acceleration as vector
@@ -55,7 +55,7 @@ pub struct CylVectors(
 );
 
 
-impl Robot<4, 1, 4, 4> for SyArm 
+impl ActRobot<4, 1, 4, 4> for SyArm 
 {   
     // Types
         type Error = stepper_lib::Error;

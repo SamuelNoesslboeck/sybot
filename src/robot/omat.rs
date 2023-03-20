@@ -1,12 +1,12 @@
 use glam::Vec3;
 use stepper_lib::units::*; 
 
-use crate::{Robot, Vectors, ConfRobot};
+use crate::{ActRobot, Vectors, Robot};
 
 pub type Syomat = crate::BasicRobot<3, 0, 1, 0>;
 
 #[allow(unused)]
-impl Robot<3, 0, 1, 0> for Syomat 
+impl ActRobot<3, 0, 1, 0> for Syomat 
 {
     type Error = std::io::Error;
 

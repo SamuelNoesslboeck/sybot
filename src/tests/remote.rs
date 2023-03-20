@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use stepper_lib::units::*;
 
-use crate::{mqtt::Publisher, PushRemote, ConfRobot, Robot};
+use crate::{mqtt::Publisher, PushRemote, Robot, ActRobot};
 
 #[test]
 fn mqtt() -> Result<(), std::io::Error> {
@@ -28,7 +28,7 @@ fn remotes() -> Result<(), std::io::Error> {
     let pb = Publisher::new("mqtt://syhub:1883")?;
     pb.connect()?;
     
-    syarm.add_remote(pb);
+    syarm.add_remote(Box::new(pb));
 
     syarm.update(Some(&[Phi(0.5); 4]))?;
 

@@ -1,7 +1,9 @@
 use colored::Colorize; 
 use colored_json::to_colored_json_auto;
 
-use sybot_lib::{init_intpr, SyArm, ConfRobot, JsonConfig};
+use sybot_lib::{SyArm, Robot, JsonConfig};
+use sybot_lib::intpr::Interpreter;
+use sybot_lib::intpr::gcode::init_intpr;
 
 const AUTHOR : &str = "Samuel Nösslböck (Sy)";
 const VERSION : &str = "0.1.0";
@@ -29,7 +31,7 @@ fn main() -> std::io::Result<()> {
         syarm.set_tool_id(2);
     // 
 
-    let mut intpr = init_intpr(syarm);
+    let intpr = init_intpr();
 
     let args : Vec<String> = std::env::args().collect();
     let mut lines = Vec::new();
@@ -60,7 +62,7 @@ fn main() -> std::io::Result<()> {
             std::io::stdin().read_line(&mut line).unwrap();
         }
 
-        match intpr.interpret(line.as_str()).first() {
+        match intpr.interpret(&mut syarm, line.as_str()).first() {
             Some(res) => {
                 if lines_len > 0 {
                     println!("{} {}", format!("{} |", lines_init_len - lines_len).bold(), line);

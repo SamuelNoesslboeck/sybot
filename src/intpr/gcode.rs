@@ -36,7 +36,7 @@ impl<ROB, RES> GCodeIntpr<ROB, RES>
 }
 
 impl<ROB, RES> Interpreter<ROB, RES> for GCodeIntpr<ROB, RES> {
-    fn interpret(&mut self, rob : &mut ROB, gc_str : &str) -> Vec<RES> {
+    fn interpret(&self, rob : &mut ROB, gc_str : &str) -> Vec<RES> {
         let mut res = vec![]; 
 
         let not_found = self.not_found;
@@ -122,7 +122,7 @@ impl<ROB, RES> Interpreter<ROB, RES> for GCodeIntpr<ROB, RES> {
 // 
 
 pub fn init_intpr<R : SafeRobot<COMP, DECO, DIM, ROT, Error = stepper_lib::Error>, 
-    const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>(rob : R) 
+    const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>() 
         -> GCodeIntpr<R, Result<serde_json::Value, R::Error>> 
 {
     let funcs = LetterEntries::from([

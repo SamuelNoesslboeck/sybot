@@ -1,12 +1,12 @@
-use alloc::rc::Rc;
+// use alloc::rc::Rc;
 use alloc::sync::Arc;
-use core::cell::RefCell;
+// use core::cell::RefCell;
 
 use std::sync::Mutex;
 
 use stepper_lib::units::*;
 
-use crate::ConfRobot;
+// use crate::Robot;
 
 pub trait PushRemote<const COMP : usize> {
     fn pub_phis(&mut self, phis : &[Phi; COMP]) -> Result<(), crate::Error>;
@@ -14,17 +14,17 @@ pub trait PushRemote<const COMP : usize> {
     fn pub_drive(&mut self);
 }
 
-pub trait PullRemote<const COMP : usize> : PushRemote<COMP> {
-    fn write_link<const DECO : usize, const DIM : usize, const ROT : usize>(&mut self, robot : dyn ConfRobot<COMP, DECO, DIM, ROT>);
+// pub trait PullRemote<const COMP : usize> : PushRemote<COMP> {
+//     fn write_link<const DECO : usize, const DIM : usize, const ROT : usize>(&mut self, robot : dyn Robot<COMP, DECO, DIM, ROT>);
 
-    fn link<R, const DECO : usize, const DIM : usize, const ROT : usize>(&mut self) -> Option<&Rc<RefCell<R>>> 
-        where 
-            R : ConfRobot<COMP, DECO, DIM, ROT>;
+//     fn link<R, const DECO : usize, const DIM : usize, const ROT : usize>(&mut self) -> Option<&Rc<RefCell<R>>> 
+//         where 
+//             R : Robot<COMP, DECO, DIM, ROT>;
     
-    fn link_mut<R, const DECO : usize, const DIM : usize, const ROT : usize>(&mut self) -> Option<&mut Rc<RefCell<R>>> 
-        where 
-            R : ConfRobot<COMP, DECO, DIM, ROT>;
-}   
+//     fn link_mut<R, const DECO : usize, const DIM : usize, const ROT : usize>(&mut self) -> Option<&mut Rc<RefCell<R>>> 
+//         where 
+//             R : Robot<COMP, DECO, DIM, ROT>;
+// }   
 
 impl<T : PushRemote<COMP>, const COMP : usize> PushRemote<COMP> for Arc<Mutex<T>> {
     fn pub_phis(&mut self, phis : &[Phi; COMP]) -> Result<(), crate::Error> {
