@@ -161,12 +161,18 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                     inertias.insert(0, inertia_rod_constr(&segments) + inertia_point(point, tool_mass));
                 }
 
-                [ 
+                let mut inertias = [ 
                     Inertia(inertias[0].z_axis.length() / 1_000_000.0), 
                     inertia_to_mass(inertias[1], c1_pos, c1_dir), 
                     inertia_to_mass(inertias[2], c2_pos, c2_dir),
                     Inertia((Mat3::from_rotation_z(-self.comps[0].gamma().0) * inertias[3]).x_axis.length() / 1_000_000.0) // TODO: Get angle from phis
-                ]
+                ];
+
+                for i in 0 .. 4 {
+                    inertias[i] += self.mach.sim[i].inert;
+                }
+
+                inertias
             }
 
             fn forces_from_vecs(&self, vecs : &Vectors<4>) -> [Force; 4] {
@@ -186,7 +192,13 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                 let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fgs[2], a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);
                 let (f_c1, _ ) = forces_segment(&vec![ (f_2, a_1), (f_c2, c2_pos_1), (fgs[1], a_1 / 2.0) ], Vec3::ZERO, c1_pos, c1_dir);
 
-                [ Force::ZERO, Force(f_c1.length()), Force(f_c2.length()), Force(t_3.length() / 1_000.0) ]
+                let mut forces = [ Force::ZERO, Force(f_c1.length()), Force(f_c2.length()), Force(t_3.length() / 1_000.0) ];
+
+                for i in 0 .. 4 {
+                    forces[i] += self.mach.sim[i].fric;
+                }
+
+                forces
             }
         //
 
