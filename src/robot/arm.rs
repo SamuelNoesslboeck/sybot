@@ -159,6 +159,8 @@ impl Robot<4, 1, 4, 4> for SyArm
                     point += vecs[index];
                     segments.insert(0, (self.mach.sim[index].mass, vecs[index]) );
                     inertias.insert(0, inertia_rod_constr(&segments) + inertia_point(point, tool_mass));
+
+                    inertias[0] += self.mach.sim[index].inert;
                 }
 
                 [ 
