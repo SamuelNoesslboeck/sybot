@@ -24,8 +24,18 @@ use crate::intpr::gcode::*;
             Err((_, err)) => return Err(err)
         }; 
 
+        let f_bend = arg_by_letter(args, 'B').unwrap_or(1.0);
+        let f_speed = arg_by_letter(args, 'S').unwrap_or(1.0);
+
+        robot.apply_bend_f(f_bend);
+        robot.apply_speed_f(f_speed);
+
         let deltas = robot.drive_abs(robot.gammas_from_phis(phis))?;
         robot.update(None)?;
+
+        robot.apply_bend_f(1.0);
+        robot.apply_speed_f(1.0);
+        
         Ok(serde_json::json!({ 
             "points": pos.to_array(), 
             "phis": Vec::from(phis),

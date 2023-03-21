@@ -55,9 +55,11 @@ pub trait Robot<const COMP : usize, const DECO : usize, const DIM : usize, const
 
         fn vars(&self) -> &RobotVars<DECO>;
 
+        fn vars_mut(&mut self) -> &mut RobotVars<DECO>;
+
         fn mach(&self) -> &MachineConfig<COMP, DIM, ROT>;
 
-        fn max_vels(&self) -> &[Omega; COMP];
+        fn max_vels(&self) -> [Omega; COMP];
         
         fn meas_deltas(&self) -> &[Delta; COMP];
     //

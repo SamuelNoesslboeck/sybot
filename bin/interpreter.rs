@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use colored::Colorize; 
 use colored_json::to_colored_json_auto;
 
@@ -64,6 +66,8 @@ fn main() -> std::io::Result<()> {
             std::io::stdin().read_line(&mut line).unwrap();
         }
 
+        let inst = Instant::now();
+
         match intpr.interpret(&mut syarm, line.as_str()).first() {
             Some(res) => {
                 if lines_len > 0 {
@@ -73,7 +77,8 @@ fn main() -> std::io::Result<()> {
                 match res {
                     Ok(j) => { 
                         if !j.is_null() {
-                            println!("{}\n", to_colored_json_auto(&j).unwrap());
+                            println!("{}", to_colored_json_auto(&j).unwrap());
+                            println!("{}{}\n", "Completed in ".bold(), format!("{}s", inst.elapsed().as_secs_f32()).green())
                         }
                     },
                     Err(err) => {
