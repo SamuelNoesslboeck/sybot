@@ -3,7 +3,7 @@ use std::thread::sleep;
 
 use stepper_lib::units::*;
 
-use crate::{Robot, ConfRobot};
+use crate::{ActRobot, Robot};
 
 #[test]
 fn all_axes() -> std::io::Result<()> {

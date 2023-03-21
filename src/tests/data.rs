@@ -4,8 +4,6 @@ use serde::{Serialize, Deserialize};
 
 use stepper_lib::{StepperCtrl, SyncComp, StepperConst};
 
-use crate::gcode::{GCodeFunc, GCode, Args};
-
 mod configs 
 {
     use stepper_lib::ctrl::pin::ERR_PIN;
@@ -67,6 +65,9 @@ mod configs
 
 mod gcode
 {
+    use crate::{Interpreter};
+    use crate::intpr::gcode::{GCodeFunc, GCode, Args};
+
     use super::*; 
 
     struct Data 
@@ -93,9 +94,11 @@ mod gcode
             ]) )
         ]);
 
-        let mut intpr = crate::gcode::Interpreter::new(Data { pos: 0.0 }, None, map);
+        let mut data = Data { pos: 0.0 };
+        let intpr = 
+            crate::intpr::gcode::GCodeIntpr::new( None, map, |_| { Some(0.0) });
 
-        let res = intpr.interpret("G0\nG1", |_| { Some(0.0) });
+        let res = intpr.interpret(&mut data, "G0\nG1");
                 
         assert_eq!(res, vec![Some(10.0), Some(5.0)]);
     }

@@ -4,6 +4,7 @@ use crate::*;
 mod calc;
 mod data;
 mod movements;
+mod remote;
 mod robots;
 
 // Test Arm
@@ -17,7 +18,7 @@ mod robots;
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;
 
-        syarm.update(None);
+        syarm.update(None)?;
     
         // syarm.debug_pins();
     

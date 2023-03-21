@@ -9,7 +9,7 @@ use stepper_lib::math::force::{forces_segment, forces_joint};
 use stepper_lib::math::inertia::{inertia_point, inertia_rod_constr, inertia_to_mass, };
 use stepper_lib::units::*;
 
-use crate::{Robot, Vectors, SafeRobot, ConfRobot};
+use crate::{ActRobot, Vectors, SafeRobot, Robot};
 
 // Constants
 /// Gravitational acceleration as vector
@@ -55,7 +55,7 @@ pub struct CylVectors(
 );
 
 
-impl Robot<4, 1, 4, 4> for SyArm 
+impl ActRobot<4, 1, 4, 4> for SyArm 
 {   
     // Types
         type Error = stepper_lib::Error;
@@ -202,9 +202,17 @@ impl Robot<4, 1, 4, 4> for SyArm
             }
         //
 
-        fn update(&mut self, phis : Option<&[Phi; 4]>) {
+        fn update(&mut self, phis_opt : Option<&[Phi; 4]>) -> Result<(), crate::Error> {
             let all_phis = self.phis();
-            let phis = phis.unwrap_or(&all_phis);
+
+            let phis = match phis_opt {
+                Some(phis) => {
+                    self.write_phis(phis);
+                    phis
+                },
+                None => &all_phis
+            };
+
             let vectors = self.vecs_from_phis(phis);
             let points = self.points_from_phis(phis);
             
@@ -214,17 +222,21 @@ impl Robot<4, 1, 4, 4> for SyArm
             self.vars.point = points[3];
             self.vars.decos = [ phis[1].0 + phis[2].0 + phis[3].0 ];
 
-            // vectors
+            for rem in self.remotes_mut() {
+                rem.pub_phis(phis)?;
+            }
+
+            Ok(())
         }
     //
 
     // Actions
-        fn measure(&mut self) -> Result<[Delta; 4], stepper_lib::Error> {
+        fn measure(&mut self) -> Result<[Delta; 4], crate::Error> {
             let deltas = self.comps.measure(self.mach.meas_dist, self.mach.vels, 
                 self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap())?;
 
             self.set_limit();
-            self.update(None);
+            self.update(None)?;
             Ok(deltas)
         }
 

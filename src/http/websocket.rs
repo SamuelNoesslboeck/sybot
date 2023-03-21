@@ -6,19 +6,19 @@ use actix_web_actors::ws;
 
 use serde_json::json;
 
-use crate::Robot;
+use crate::ActRobot;
 
 use super::AppData;
 
-pub struct WSHandler<R : Robot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
+pub struct WSHandler<R : ActRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
     pub data : Arc<Mutex<AppData<R, COMP, DECO, DIM, ROT>>>
 }
 
-impl<R : Robot<COMP, DECO, DIM, ROT> + 'static, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Actor for WSHandler<R, COMP, DECO, DIM, ROT> {
+impl<R : ActRobot<COMP, DECO, DIM, ROT> + 'static, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Actor for WSHandler<R, COMP, DECO, DIM, ROT> {
     type Context = ws::WebsocketContext<Self>;
 }
 
-impl<R : Robot<COMP, DECO, DIM, ROT, Error = std::io::Error> + 'static, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
+impl<R : ActRobot<COMP, DECO, DIM, ROT, Error = std::io::Error> + 'static, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
     StreamHandler<Result<ws::Message, ws::ProtocolError>> for WSHandler<R, COMP, DECO, DIM, ROT> 
 {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
@@ -26,10 +26,8 @@ impl<R : Robot<COMP, DECO, DIM, ROT, Error = std::io::Error> + 'static, const CO
             Ok(ws::Message::Text(text)) => { 
                 let inst = Instant::now();
 
-                let mut data = self.data.lock().unwrap();
-                let results = data.intpr.interpret(&text, |_| {
-                    Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, ""))
-                });
+                let data = self.data.lock().unwrap();
+                let results = data.intpr.borrow().interpret(&mut data.rob.borrow_mut(), &text);
 
                 let mut results_json : Vec<serde_json::Value> = vec![];
 
