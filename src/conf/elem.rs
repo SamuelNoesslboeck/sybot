@@ -27,7 +27,7 @@ use stepper_lib::units::*;
 
     #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
     pub struct SimData {
-        pub mass : f32,
+        pub mass : Inertia,
         #[serde(default)]
         pub fric : Force,
         #[serde(default)]

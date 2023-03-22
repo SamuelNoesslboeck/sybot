@@ -157,7 +157,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                     index = 3 - i;
 
                     point += vecs[index];
-                    segments.insert(0, (self.mach.sim[index].mass, vecs[index]) );
+                    segments.insert(0, (self.mach.sim[index].mass.0, vecs[index]) );
                     inertias.insert(0, inertia_rod_constr(&segments) + inertia_point(point, tool_mass));
                 }
 
@@ -183,7 +183,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                 let fg_tool = G * self.get_tool().unwrap().get_mass();
 
                 let fgs : [Vec3; 4] = self.mach.sim.iter().map(
-                    |sim| sim.mass * G
+                    |sim| sim.mass.0 * G
                 ).collect::<Vec<Vec3>>().try_into().unwrap();
 
                 let a_load = self.get_tool().unwrap().get_vec() + a_3;
