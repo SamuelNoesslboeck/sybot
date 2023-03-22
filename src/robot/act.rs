@@ -196,11 +196,11 @@ pub trait ActRobot<const COMP : usize, const DECO : usize, const DIM : usize, co
         //
 
         // Measure
-            fn measure(&mut self) -> Result<[Delta; 4], stepper_lib::Error>;
+            fn measure(&mut self) -> Result<[Delta; COMP], stepper_lib::Error>;
         // 
 
         #[inline]
-        fn await_inactive(&mut self) -> Result<(), stepper_lib::Error> {
+        fn await_inactive(&mut self) -> Result<[Delta; COMP], stepper_lib::Error> {
             self.comps_mut().await_inactive()
         }
 

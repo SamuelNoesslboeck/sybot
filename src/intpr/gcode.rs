@@ -104,6 +104,10 @@ impl<ROB, RES> Interpreter<ROB, RES> for GCodeIntpr<ROB, RES> {
             if args[i].letter == letter {
                 letters[l_index] = Some(args[i].value);
                 l_index += 1;
+
+                if l_index == N {
+                    break;
+                }
             }
         }   
 
