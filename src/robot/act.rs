@@ -190,7 +190,7 @@ pub trait ActRobot<const COMP : usize, const DECO : usize, const DIM : usize, co
         // 
 
         #[inline]
-        fn await_inactive(&mut self) -> Result<(), stepper_lib::Error> {
+        fn await_inactive(&mut self) -> Result<[Delta; COMP], stepper_lib::Error> {
             self.comps_mut().await_inactive()
         }
 

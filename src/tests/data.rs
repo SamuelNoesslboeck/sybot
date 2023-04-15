@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
 use stepper_lib::{StepperCtrl, SyncComp, StepperConst};
+use stepper_lib::units::*;
 
 mod configs 
 {
@@ -52,7 +53,7 @@ mod configs
                 stepper_lib::comp::tool::NoTool::new()
             ),
             Box::new(
-                stepper_lib::comp::tool::PencilTool::new(100.0, 0.25)
+                stepper_lib::comp::tool::PencilTool::new(100.0, Inertia(0.25))
             )
         ]; 
 

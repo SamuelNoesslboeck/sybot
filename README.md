@@ -1,3 +1,5 @@
 # sybot_lib
 
-Control and calculation library for various robots
+A simple library to control groups of components and robots
+
+
