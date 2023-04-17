@@ -12,5 +12,8 @@
 			"name": "syarm_app",
 			"path": "../../Projects/SyArm_Mk1/code/syarm_app"
 		}
-	]
+	],
+	"settings": {
+		"rust-analyzer.showUnlinkedFileNotification": false
+	}
 }

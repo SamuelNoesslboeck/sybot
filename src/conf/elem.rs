@@ -72,8 +72,8 @@ impl ConfigElement {
             "stepper_lib::comp::cylinder_triangle::CylinderTriangle" => Some(Box::new(
                 serde_json::from_value::<stepper_lib::comp::CylinderTriangle>(self.obj.clone()).unwrap()
             )),
-            "stepper_lib::comp::gear_bearing::GearBearing" => Some(Box::new(
-                serde_json::from_value::<stepper_lib::comp::GearBearing>(self.obj.clone()).unwrap()
+            "stepper_lib::comp::gear_bearing::GearJoint" => Some(Box::new(
+                serde_json::from_value::<stepper_lib::comp::GearJoint>(self.obj.clone()).unwrap()
             )), 
             _ => None
         }

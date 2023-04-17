@@ -48,7 +48,7 @@ impl JsonConfig
         }
 
         let mut comp_group : [Box<dyn SyncComp>; N] = comps.try_into().unwrap();
-        comp_group.link(self.lk.clone());
+        comp_group.write_link(self.lk.clone());
 
         Ok(comp_group)
     }
@@ -71,7 +71,7 @@ impl JsonConfig
         }
 
         let mut comp_group : [Box<dyn SyncComp>; N] = comps.try_into().unwrap();
-        comp_group.link(self.lk.clone());
+        comp_group.write_link(self.lk.clone());
 
         Ok(comp_group)
     }
