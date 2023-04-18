@@ -1,7 +1,12 @@
+#![doc = "
+# sybot_lib
+
+A simple library to control groups of components and robots.
+
+Extension library for the [stepper_lib](https://crates.io/crates/stepper_lib).
+"]
 #![crate_name = "sybot_lib"]
-//! # SyBot Library
-//! 
-//! Control and calculation library various robots
+// #![deny(missing_docs)]
 
 extern crate alloc;
 
@@ -11,18 +16,32 @@ use stepper_lib::{Tool, SyncComp, SyncCompGroup};
 use stepper_lib::units::*;
 
 // Module decleration
-    /// I/O of configuration files to parse whole component groups out of text
+    /// I/O for configuration files to parse whole robots out of JSON-text
     pub mod conf;
     pub use conf::{JsonConfig, MachineConfig};
     pub use conf::partlib;
 
+    /// Structures and methods for exposing the robot to the internet with a HTTP server 
+    /// 
+    /// # Features
+    /// 
+    /// Only available if the "http"-feature is available
+    #[cfg(feature = "http")]
     pub mod http;
 
+    /// Interpreters for sending text commands to control a [BasicRobot](crate::BasicRobot)
     pub mod intpr;
     pub use intpr::Interpreter;
 
+    /// Structures and methods for exposing the robot to the internet with a MQTT server
+    /// 
+    /// # Features 
+    /// 
+    /// Only available if the "mqtt"-feature is enabled
+    #[cfg(feature = "mqtt")]
     pub mod mqtt;
 
+    /// Universal trait for input and output events happening in the robot. Used for 
     pub mod remote;
     pub use remote::PushRemote;
 
@@ -34,9 +53,11 @@ use stepper_lib::units::*;
 //
 
 // Types
+/// Universal error type used in the crate
 pub type Error = std::io::Error;
 
 // Basic robot
+/// A basic robot structure which new robot types can derive upon
 pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
     conf : Option<JsonConfig>,
     mach : MachineConfig<COMP, DIM, ROT>,
@@ -52,6 +73,7 @@ pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize,
 }
 
 impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> BasicRobot<COMP, DECO, DIM, ROT> {
+    /// Prints a brief summary of the configuration file applied to the robot
     #[cfg(feature = "dbg-funcs")]
     pub fn print_conf_header(&self) {
         if let Some(conf) = &self.conf {

@@ -25,7 +25,7 @@
   "comps": [
     {
       "name": "Base",
-      "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
+      "type_name": "stepper_lib::comp::gear_bearing::GearJoint",
       "obj": {
         "ctrl": {
           "consts": "MOT_17HE15_1504S",
@@ -114,7 +114,7 @@
     },
     {
       "name": "Arm_3",
-      "type_name": "stepper_lib::comp::gear_bearing::GearBearing",
+      "type_name": "stepper_lib::comp::gear_bearing::GearJoint",
       "obj": {
         "ctrl": {
           "consts": "MOT_17HE15_1504S",

@@ -38,7 +38,7 @@ mod configs
                     1.5),
                 100.0, 200.0)),
             Box::new(
-                stepper_lib::comp::GearBearing {
+                stepper_lib::comp::GearJoint {
                     ctrl: StepperCtrl::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN),
                     ratio: 1.5
                 })

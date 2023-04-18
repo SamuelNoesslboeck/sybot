@@ -206,7 +206,7 @@ pub trait ActRobot<const COMP : usize, const DECO : usize, const DIM : usize, co
 
         #[inline]
         fn set_end(&mut self, gammas : &[Gamma; COMP]) {
-            self.comps_mut().set_end(gammas)
+            self.comps_mut().set_ends(gammas)
         }
 
         fn set_limit(&mut self) {
