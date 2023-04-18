@@ -3,6 +3,7 @@ use crate::*;
 
 mod calc;
 mod data;
+#[cfg(feature = "rasp")]
 mod movements;
 mod remote;
 mod robots;
@@ -12,6 +13,7 @@ mod robots;
 
 // Test meas
     #[test]
+    #[cfg(feature = "rasp")]
     fn test_meas() -> std::io::Result<()> {
         let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(

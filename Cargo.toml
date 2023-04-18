@@ -14,7 +14,7 @@ path = "src/lib.rs"
 
 [[example]]
 name = "intpr"
-path = "bin/interpreter.rs"
+path = "examples/interpreter.rs"
 
 [[example]]
 name = "mqtt"
@@ -23,7 +23,7 @@ required-features = [ "mqtt" ]
 
 [[example]]
 name = "webserver"
-path = "bin/webserver.rs"
+path = "examples/webserver.rs"
 required-features = [ "http" ]
 
 [dependencies]

@@ -92,7 +92,7 @@ impl ActRobot<3, 0, 1, 0> for Syomat
         self.apply_forces(&self.forces_from_vecs(&vectors));
         self.apply_inertias(&self.inertias_from_vecs(&vectors));
 
-        self.vars.point = points[3];
+        self.vars.point = points[2];
         self.vars.decos = [ ];
 
         for rem in self.remotes_mut() {
