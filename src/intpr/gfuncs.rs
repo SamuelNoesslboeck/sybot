@@ -9,7 +9,7 @@ use crate::intpr::gcode::*;
     /// G0 X{Position} Y{Position} Z{Position} DECO{Angle} \
     /// Rapid positioning
     pub fn g0<R : SafeRobot<COMP, DECO, DIM, ROT, Error = stepper_lib::Error>, const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>
-        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
+        (robot : &mut R, c : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
     {
         let pos = robot.safe_pos(
             arg_by_letter(args, 'X'), 
@@ -24,8 +24,27 @@ use crate::intpr::gcode::*;
             Err((_, err)) => return Err(err)
         }; 
 
-        let deltas = robot.drive_abs(robot.gammas_from_phis(phis))?;
+        let f_bend = arg_by_letter(args, 'B').unwrap_or(1.0);
+        let f_speed = arg_by_letter(args, 'S').unwrap_or(1.0);
+
+        robot.apply_bend_f(f_bend);
+        robot.apply_speed_f(f_speed);
+
+        let deltas = if c.minor_number() == 0 {
+            robot.drive_abs(robot.gammas_from_phis(phis))?
+        } else if c.minor_number() == 1 {
+            robot.drive_abs_async(robot.gammas_from_phis(phis))?;
+            robot.await_inactive()?
+        } else {
+            // Create error!
+            panic!("Bad minor number!");
+        };
+
         robot.update(None)?;
+
+        robot.apply_bend_f(1.0);
+        robot.apply_speed_f(1.0);
+        
         Ok(serde_json::json!({ 
             "points": pos.to_array(), 
             "phis": Vec::from(phis),

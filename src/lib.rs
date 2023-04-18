@@ -154,13 +154,25 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
             &self.vars
         }
 
+        #[inline(always)]
+        fn vars_mut(&mut self) -> &mut RobotVars<DECO> {
+            &mut self.vars
+        }
+
+        #[inline(always)]
         fn mach(&self) -> &MachineConfig<COMP, DIM, ROT> {
             &self.mach
         }
 
         #[inline]
-        fn max_vels(&self) -> &[Omega; COMP] {
-            &self.mach.vels
+        fn max_vels(&self) -> [Omega; COMP] {
+            let mut vels = self.mach.vels.clone();
+
+            for i in 0 .. COMP {
+                vels[i] = vels[i] * self.vars.f_speed;
+            }
+
+            vels
         }
 
         #[inline]
