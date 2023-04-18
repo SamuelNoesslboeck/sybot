@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, thread::sleep, time::Duration};
+use std::f32::consts::PI;
 use crate::*;
 
 mod calc;
