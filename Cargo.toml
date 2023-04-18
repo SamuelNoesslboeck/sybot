@@ -1,10 +1,10 @@
 [package]
 name = "sybot_lib"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.7.8"
+version = "0.8.0"
 description = "A simple library to control groups of components and robots"
 edition = "2021"
-repository = "https://github.com/SamuelNoesslboeck/stepper_lib"
+repository = "https://github.com/SamuelNoesslboeck/sybot_lib"
 license-file = "LICENSE"
 keywords = [ "framework", "robotics", "automation" ]
 
@@ -13,7 +13,7 @@ name = "sybot_lib"
 path = "src/lib.rs"
 
 [[example]]
-name = "intpr"
+name = "interpreter"
 path = "examples/interpreter.rs"
 
 [[example]]

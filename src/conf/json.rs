@@ -6,9 +6,8 @@ use serde::{Serialize, Deserialize};
 use stepper_lib::{Tool, SyncComp, SyncCompGroup};
 use stepper_lib::data::LinkedData;
 
-use crate::MachineConfig;
-use crate::conf::ConfigElement;
-use crate::conf::partlib;
+use crate::conf::{ConfigElement, MachineConfig};
+use crate::partlib;
 
 
 #[derive(Serialize, Deserialize)]

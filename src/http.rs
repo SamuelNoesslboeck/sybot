@@ -9,7 +9,9 @@ use actix_web_actors::ws;
 use glam::Vec3;
 use stepper_lib::units::*;
 
-use crate::{ActRobot, SafeRobot, PushRemote, Interpreter};
+use crate::{ActRobot,Interpreter};
+use crate::remote::PushRemote;
+use crate::robot::SafeRobot;
 
 // Submodules
 pub mod conf;
@@ -31,10 +33,6 @@ impl<R : ActRobot<COMP, DECO, DIM, ROT>, const COMP : usize, const DECO : usize,
         self.phis = *phis;
 
         Ok(())
-    }
-
-    fn pub_drive(&mut self) {
-        todo!()
     }
 }
 

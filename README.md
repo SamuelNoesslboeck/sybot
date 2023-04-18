@@ -12,11 +12,11 @@ Extension library for the [stepper_lib](https://crates.io/crates/stepper_lib).
 
 -- UNFINISHED DOCS -- 
 
-Fully documentation will be added soon
+Full documentation will be added soon
 
 ### Goal
 
-- Create an all-in-one library for controlling robots, expose them to networks and do basic calculations
+- Create an all-in-one library for controlling robots, exposing them to networks and doing basic calculations
 
 # In action
 
@@ -131,6 +131,8 @@ For more features, see [stepper_lib#features](https://crates.io/crates/stepper_l
 
 ## Robots
 
+In order to access all the functionalities of the library, we must first create an instance of an existing robot type or create a new [custom one](#custom-robots). The library 
+
 ### Custom robots
 
 ### Tools
@@ -202,7 +204,7 @@ The library includes functions for inertia and load calculations.
 
 ## Command systems
 
-With the `intpr` module the user can create own command systems or use the already implemented GCode one.
+With the `intpr` module you can create your own command systems or use the already implemented GCode one.
 
 ## Networking
 

@@ -1,6 +1,3 @@
-use std::f32::consts::PI;
-use crate::*;
-
 mod calc;
 mod data;
 #[cfg(feature = "rasp")]

@@ -1,16 +1,37 @@
 use glam::Vec3;
 use stepper_lib::units::*; 
 
-use crate::{ActRobot, Vectors, Robot};
-
-pub type Syomat = crate::BasicRobot<3, 0, 1, 0>;
+use crate::{ActRobot, Robot, BasicRobot};
+use crate::robot::Vectors;
 
 const G : Alpha = Alpha(-9.805);
+
+pub struct Syomat {
+    rob : BasicRobot<3, 0, 1, 0>
+}
 
 #[allow(unused)]
 impl ActRobot<3, 0, 1, 0> for Syomat 
 {
     type Error = std::io::Error;
+
+    // Composition
+        fn brob(&self) -> &BasicRobot<3, 0, 1, 0>{
+            &self.rob
+        }
+
+        fn brob_mut(&mut self) -> &mut BasicRobot<3, 0, 1, 0> {
+            &mut self.rob
+        }
+
+        fn from_conf(conf : crate::conf::JsonConfig) -> Result<Self, std::io::Error>
+            where
+                Self: Sized {
+            Ok(Self {
+                rob: BasicRobot::from_conf(conf)?
+            })
+        }
+    // 
 
     // Position
         #[inline]
@@ -56,9 +77,9 @@ impl ActRobot<3, 0, 1, 0> for Syomat
         };
 
         [
-            self.mach.sim[0].mass,
-            self.mach.sim[1].mass + tool_inert,
-            self.mach.sim[1].mass + self.mach.sim[2].mass + tool_inert,
+            self.mach().sim[0].mass,
+            self.mach().sim[1].mass + tool_inert,
+            self.mach().sim[1].mass + self.mach().sim[2].mass + tool_inert,
         ]
     }
 
@@ -71,7 +92,7 @@ impl ActRobot<3, 0, 1, 0> for Syomat
         [ 
             Force::ZERO,
             Force::ZERO,
-            G * (self.mach.sim[1].mass + self.mach.sim[2].mass + tool_inert)
+            G * (self.mach().sim[1].mass + self.mach().sim[2].mass + tool_inert)
         ]
     }
 
@@ -92,8 +113,8 @@ impl ActRobot<3, 0, 1, 0> for Syomat
         self.apply_forces(&self.forces_from_vecs(&vectors));
         self.apply_inertias(&self.inertias_from_vecs(&vectors));
 
-        self.vars.point = points[2];
-        self.vars.decos = [ ];
+        self.vars_mut().point = points[2];
+        self.vars_mut().decos = [ ];
 
         for rem in self.remotes_mut() {
             rem.pub_phis(phis)?;

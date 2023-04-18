@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{Interpreter, SafeRobot};
+use crate::Interpreter;
+use crate::robot::SafeRobot;
+
 use super::gfuncs;
 
 pub type GCodeFunc<T, E> = fn (&mut T, &GCode, &Args) -> E;

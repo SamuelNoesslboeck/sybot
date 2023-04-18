@@ -4,22 +4,73 @@
 A simple library to control groups of components and robots.
 
 Extension library for the [stepper_lib](https://crates.io/crates/stepper_lib).
+
+# In action
+
+The following example creates a new [SyArm robot](https://github.com/SamuelNoesslboeck/SyArm_Mk1), runs all setup functions and executes a GCode-script. 
+
+```toml
+# ...
+
+[dependencies]
+# Include the library configured for the raspberry pi
+sybot_lib = { version = \"0.8.0\", features = [ \"rasp\" ] }
+
+# ...
+```
+
+```rust
+use sybot_lib::{SyArm, Robot, JsonConfig};
+use sybot_lib::intpr::Interpreter;
+use sybot_lib::intpr::gcode::init_intpr;
+
+fn main() -> std::io::Result<()> {
+    // Load the standard-partlibs in order to use motor names as data
+    //
+    // ```json
+    // \"ctrl\": {
+    //     \"consts\": \"MOT_17HE15_1504S\",    // Motor name, see
+    // // <https://docs.rs/stepper_lib/0.11.1/stepper_lib/data/struct.StepperConst.html#associatedconstant.MOT_17HE15_1504S>
+    //     \"pin_dir\": 17,
+    //     \"pin_step\": 26
+    // },
+    // ```
+    let libs = sybot_lib::partlib::create_std_libs();
+
+    // Create the robot out of the [configuration file]
+    // (https://github.com/SamuelNoesslboeck/sybot_lib/blob/master/res/SyArm_Mk1.conf.json)
+    let mut syarm = SyArm::from_conf(
+        JsonConfig::read_from_file(&libs, \"res/SyArm_Mk1.conf.json\")
+    )?;
+
+    // Run setup functions
+    syarm.setup();
+    // Enables async movements (multiple motors moving at once)
+    syarm.setup_async();
+
+    // DEBUG
+        // Select \"NoTool\" at index 2
+        syarm.set_tool_id(2);
+    // 
+
+    // Create a new GCode interpreter
+    let intpr = init_intpr();
+
+    // Run a GCode script
+    dbg!(intpr.interpret_file(&mut syarm, \"res/gcode/basicYZpos.gcode\"));
+
+    Ok(())
+}
+```
 "]
 #![crate_name = "sybot_lib"]
 // #![deny(missing_docs)]
 
 extern crate alloc;
 
-use colored::Colorize;
-
-use stepper_lib::{Tool, SyncComp, SyncCompGroup};
-use stepper_lib::units::*;
-
 // Module decleration
     /// I/O for configuration files to parse whole robots out of JSON-text
     pub mod conf;
-    pub use conf::{JsonConfig, MachineConfig};
-    pub use conf::partlib;
 
     /// Structures and methods for exposing the robot to the internet with a HTTP server 
     /// 
@@ -41,12 +92,13 @@ use stepper_lib::units::*;
     #[cfg(feature = "mqtt")]
     pub mod mqtt;
 
+    pub mod partlib;
+
     /// Universal trait for input and output events happening in the robot. Used for 
     pub mod remote;
-    pub use remote::PushRemote;
 
-    mod robot;
-    pub use robot::*;
+    pub mod robot;
+    pub use robot::{ActRobot, BasicRobot, Robot};
 
     #[cfg(test)]
     mod tests;
@@ -55,261 +107,3 @@ use stepper_lib::units::*;
 // Types
 /// Universal error type used in the crate
 pub type Error = std::io::Error;
-
-// Basic robot
-/// A basic robot structure which new robot types can derive upon
-pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
-    conf : Option<JsonConfig>,
-    mach : MachineConfig<COMP, DIM, ROT>,
-
-    vars : RobotVars<DECO>,
-
-    rem : Vec<Box<dyn PushRemote<COMP>>>,
-
-    // Controls
-    comps : [Box<dyn SyncComp>; COMP],
-
-    tool_id : usize
-}
-
-impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> BasicRobot<COMP, DECO, DIM, ROT> {
-    /// Prints a brief summary of the configuration file applied to the robot
-    #[cfg(feature = "dbg-funcs")]
-    pub fn print_conf_header(&self) {
-        if let Some(conf) = &self.conf {
-            println!("{}", format!("[{}]", conf.name).bright_blue().bold());
-            println!("| {} {}", "Version:".bold(), conf.conf_version.italic().truecolor(0xEA, 0x8C, 0x43));
-
-            if let Some(author) = &conf.author {
-                println!("| {} {}", "Author:".bold(), author.italic().yellow());
-            }
-
-            println!("|");
-            println!("| {}", "[Components]".bright_blue().bold());
-            for i in 0 .. COMP {
-                println!("| | {}: {}", conf.comps[i].name, format!("\"{}\"", conf.comps[i].type_name.split("::").last().unwrap()).green());
-            }
-
-            println!("|");
-            println!("| {}", "[Tools]".bright_blue().bold());
-            for i in 0 .. conf.tools.len() {
-                println!("| | {}: {}", conf.tools[i].name, format!("\"{}\"", conf.tools[i].type_name.split("::").last().unwrap()).green());
-            }
-        }
-    }
-}
-
-impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Robot<COMP, DECO, DIM, ROT> 
-    for BasicRobot<COMP, DECO, DIM, ROT> {
-    // Setup
-        fn setup(&mut self) {
-            self.comps.setup();
-        }
-
-        fn setup_async(&mut self) {
-            self.comps.setup_async();
-        }
-    // 
-
-    // Conf
-        fn from_conf(conf : JsonConfig) -> Result<Self, crate::Error> {
-            let mach = conf.get_machine()?;
-            let comps = conf.get_async_comps()?;
-
-            Ok(Self { 
-                conf: Some(conf), 
-                mach,
-                comps,
-
-                rem: vec![],
-
-                vars: RobotVars::default(),
-
-                tool_id: 0
-            })
-        }
-
-        #[inline]
-        fn json_conf<'a>(&'a self) -> Option<&'a JsonConfig> {
-            match &self.conf {
-                Some(conf) => Some(conf),
-                None => None
-            }
-        }
-    //
-
-    // Data 
-        #[inline]
-        fn comps(&self) -> &dyn SyncCompGroup<dyn SyncComp, COMP> {
-            &self.comps
-        }
-
-        #[inline]
-        fn comps_mut(&mut self) -> &mut dyn SyncCompGroup<dyn SyncComp, COMP> {
-            &mut self.comps
-        }
-
-        #[inline]
-        fn vars(&self) -> &RobotVars<DECO> {
-            &self.vars
-        }
-
-        #[inline(always)]
-        fn vars_mut(&mut self) -> &mut RobotVars<DECO> {
-            &mut self.vars
-        }
-
-        #[inline(always)]
-        fn mach(&self) -> &MachineConfig<COMP, DIM, ROT> {
-            &self.mach
-        }
-
-        #[inline]
-        fn max_vels(&self) -> [Omega; COMP] {
-            let mut vels = self.mach.vels.clone();
-
-            for i in 0 .. COMP {
-                vels[i] = vels[i] * self.vars.f_speed;
-            }
-
-            vels
-        }
-
-        #[inline]
-        fn meas_deltas(&self) -> &[Delta; COMP] {
-            &self.mach.meas_dist
-        }
-
-        #[inline]
-        fn home_pos(&self) -> &[Gamma; COMP] {
-            &self.mach.home
-        }
-
-        #[inline]
-        fn anchor(&self) -> &glam::Vec3 {
-            &self.mach.anchor
-        }
-    //
-    
-    // Tools
-        /// Returns the current tool that is being used by the robot
-        #[inline]
-        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
-            self.mach.tools.get(self.tool_id)
-        }
-
-        #[inline]
-        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>> {
-            self.mach.tools.get_mut(self.tool_id)
-        }
-
-        #[inline]
-        fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>> {
-            &self.mach.tools
-        }
-
-        #[inline]
-        fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>> {
-            if tool_id < self.mach.tools.len() {
-                if let Some(t) = self.get_tool_mut() {
-                    t.dismount();
-                }
-
-                self.tool_id = tool_id;
-
-                return match self.get_tool_mut() {
-                    Some(t) => {
-                        t.mount(); 
-                        Some(t)
-                    },
-                    None => None
-                }
-            }
-
-            None
-        }
-
-        fn gamma_tool(&self) -> Option<Gamma> {
-            if let Some(any_tool) = self.get_tool() {
-                if let Some(tool) = any_tool.axis_tool() {
-                    return Some(tool.gamma()) 
-                }
-            }
-
-            None
-        }
-
-        // Actions
-        #[inline]
-        fn activate_tool(&mut self) -> Option<bool> {
-            if let Some(any_tool) = self.get_tool_mut() {
-                if let Some(tool) = any_tool.simple_tool_mut() {
-                    tool.activate();
-
-                    return Some(tool.is_active())
-                }
-            }
-
-            None
-        }
-
-        #[inline]
-        fn activate_spindle(&mut self, cw : bool) -> Option<bool> {
-            if let Some(any_tool) = self.get_tool_mut() {
-                if let Some(spindle) = any_tool.spindle_tool_mut() {
-                    spindle.activate(cw);
-
-                    return spindle.is_active()
-                }
-            }
-            
-            None
-        }
-
-        #[inline]
-        fn deactivate_tool(&mut self) -> Option<bool> {
-            if let Some(any_tool) = self.get_tool_mut() {
-                if let Some(tool) = any_tool.simple_tool_mut() {
-                    tool.deactivate();
-
-                    return Some(tool.is_active())
-                }
-
-                if let Some(spindle) = any_tool.spindle_tool_mut() {
-                    spindle.deactivate();
-
-                    return spindle.is_active()
-                }
-            }
-
-            None
-        }
-
-        #[inline]
-        fn rotate_tool_abs(&mut self, gamma : Gamma) -> Option<Gamma> {
-            if let Some(any_tool) = self.get_tool_mut() {
-                if let Some(tool) = any_tool.axis_tool_mut() {
-                    tool.rotate_abs(gamma);
-
-                    return Some(gamma)
-                }
-            }
-
-            None
-        }
-    //
-
-    // Remotes
-        fn add_remote(&mut self, remote : Box<dyn PushRemote<COMP> + 'static>) {
-            self.rem.push(remote);
-        }
-
-        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote<COMP>>> {
-            &self.rem
-        }
-
-        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<COMP>>> {
-            &mut self.rem
-        }
-    // 
-}

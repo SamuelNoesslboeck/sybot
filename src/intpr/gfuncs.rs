@@ -2,8 +2,8 @@ use std::process::exit;
 
 use stepper_lib::units::*;
 
-use crate::SafeRobot; 
 use crate::intpr::gcode::*;
+use crate::robot::SafeRobot; 
 
 // General functions
     /// G0 X{Position} Y{Position} Z{Position} DECO{Angle} \

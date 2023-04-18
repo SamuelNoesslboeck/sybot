@@ -13,8 +13,6 @@ use elem::*;
 mod json;
 pub use json::*;
 
-pub mod partlib;
-
 #[derive(Debug)]
 pub struct MachineConfig<const N : usize, const D : usize, const A : usize>
 {

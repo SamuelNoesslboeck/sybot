@@ -1,6 +1,8 @@
-use sybot_lib::{SyArm, Robot, JsonConfig};
+use sybot_lib::ActRobot;
+use sybot_lib::conf::JsonConfig;
 use sybot_lib::intpr::Interpreter;
 use sybot_lib::intpr::gcode::init_intpr;
+use sybot_lib::robot::SyArm;
 
 fn main() -> std::io::Result<()> {
     // Load the standard-partlibs in order to use motor names as data

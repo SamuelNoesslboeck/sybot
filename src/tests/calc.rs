@@ -1,11 +1,14 @@
-use super::*;
+use core::f32::consts::PI;
 
 use glam::Vec3;
+use stepper_lib::units::*;
+
+use crate::ActRobot;
+use crate::conf::JsonConfig;
+use crate::robot::{SyArm, SafeRobot};
 
 mod postion
 {
-    use stepper_lib::units::*;
-
     use super::*;
 
     #[test]
@@ -92,8 +95,6 @@ mod postion
 
 mod load
 {
-    use stepper_lib::units::*;
-
     use super::*;
     
     #[test]

@@ -4,7 +4,7 @@ use core::time::Duration;
 use paho_mqtt::{Client, ServerResponse, MessageBuilder};
 use stepper_lib::units::*;
 
-use crate::PushRemote;
+use crate::remote::PushRemote;
 
 // Topics
 const TOPIC_PHIS : &str = "pos/phis";
@@ -61,9 +61,5 @@ impl<const DIM : usize> PushRemote<DIM> for Publisher {
             Ok(res) => Ok(res),
             Err(err) => Err(crate::Error::new(std::io::ErrorKind::Other, err))
         }
-    }
-
-    fn pub_drive(&mut self) {
-        todo!()
     }
 }

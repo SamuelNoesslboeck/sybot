@@ -3,9 +3,11 @@ use std::time::Instant;
 use colored::Colorize; 
 use colored_json::to_colored_json_auto;
 
-use sybot_lib::{SyArm, Robot, JsonConfig};
+use sybot_lib::ActRobot;
+use sybot_lib::conf::JsonConfig;
 use sybot_lib::intpr::Interpreter;
 use sybot_lib::intpr::gcode::init_intpr;
+use sybot_lib::robot::SyArm;
 
 const AUTHOR : &str = "Samuel Nösslböck (Sy)";
 const VERSION : &str = "0.1.0";
@@ -26,7 +28,7 @@ fn main() -> std::io::Result<()> {
     println!("Version: {}, (c) {}\n", VERSION.truecolor(0xEA, 0x8C, 0x43), AUTHOR.truecolor(0xEA, 0x8C, 0x43));
 
     if cfg!(feature = "dbg-funcs") {
-        syarm.print_conf_header();
+        syarm.brob().print_conf_header();
         println!("");   // Newline for style
     }
 

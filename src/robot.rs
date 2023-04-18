@@ -5,7 +5,8 @@ use stepper_lib::SyncCompGroup;
 use stepper_lib::Tool;
 use stepper_lib::units::*;
 
-use crate::{JsonConfig, MachineConfig, PushRemote};
+use crate::conf::{JsonConfig, MachineConfig};
+use crate::remote::PushRemote;
 
 // Robots
 mod arm;
@@ -18,6 +19,9 @@ pub use omat::Syomat;
 // Submodules
 mod act; 
 pub use act::ActRobot;
+
+mod basic;
+pub use basic::BasicRobot;
 
 mod safe;
 pub use safe::SafeRobot;

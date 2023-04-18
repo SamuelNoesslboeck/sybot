@@ -5,9 +5,11 @@ use core::cell::RefCell;
 use alloc::rc::Rc;
 use actix_web::{HttpServer, App};
 
-use sybot_lib::{JsonConfig, SyArm, Robot};
+use sybot_lib::ActRobot;
+use sybot_lib::conf::JsonConfig;
 use sybot_lib::intpr::gcode::init_intpr;
 use sybot_lib::http::create_robot_webserver;
+use sybot_lib::robot::SyArm;
 
 #[actix::main]
 async fn main() -> Result<(), std::io::Error> {    
@@ -26,9 +28,9 @@ async fn main() -> Result<(), std::io::Error> {
 
         // Create the robot out of the [configuration file]
         // (https://github.com/SamuelNoesslboeck/sybot_lib/blob/master/res/SyArm_Mk1.conf.json)
-        let mut syarm = SyArm::from_conf(
+        let syarm = Rc::new(RefCell::new(SyArm::from_conf(
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
-        )?;
+        ).unwrap()));
         
         // Create a new interpreter in a [std::rc::Rc]
         let intpr = Rc::new(RefCell::new(init_intpr()));

@@ -4,19 +4,21 @@ use std::vec;
 
 use glam::{Vec3, Mat3};
 
-use stepper_lib::SyncCompGroup;
 use stepper_lib::math::force::{forces_segment, forces_joint};
 use stepper_lib::math::inertia::{inertia_point, inertia_rod_constr, inertia_to_mass, };
 use stepper_lib::units::*;
 
-use crate::{ActRobot, Vectors, SafeRobot, Robot};
+use crate::{ActRobot, BasicRobot, Robot};
+use crate::robot::{SafeRobot, Vectors};
 
 // Constants
 /// Gravitational acceleration as vector
 const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 /// Calculation and control struct for the SyArm robot
-pub type SyArm = crate::BasicRobot<4, 1, 4, 4>;
+pub struct SyArm {
+    rob : BasicRobot<4, 1, 4, 4>
+}
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
 fn top_down_angle(point : Vec3) -> f32 {
@@ -61,23 +63,41 @@ impl ActRobot<4, 1, 4, 4> for SyArm
         type Error = stepper_lib::Error;
     // 
 
+    // Composition
+        fn brob(&self) -> &BasicRobot<4, 1, 4, 4> {
+            &self.rob
+        }
+
+        fn brob_mut(&mut self) -> &mut BasicRobot<4, 1, 4, 4> {
+            &mut self.rob
+        }
+
+        fn from_conf(conf : crate::conf::JsonConfig) -> Result<Self, std::io::Error>
+            where
+                Self: Sized {
+            Ok(Self {
+                rob: BasicRobot::from_conf(conf)?
+            })
+        }
+    // 
+
     // Position
         /// Converts gamma into phi angles
         #[inline]
         fn gammas_from_phis(&self, phis : [Phi; 4]) -> [Gamma; 4] {
-            self.mach.gammas_from_phis(phis)
+            self.mach().gammas_from_phis(phis)
         } 
 
         /// Converts phi into gamma angles
         #[inline]
         fn phis_from_gammas(&self, gammas : [Gamma; 4]) -> [Phi; 4] {
-            self.mach.phis_from_gammas(gammas)
+            self.mach().phis_from_gammas(gammas)
         }
 
         // Other
             #[inline]
             fn deco_axis(&self) -> Vec3 {
-                self.mach.dims[3] + self.get_tool().unwrap().get_vec()
+                self.mach().dims[3] + self.get_tool().unwrap().get_vec()
             }
         //
     // 
@@ -86,7 +106,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
         // Position
             fn vecs_from_phis(&self, phis : &[Phi; 4]) -> [Vec3; 4] {
                 let mut vecs = vec![];
-                let matr = self.mach.get_axes(&phis);
+                let matr = self.mach().get_axes(&phis);
     
                 // Create vectors in default position (Pointing along X-Axis) except base
                 for i in 0 .. 4 {
@@ -96,7 +116,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                         mat_total = matr[i - n - 1] * mat_total;
                     }
     
-                    vecs.push(mat_total * self.mach.dims[i]);
+                    vecs.push(mat_total * self.mach().dims[i]);
                 }
                 
                 vecs.try_into().unwrap()
@@ -107,8 +127,8 @@ impl ActRobot<4, 1, 4, 4> for SyArm
 
                 pos = Mat3::from_rotation_z(-phi_b) * pos;
 
-                let phi_h1 = law_of_cosines(pos.length(), self.mach.dims[1].length(), self.mach.dims[2].length());      // Helper angle for phi_1 calc
-                let gamma_2_ = law_of_cosines(self.mach.dims[2].length(), self.mach.dims[1].length(), pos.length());    // Gamma 2 with side angles
+                let phi_h1 = law_of_cosines(pos.length(), self.mach().dims[1].length(), self.mach().dims[2].length());      // Helper angle for phi_1 calc
+                let gamma_2_ = law_of_cosines(self.mach().dims[2].length(), self.mach().dims[1].length(), pos.length());    // Gamma 2 with side angles
                 let mut phi_h = Vec3::Y.angle_between(pos);                                             // Direct angle towards point
 
                 if 0.0 > pos.z {
@@ -131,7 +151,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                 let dec_rot = Mat3::from_rotation_z(phi_b) * Mat3::from_rotation_x(dec_ang[0]) * dec;
 
                 // Triganlge point
-                pos - dec_rot - self.mach.anchor - self.mach.dims[0]
+                pos - dec_rot - self.mach().anchor - self.mach().dims[0]
             }
 
             fn phis_from_vec(&self, pos : Vec3, dec_ang : [f32; 1]) -> [Phi; 4] {
@@ -157,7 +177,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                     index = 3 - i;
 
                     point += vecs[index];
-                    segments.insert(0, (self.mach.sim[index].mass.0, vecs[index]) );
+                    segments.insert(0, (self.mach().sim[index].mass.0, vecs[index]) );
                     inertias.insert(0, inertia_rod_constr(&segments) + inertia_point(point, tool_mass));
                 }
 
@@ -165,11 +185,11 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                     Inertia(inertias[0].z_axis.length() / 1_000_000.0), 
                     inertia_to_mass(inertias[1], c1_pos, c1_dir), 
                     inertia_to_mass(inertias[2], c2_pos, c2_dir),
-                    Inertia((Mat3::from_rotation_z(-self.comps[0].gamma().0) * inertias[3]).x_axis.length() / 1_000_000.0) // TODO: Get angle from phis
+                    Inertia((Mat3::from_rotation_z(-self.comps()[0].gamma().0) * inertias[3]).x_axis.length() / 1_000_000.0) // TODO: Get angle from phis
                 ];
 
                 for i in 0 .. 4 {
-                    inertias[i] += self.mach.sim[i].inert;
+                    inertias[i] += self.mach().sim[i].inert;
                 }
 
                 inertias
@@ -177,12 +197,13 @@ impl ActRobot<4, 1, 4, 4> for SyArm
 
             fn forces_from_vecs(&self, vecs : &Vectors<4>) -> [Force; 4] {
                 let [ _, a_1, a_2, a_3 ] = *vecs;
-                let CylVectors( (c1_dir, c1_pos), (_, c2_pos_1), (c2_dir_2, c2_pos_2) ) = self.get_cylinder_vecs(vecs);
+                let CylVectors( (c1_dir, c1_pos), (_, c2_pos_1), (c2_dir_2, c2_pos_2) ) 
+                    = self.get_cylinder_vecs(vecs);
 
-                let fg_load = G * self.vars.load;
+                let fg_load = G * self.vars().load;
                 let fg_tool = G * self.get_tool().unwrap().get_mass();
 
-                let fgs : [Vec3; 4] = self.mach.sim.iter().map(
+                let fgs : [Vec3; 4] = self.mach().sim.iter().map(
                     |sim| sim.mass.0 * G
                 ).collect::<Vec<Vec3>>().try_into().unwrap();
 
@@ -195,7 +216,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                 let mut forces = [ Force::ZERO, Force(f_c1.length()), Force(f_c2.length()), Force(t_3.length() / 1_000.0) ];
 
                 for i in 0 .. 4 {
-                    forces[i] += self.mach.sim[i].fric;
+                    forces[i] += self.mach().sim[i].fric;
                 }
 
                 forces
@@ -219,8 +240,8 @@ impl ActRobot<4, 1, 4, 4> for SyArm
             self.apply_forces(&self.forces_from_vecs(&vectors));
             self.apply_inertias(&self.inertias_from_vecs(&vectors));
 
-            self.vars.point = points[3];
-            self.vars.decos = [ phis[1].0 + phis[2].0 + phis[3].0 ];
+            self.vars_mut().point = points[3];
+            self.vars_mut().decos = [ phis[1].0 + phis[2].0 + phis[3].0 ];
 
             for rem in self.remotes_mut() {
                 rem.pub_phis(phis)?;
@@ -232,8 +253,10 @@ impl ActRobot<4, 1, 4, 4> for SyArm
 
     // Actions
         fn measure(&mut self) -> Result<[Delta; 4], crate::Error> {
-            let deltas = self.comps.measure(self.mach.meas_dist, self.mach.vels, 
-                self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap())?;
+            let deltas = self.mach().meas_dist;
+            let omegas = self.mach().vels;
+            let set_dists = self.mach().meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap();
+            let deltas = self.comps_mut().measure(deltas, omegas, set_dists)?;
 
             self.set_limit();
             self.update(None)?;
@@ -241,25 +264,24 @@ impl ActRobot<4, 1, 4, 4> for SyArm
         }
 
         // fn measure_async(&mut self, acc : u64) {
-        //     self.comps.measure_async(self.mach.meas_dist, self.mach.vels, 
-        //         self.mach.meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap(), [acc; 4]);
+        //     self.comps().measure_async(self.mach().meas_dist, self.mach().vels, 
+        //         self.mach().meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap(), [acc; 4]);
         // }
 
         fn set_end(&mut self, gammas : &[Gamma; 4]) {
             for i in 1 .. 4 {
-                self.comps[i].set_end(gammas[i]);
+                self.comps_mut()[i].set_end(gammas[i]);
             }
         }
     //
 }
 
-impl SyArm
-{
+impl SyArm {
     // Load / Inertia calculation
         pub fn get_cylinder_vecs(&self, vecs : &Vectors<4>) -> CylVectors {
             let [ _, a_1, a_2, _ ] = *vecs;
 
-            let base_helper = Mat3::from_rotation_z(-self.comps[0].gamma().0) * Vec3::new(0.0, -100.0, 0.0); // TODO: -100.0 Y-Dist HARDCODED FOR TESTING!!!
+            let base_helper = Mat3::from_rotation_z(-self.comps()[0].gamma().0) * Vec3::new(0.0, -100.0, 0.0); // TODO: -100.0 Y-Dist HARDCODED FOR TESTING!!!
             // TODO: Add Gammas for ------------------------------------| 
 
             CylVectors(
@@ -272,7 +294,7 @@ impl SyArm
 
 impl SafeRobot<4, 1, 4, 4> for SyArm {
     fn check_gammas(&self, gammas : [Gamma; 4]) -> Result<[Gamma; 4], ([Delta; 4], Self::Error)> {
-        let valids = self.comps.lims_for_gammas(&gammas);
+        let valids = self.comps().lims_for_gammas(&gammas);
         
         for valid in valids {
             if valid.is_normal() {

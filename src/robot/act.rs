@@ -1,18 +1,167 @@
 use glam::Vec3;
+use stepper_lib::{SyncCompGroup, SyncComp, Tool};
 use stepper_lib::units::*;
 
-use crate::{Robot, Points, Vectors};
+use crate::{Robot, BasicRobot};
+use crate::conf::{JsonConfig, MachineConfig};
+use crate::remote::PushRemote;
+use crate::robot::{Points, Vectors, RobotVars};
 
 pub trait ActRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> 
-    : Robot<COMP, DECO, DIM, ROT>
 {
     // Types
         type Error : std::error::Error;
     // 
 
+    // Inheritance
+        fn brob(&self) -> &BasicRobot<COMP, DECO, DIM, ROT>;
+
+        fn brob_mut(&mut self) -> &mut BasicRobot<COMP, DECO, DIM, ROT>;
+
+        // Setup
+            #[inline(always)]
+            fn setup(&mut self) {
+                self.brob_mut().setup()
+            }
+
+            #[inline(always)]
+            fn setup_async(&mut self) {
+                self.brob_mut().setup_async();
+            }
+        // 
+    
+        // Configuration
+            /// Creates a new instance of the robot from a Json-Configuration file if it's format is appropriate
+            fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error>
+                where
+                    Self: Sized;    
+    
+            /// Returns the 
+            #[inline(always)]
+            fn json_conf<'a>(&'a self) -> Option<&'a JsonConfig> {
+                self.brob().json_conf()
+            }
+        // 
+    
+        // Stats and Data
+            #[inline(always)]
+            fn comps(&self) -> &dyn SyncCompGroup<dyn SyncComp, COMP> {
+                self.brob().comps()
+            }
+
+            #[inline(always)]
+            fn comps_mut(&mut self) -> &mut dyn SyncCompGroup<dyn SyncComp, COMP> {
+                self.brob_mut().comps_mut()
+            }
+    
+            #[inline(always)]
+            fn vars(&self) -> &RobotVars<DECO> {
+                self.brob().vars()
+            }
+            
+            #[inline(always)]
+            fn vars_mut(&mut self) -> &mut RobotVars<DECO> {
+                self.brob_mut().vars_mut()
+            }
+            
+            #[inline(always)]
+            fn mach(&self) -> &MachineConfig<COMP, DIM, ROT> {
+                self.brob().mach()
+            }
+            
+            #[inline(always)]
+            fn max_vels(&self) -> [Omega; COMP] {
+                self.brob().max_vels()
+            }   
+            
+            #[inline(always)]
+            fn meas_deltas(&self) -> &[Delta; COMP] {
+                self.brob().meas_deltas()
+            }
+        //
+    
+        // Positions
+            #[inline(always)]
+            fn home_pos(&self) -> &[Gamma; COMP] {
+                self.brob().home_pos()
+            }
+            
+            #[inline(always)]
+            fn anchor(&self) -> &Vec3 {
+                self.brob().anchor()
+            }
+        //
+    
+        // Tools
+            /// Returns the current tool that is being used by the robot
+            #[inline(always)]
+            fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>> {
+                self.brob().get_tool()
+            }
+            
+            #[inline(always)]
+            fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>> {
+                self.brob_mut().get_tool_mut()
+            }
+            
+            #[inline(always)]
+            fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>> {
+                self.brob().get_tools()
+            }
+            
+            #[inline(always)]
+            fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>> {
+                self.brob_mut().set_tool_id(tool_id)
+            }
+            
+            #[inline(always)]
+            fn gamma_tool(&self) -> Option<Gamma> {
+                self.brob().gamma_tool()
+            }
+    
+            // Actions 
+            #[inline(always)]
+            fn activate_tool(&mut self) -> Option<bool> {
+                self.brob_mut().activate_tool()
+            }
+            
+            #[inline(always)]
+            fn activate_spindle(&mut self, cw : bool) -> Option<bool> {
+                self.brob_mut().activate_spindle(cw)
+            }
+            
+            #[inline(always)]
+            fn deactivate_tool(&mut self) -> Option<bool> {
+                self.brob_mut().deactivate_tool()
+            }
+            
+            #[inline(always)]
+            fn rotate_tool_abs(&mut self, gamma : Gamma) -> Option<Gamma> {
+                self.brob_mut().rotate_tool_abs(gamma)
+            }
+        //
+    
+        // Remotes
+            #[inline(always)]
+            fn add_remote(&mut self, remote : Box<dyn PushRemote<COMP> + 'static>) {
+                self.brob_mut().add_remote(remote) 
+            }
+            
+            #[inline(always)]
+            fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote<COMP>>> {
+                self.brob().remotes()
+            }
+            
+            #[inline(always)]
+            fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<COMP>>> {
+                self.brob_mut().remotes_mut()
+            }
+        // 
+    //
+
     // Position
         /// Returns all the angles used by the controls to represent the components extension/drive distance
-        #[inline]
+        #[inline(always)]
         fn gammas(&self) -> [Gamma; COMP] {
             self.comps().gammas()
         }
@@ -20,7 +169,7 @@ pub trait ActRobot<const COMP : usize, const DECO : usize, const DIM : usize, co
         /// Converts all angles (by subtracting an offset in most of the cases)
         fn gammas_from_phis(&self, phis : [Phi; COMP]) -> [Gamma; COMP];
 
-        #[inline]
+        #[inline(always)]
         fn phis(&self) -> [Phi; COMP] {
             self.phis_from_gammas(self.gammas())
         }
