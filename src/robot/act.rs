@@ -216,7 +216,7 @@ pub trait ActRobot<const COMP : usize, const DECO : usize, const DIM : usize, co
                     }
                 }
 
-                *points.last_mut().unwrap() += self.get_tool().unwrap().get_vec();
+                *points.last_mut().unwrap() += self.get_tool().unwrap().vec();
                 points
             }
 

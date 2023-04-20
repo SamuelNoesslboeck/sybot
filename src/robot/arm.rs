@@ -97,7 +97,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
         // Other
             #[inline]
             fn deco_axis(&self) -> Vec3 {
-                self.mach().dims[3] + self.get_tool().unwrap().get_vec()
+                self.mach().dims[3] + self.get_tool().unwrap().vec()
             }
         //
     // 
@@ -170,8 +170,8 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                 let mut inertias = vec![ ];
                 let mut segments = vec![ ];
                 let tool = self.get_tool().unwrap();
-                let tool_mass = tool.get_mass();
-                let mut point = tool.get_vec();
+                let tool_mass = tool.mass();
+                let mut point = tool.vec();
 
                 for i in 0 .. 4 { 
                     index = 3 - i;
@@ -201,13 +201,13 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                     = self.get_cylinder_vecs(vecs);
 
                 let fg_load = G * self.vars().load;
-                let fg_tool = G * self.get_tool().unwrap().get_mass();
+                let fg_tool = G * self.get_tool().unwrap().mass();
 
                 let fgs : [Vec3; 4] = self.mach().sim.iter().map(
                     |sim| sim.mass.0 * G
                 ).collect::<Vec<Vec3>>().try_into().unwrap();
 
-                let a_load = self.get_tool().unwrap().get_vec() + a_3;
+                let a_load = self.get_tool().unwrap().vec() + a_3;
 
                 let (t_3, f_3) = forces_joint(&vec![ (fg_load + fg_tool, a_load), (fgs[3], a_3 / 2.0) ], Vec3::ZERO);
                 let (f_c2, f_2) = forces_segment(&vec![ (f_3, a_2), (fgs[2], a_2 / 2.0) ], t_3, c2_pos_2, c2_dir_2);

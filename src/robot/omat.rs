@@ -46,7 +46,7 @@ impl ActRobot<3, 0, 1, 0> for Syomat
 
         #[inline]
         fn deco_axis(&self) -> Vec3 {
-            self.get_tool().unwrap().get_vec()
+            self.get_tool().unwrap().vec()
         }
     //
 
@@ -72,7 +72,7 @@ impl ActRobot<3, 0, 1, 0> for Syomat
 
     fn inertias_from_vecs(&self, _ : &Vectors<3>) -> [Inertia; 3] {
         let tool_inert = match self.get_tool() {
-            Some(tool) => Inertia(tool.get_mass()),
+            Some(tool) => Inertia(tool.mass()),
             None => Inertia::ZERO
         };
 
@@ -85,7 +85,7 @@ impl ActRobot<3, 0, 1, 0> for Syomat
 
     fn forces_from_vecs(&self, vecs : &Vectors<3>) -> [Force; 3] {
         let tool_inert = match self.get_tool() {
-            Some(tool) => Inertia(tool.get_mass()),
+            Some(tool) => Inertia(tool.mass()),
             None => Inertia::ZERO
         };
 
