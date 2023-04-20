@@ -20,8 +20,8 @@ sybot_lib = { version = \"0.8.0\", features = [ \"rasp\" ] }
 ```
 
 ```rust
-use sybot_lib::Robot;
-use sybot_lib::conf::JsonConf;
+use sybot_lib::{Robot, ActRobot};
+use sybot_lib::conf::JsonConfig;
 use sybot_lib::intpr::Interpreter;
 use sybot_lib::intpr::gcode::init_intpr;
 use sybot_lib::robot::SyArm;
