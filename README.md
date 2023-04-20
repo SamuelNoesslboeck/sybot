@@ -18,7 +18,7 @@ Full documentation will be added soon
 
 - Create an all-in-one library for controlling robots, exposing them to networks and doing basic calculations
 
-# In action
+## In action
 
 The following example creates a new [SyArm robot](https://github.com/SamuelNoesslboeck/SyArm_Mk1), runs all setup functions and executes a GCode-script. 
 
@@ -105,11 +105,11 @@ fn main() -> std::io::Result<()> {
 
 For more features, see [stepper_lib#features](https://crates.io/crates/stepper_lib#features)
 
-- [x] Robots
+- [x] [Robots](/docs/robots.md)
   - [x] Basic 3D-Printer like robot ("Syomat")
   - [x] Basic robotic arm ("SyArm")
   - [x] Custom robots
-  - [x] Tools
+  - [x] [Tools](/docs/robots/tools.md)
   - [ ] JSON configuration files
     - [x] Parsing
     - [ ] Generating
@@ -129,13 +129,6 @@ For more features, see [stepper_lib#features](https://crates.io/crates/stepper_l
   - [ ] Serial
 - [ ] Logging
 
-## Robots
-
-In order to access all the functionalities of the library, we must first create an instance of an existing robot type or create a new [custom one](#custom-robots). The library 
-
-### Custom robots
-
-### Tools
 
 ## Configuration
 
