@@ -1,7 +1,7 @@
 [package]
 name = "sybot_lib"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.8.1"
+version = "0.8.2"
 description = "A simple library to control groups of components and robots"
 edition = "2021"
 repository = "https://github.com/SamuelNoesslboeck/sybot_lib"
