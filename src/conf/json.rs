@@ -9,7 +9,7 @@ use stepper_lib::data::LinkedData;
 use crate::conf::{ConfigElement, MachineConfig};
 use crate::partlib;
 
-
+/// Struct for parsing a JSON-configuration file (".conf.json") and 
 #[derive(Serialize, Deserialize)]
 pub struct JsonConfig
 {
@@ -75,13 +75,13 @@ impl JsonConfig
         Ok(comp_group)
     }
 
-    pub fn get_machine<const N : usize, const D : usize, const A : usize>(&self) -> Result<MachineConfig<N, D, A>, std::io::Error> {
+    pub fn get_machine<const N : usize>(&self, dim : usize, rot : usize) -> Result<MachineConfig<N>, std::io::Error> {
         if self.comps.len() != N {
             return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, 
                 format!("Not enough components for machine! [Required: {}, Given: {}]", N, self.comps.len())))
         }
 
-        let mut mach : MachineConfig<N, D, A> = Default::default();
+        let mut mach : MachineConfig<N> = Default::default();
         
         // Init
         mach.name = self.name.clone();
@@ -93,23 +93,23 @@ impl JsonConfig
         };
 
         mach.dims = match &self.dims {
-            Some(dims) => match dims.iter().map(|axis_raw| Vec3::from(*axis_raw)).collect::<Vec<Vec3>>().try_into() {
-                Ok(val) => val, 
-                Err(_) => return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData, format!("Not enough dimensions defined for machine! [Required: {}, Given: {}]", D, dims.len())))
-            },
+            Some(dims) => dims.iter().map(
+                |axis_raw| Vec3::from(*axis_raw)
+            ).collect::<Vec<Vec3>>(),
             None => return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData, format!("Not enough dimensions defined for machine! [Required: {}, Given: 0]", D)))
+                std::io::ErrorKind::InvalidData, 
+                format!("Not enough dimensions defined for machine! [Required: {}, Given: 0]", dim )
+            ))
         };
 
         mach.axes = match &self.axes {
-            Some(axes) => match axes.iter().map(|axis_raw| Vec3::from(*axis_raw)).collect::<Vec<Vec3>>().try_into() {
-                Ok(val) => val, 
-                Err(_) => return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData, format!("Not enough axes defined for machine! [Required: {}, Given: {}]", A, axes.len())))
-            },
+            Some(axes) => axes.iter().map(
+                |axis_raw| Vec3::from(*axis_raw)
+            ).collect::<Vec<Vec3>>(),
             None => return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData, format!("Not enough axes defined for machine! [Required: {}, Given: 0]", A)))
+                std::io::ErrorKind::InvalidData, 
+                format!("Not enough axes defined for machine! [Required: {}, Given: 0]", rot )
+            ))
         };
 
         mach.tools = self.tools.iter().map(

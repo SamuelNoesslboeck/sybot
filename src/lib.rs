@@ -66,7 +66,7 @@ fn main() -> std::io::Result<()> {
 ```
 "]
 #![crate_name = "sybot_lib"]
-// #![deny(missing_docs)]
+#![deny(missing_docs)]
 
 extern crate alloc;
 
@@ -94,11 +94,13 @@ extern crate alloc;
     #[cfg(feature = "mqtt")]
     pub mod mqtt;
 
+    /// Partlibs help to simplify configuration files by storing standard-parts and motors
     pub mod partlib;
 
     /// Universal trait for input and output events happening in the robot. Used for 
     pub mod remote;
 
+    /// Contains predefined robots and traits to describe them
     pub mod robot;
     pub use robot::{ActRobot, BasicRobot, Robot};
 

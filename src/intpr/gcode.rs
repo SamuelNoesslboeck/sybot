@@ -127,31 +127,31 @@ impl<ROB, RES> Interpreter<ROB, RES> for GCodeIntpr<ROB, RES> {
     }
 // 
 
-pub fn init_intpr<R : SafeRobot<COMP, DECO, DIM, ROT, Error = stepper_lib::Error>, 
-    const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize>() 
+pub fn init_intpr<R : SafeRobot<C, Error = stepper_lib::Error>, 
+    const C : usize>() 
         -> GCodeIntpr<R, Result<serde_json::Value, R::Error>> 
 {
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
-            (0, gfuncs::g0::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
-            (4, gfuncs::g4::<R, COMP, DECO, DIM, ROT>),
-            (8, gfuncs::g8::<R, COMP, DECO, DIM, ROT>),
-            (28, gfuncs::g28::<R, COMP, DECO, DIM, ROT>),
-            // (29, gfuncs::g29::<R, COMP, DECO, DIM, ROT>),
-            (100, gfuncs::g100::<R, COMP, DECO, DIM, ROT>),
-            (1000, gfuncs::g1000::<R, COMP, DECO, DIM, ROT>),
-            (1100, gfuncs::g1100::<R, COMP, DECO, DIM, ROT>)
+            (0, gfuncs::g0::<R, C> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (4, gfuncs::g4::<R, C>),
+            (8, gfuncs::g8::<R, C>),
+            (28, gfuncs::g28::<R, C>),
+            // (29, gfuncs::g29::<R, C>),
+            (100, gfuncs::g100::<R, C>),
+            (1000, gfuncs::g1000::<R, C>),
+            (1100, gfuncs::g1100::<R, C>)
         ])), 
         (Letter::Miscellaneous, NumEntries::from([
-            (3, gfuncs::m3::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
-            (4, gfuncs::m4::<R, COMP, DECO, DIM, ROT>),
-            (5, gfuncs::m5::<R, COMP, DECO, DIM, ROT>),
-            (30, gfuncs::m30::<R, COMP, DECO, DIM, ROT>),
-            (119, gfuncs::m119::<R, COMP, DECO, DIM, ROT>),
-            (1006, gfuncs::m1006::<R, COMP, DECO, DIM, ROT>),
+            (3, gfuncs::m3::<R, C> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (4, gfuncs::m4::<R, C>),
+            (5, gfuncs::m5::<R, C>),
+            (30, gfuncs::m30::<R, C>),
+            (119, gfuncs::m119::<R, C>),
+            (1006, gfuncs::m1006::<R, C>),
         ])), 
         (Letter::ProgramNumber, NumEntries::from([
-            (0, gfuncs::o0::<R, COMP, DECO, DIM, ROT> as GCodeFunc<R, Result<serde_json::Value, R::Error>>)
+            (0, gfuncs::o0::<R, C> as GCodeFunc<R, Result<serde_json::Value, R::Error>>)
         ]))
     ]);
     

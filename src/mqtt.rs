@@ -10,10 +10,10 @@ use crate::remote::PushRemote;
 const TOPIC_PHIS : &str = "pos/phis";
 
 // Helpers
-fn phis_to_bytes<const DIM : usize>(phis : &[Phi; DIM]) -> Vec<u8> {
-    let mut bytes = vec![0u8; DIM * 4];
+fn phis_to_bytes<const C : usize>(phis : &[Phi; C]) -> Vec<u8> {
+    let mut bytes = vec![0u8; C * 4];
     
-    for i in 0 .. DIM {
+    for i in 0 .. C {
         let p_bytes = phis[i].0.to_le_bytes();
 
         for n in 0 .. size_of::<f32>() {
@@ -49,8 +49,8 @@ impl Publisher {
     }
 }
 
-impl<const DIM : usize> PushRemote<DIM> for Publisher {
-    fn pub_phis(&mut self, phis : &[Phi; DIM]) -> Result<(), crate::Error> {
+impl<const C : usize> PushRemote<C> for Publisher {
+    fn pub_phis(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error> {
         let msg = MessageBuilder::new()
             .topic(TOPIC_PHIS)
             .payload(phis_to_bytes(phis))

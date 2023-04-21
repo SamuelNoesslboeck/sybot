@@ -7,20 +7,20 @@ use crate::robot::Vectors;
 const G : Alpha = Alpha(-9.805);
 
 pub struct Syomat {
-    rob : BasicRobot<3, 0, 1, 0>
+    rob : BasicRobot<3>
 }
 
 #[allow(unused)]
-impl ActRobot<3, 0, 1, 0> for Syomat 
+impl ActRobot<3> for Syomat 
 {
     type Error = std::io::Error;
 
     // Composition
-        fn brob(&self) -> &BasicRobot<3, 0, 1, 0>{
+        fn brob(&self) -> &dyn Robot<3>{
             &self.rob
         }
 
-        fn brob_mut(&mut self) -> &mut BasicRobot<3, 0, 1, 0> {
+        fn brob_mut(&mut self) -> &mut dyn Robot<3> {
             &mut self.rob
         }
 
@@ -28,7 +28,7 @@ impl ActRobot<3, 0, 1, 0> for Syomat
             where
                 Self: Sized {
             Ok(Self {
-                rob: BasicRobot::from_conf(conf)?
+                rob: BasicRobot::from_conf(conf, 1, 0)?
             })
         }
     // 
@@ -61,13 +61,13 @@ impl ActRobot<3, 0, 1, 0> for Syomat
     }
 
     #[inline]
-    fn reduce_to_def(&self, pos : Vec3, _ : [f32; 0]) -> Vec3 {
-        pos
+    fn reduce_to_def(&self, pos : Vec3, _ : &[f32]) -> Result<Vec3, Self::Error> {
+        Ok(pos)
     }
 
     #[inline]
-    fn phis_from_vec(&self, pos : Vec3, deco : [f32; 0]) -> [Phi; 3] {
-        self.phis_from_def_vec(self.reduce_to_def(pos, deco))
+    fn phis_from_vec(&self, pos : Vec3, deco : &[f32]) -> Result<[Phi; 3], Self::Error> {
+        Ok(self.phis_from_def_vec(self.reduce_to_def(pos, deco)?)) 
     }
 
     fn inertias_from_vecs(&self, _ : &Vectors<3>) -> [Inertia; 3] {
@@ -114,10 +114,10 @@ impl ActRobot<3, 0, 1, 0> for Syomat
         self.apply_inertias(&self.inertias_from_vecs(&vectors));
 
         self.vars_mut().point = points[2];
-        self.vars_mut().decos = [ ];
+        self.vars_mut().decos = vec![];
 
         for rem in self.remotes_mut() {
-            rem.pub_phis(phis)?;
+            rem.publ_phis(phis)?;
         }
 
         Ok(())

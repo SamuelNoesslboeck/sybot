@@ -14,29 +14,29 @@ mod json;
 pub use json::*;
 
 #[derive(Debug)]
-pub struct MachineConfig<const N : usize, const D : usize, const A : usize>
+pub struct MachineConfig<const C : usize>
 {
     pub name: String,
 
     pub lk : Arc<LinkedData>,
 
     pub anchor : Vec3,
-    pub dims : [Vec3; D],
-    pub axes : [Vec3; A],
+    pub dims : Vec<Vec3>,
+    pub axes : Vec<Vec3>,
 
     pub tools : Vec<Box<dyn Tool + Send>>,
 
-    pub vels : [Omega; N],
-    pub home : [Gamma; N],
-    pub meas_dist : [Delta; N],
+    pub vels : [Omega; C],
+    pub home : [Gamma; C],
+    pub meas_dist : [Delta; C],
     
-    pub ang : [AngleData; N],
-    pub sim : [SimData; N],
-    pub meas : [MeasInstance; N],
-    pub limit : [LimitDecl; N]
+    pub ang : [AngleData; C],
+    pub sim : [SimData; C],
+    pub meas : [MeasInstance; C],
+    pub limit : [LimitDecl; C]
 }
 
-impl<const N : usize, const D : usize, const A : usize> Default for MachineConfig<N, D, A> 
+impl<const C : usize> Default for MachineConfig<C> 
 {
     fn default() -> Self {
         Self {
@@ -44,26 +44,30 @@ impl<const N : usize, const D : usize, const A : usize> Default for MachineConfi
             lk: Default::default(),
 
             anchor: Default::default(),
-            dims: [Default::default(); D],
-            axes: [Default::default(); A], 
+            dims: Default::default(),
+            axes: Default::default(), 
 
             tools: vec![],
 
-            vels: [Omega::ZERO; N],
-            home: [Gamma::ZERO; N],
-            meas_dist: [Delta::ZERO; N],
+            vels: [Omega::ZERO; C],
+            home: [Gamma::ZERO; C],
+            meas_dist: [Delta::ZERO; C],
             
-            ang: [Default::default(); N],
-            sim: [Default::default(); N],
-            meas: [Default::default(); N],
-            limit: [Default::default(); N]
+            ang: [Default::default(); C],
+            sim: [Default::default(); C],
+            meas: [Default::default(); C],
+            limit: [Default::default(); C]
         }
     }
 }
 
-impl<const N : usize, const D : usize, const A : usize> MachineConfig<N, D, A>
+impl<const C : usize> MachineConfig<C>
 {
-    pub fn get_axes(&self, angles : &[Phi; A]) -> Vec<Mat3> {
+    pub fn get_axes<const A : usize>(&self, angles : &[Phi; A]) -> Vec<Mat3> {
+        if A > self.axes.len() {
+            panic!("Bad number of axes! (Required: {}, Present: {})", A, self.axes.len());
+        }
+
         let mut matr = vec![];
 
         for i in 0 .. A {
@@ -86,12 +90,12 @@ impl<const N : usize, const D : usize, const A : usize> MachineConfig<N, D, A>
     }
 }
 
-impl<const N : usize, const D : usize, const A : usize> MachineConfig<N, D, A>
+impl<const C : usize> MachineConfig<C>
 {
-    pub fn gammas_from_phis(&self, phis : [Phi; N]) -> [Gamma; N] {
-        let mut gammas = [Gamma::ZERO; N];
+    pub fn gammas_from_phis(&self, phis : [Phi; C]) -> [Gamma; C] {
+        let mut gammas = [Gamma::ZERO; C];
 
-        for i in 0 .. N {
+        for i in 0 .. C {
             gammas[i] = if self.ang[i].counter { 
                 -phis[i].force_to_gamma() + self.ang[i].offset
             } else { 
@@ -102,10 +106,10 @@ impl<const N : usize, const D : usize, const A : usize> MachineConfig<N, D, A>
         gammas
     }
 
-    pub fn phis_from_gammas(&self, gammas : [Gamma; N]) -> [Phi; N] {
-        let mut phis = [Phi::ZERO; N];
+    pub fn phis_from_gammas(&self, gammas : [Gamma; C]) -> [Phi; C] {
+        let mut phis = [Phi::ZERO; C];
 
-        for i in 0 .. N {
+        for i in 0 .. C {
             phis[i] = (if self.ang[i].counter { 
                 -gammas[i]
             } else { 

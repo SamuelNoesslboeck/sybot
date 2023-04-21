@@ -33,7 +33,7 @@ mod postion
         ];
         
         for pos in positions {
-            let angles = syarm.phis_from_vec(pos, [ 0.0 ]);
+            let angles = syarm.phis_from_vec(pos, &[ 0.0 ])?;
             let points = syarm.points_from_phis(&angles);
 
             println!("{:?}", angles);

@@ -9,21 +9,21 @@ use crate::remote::PushRemote;
 use crate::robot::RobotVars;
 
 /// A basic robot structure which new robot types can derive upon
-pub struct BasicRobot<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> {
+pub struct BasicRobot<const C : usize> {
     conf : Option<JsonConfig>,
-    mach : MachineConfig<COMP, DIM, ROT>,
+    mach : MachineConfig<C>,
 
-    vars : RobotVars<DECO>,
+    vars : RobotVars,
 
-    rem : Vec<Box<dyn PushRemote<COMP>>>,
+    rem : Vec<Box<dyn PushRemote<C>>>,
 
     // Controls
-    comps : [Box<dyn SyncComp>; COMP],
+    comps : [Box<dyn SyncComp>; C],
 
     tool_id : usize
 }
 
-impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> BasicRobot<COMP, DECO, DIM, ROT> {
+impl<const C : usize> BasicRobot<C> {
     /// Prints a brief summary of the configuration file applied to the robot
     #[cfg(feature = "dbg-funcs")]
     pub fn print_conf_header(&self) {
@@ -37,7 +37,7 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
 
             println!("|");
             println!("| {}", "[Components]".bright_blue().bold());
-            for i in 0 .. COMP {
+            for i in 0 .. C {
                 println!("| | {}: {}", conf.comps[i].name, format!("\"{}\"", conf.comps[i].type_name.split("::").last().unwrap()).green());
             }
 
@@ -50,8 +50,7 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
     }
 }
 
-impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usize> Robot<COMP, DECO, DIM, ROT> 
-    for BasicRobot<COMP, DECO, DIM, ROT> {
+impl<const C : usize> Robot<C> for BasicRobot<C> {
     // Setup
         fn setup(&mut self) {
             self.comps.setup();
@@ -63,8 +62,8 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
     // 
 
     // Conf
-        fn from_conf(conf : JsonConfig) -> Result<Self, crate::Error> {
-            let mach = conf.get_machine()?;
+        fn from_conf(conf : JsonConfig, dim : usize, rot : usize) -> Result<Self, crate::Error> {
+            let mach = conf.get_machine::<C>(dim, rot)?;
             let comps = conf.get_async_comps()?;
 
             Ok(Self { 
@@ -91,35 +90,35 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
 
     // Data 
         #[inline]
-        fn comps(&self) -> &dyn SyncCompGroup<dyn SyncComp, COMP> {
+        fn comps(&self) -> &dyn SyncCompGroup<dyn SyncComp, C> {
             &self.comps
         }
 
         #[inline]
-        fn comps_mut(&mut self) -> &mut dyn SyncCompGroup<dyn SyncComp, COMP> {
+        fn comps_mut(&mut self) -> &mut dyn SyncCompGroup<dyn SyncComp, C> {
             &mut self.comps
         }
 
         #[inline]
-        fn vars(&self) -> &RobotVars<DECO> {
+        fn vars(&self) -> &RobotVars {
             &self.vars
         }
 
         #[inline(always)]
-        fn vars_mut(&mut self) -> &mut RobotVars<DECO> {
+        fn vars_mut(&mut self) -> &mut RobotVars {
             &mut self.vars
         }
 
         #[inline(always)]
-        fn mach(&self) -> &MachineConfig<COMP, DIM, ROT> {
+        fn mach(&self) -> &MachineConfig<C> {
             &self.mach
         }
 
         #[inline]
-        fn max_vels(&self) -> [Omega; COMP] {
+        fn max_vels(&self) -> [Omega; C] {
             let mut vels = self.mach.vels.clone();
 
-            for i in 0 .. COMP {
+            for i in 0 .. C {
                 vels[i] = vels[i] * self.vars.f_speed;
             }
 
@@ -127,12 +126,12 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
         }
 
         #[inline]
-        fn meas_deltas(&self) -> &[Delta; COMP] {
+        fn meas_deltas(&self) -> &[Delta; C] {
             &self.mach.meas_dist
         }
 
         #[inline]
-        fn home_pos(&self) -> &[Gamma; COMP] {
+        fn home_pos(&self) -> &[Gamma; C] {
             &self.mach.home
         }
 
@@ -251,15 +250,15 @@ impl<const COMP : usize, const DECO : usize, const DIM : usize, const ROT : usiz
     //
 
     // Remotes
-        fn add_remote(&mut self, remote : Box<dyn PushRemote<COMP> + 'static>) {
+        fn add_remote(&mut self, remote : Box<dyn PushRemote<C> + 'static>) {
             self.rem.push(remote);
         }
 
-        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote<COMP>>> {
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote<C>>> {
             &self.rem
         }
 
-        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<COMP>>> {
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<C>>> {
             &mut self.rem
         }
     // 

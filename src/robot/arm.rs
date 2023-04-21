@@ -17,7 +17,7 @@ const G : Vec3 = Vec3 { x: 0.0, y: 0.0, z: -9.805 };
 
 /// Calculation and control struct for the SyArm robot
 pub struct SyArm {
-    rob : BasicRobot<4, 1, 4, 4>
+    rob : BasicRobot<4>
 }
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
@@ -42,6 +42,12 @@ fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
     ((a.powi(2) + b.powi(2) - c.powi(2)) / 2.0 / a / b).acos()
 }
 
+macro_rules! not_enough_deco_angles {
+    () => {
+        Err(std::io::Error::new(std::io::ErrorKind::Other, "Not enough deco angles provieded!"))
+    };
+}
+
 /// Exchange tuple type for directional and positional vectors of the robot 
 #[derive(Clone, Copy, Debug)]
 pub struct CylVectors(
@@ -57,18 +63,17 @@ pub struct CylVectors(
 );
 
 
-impl ActRobot<4, 1, 4, 4> for SyArm 
-{   
+impl ActRobot<4> for SyArm {   
     // Types
         type Error = stepper_lib::Error;
     // 
 
     // Composition
-        fn brob(&self) -> &BasicRobot<4, 1, 4, 4> {
+        fn brob(&self) -> &dyn Robot<4> {
             &self.rob
         }
 
-        fn brob_mut(&mut self) -> &mut BasicRobot<4, 1, 4, 4> {
+        fn brob_mut(&mut self) -> &mut dyn Robot<4> {
             &mut self.rob
         }
 
@@ -76,7 +81,7 @@ impl ActRobot<4, 1, 4, 4> for SyArm
             where
                 Self: Sized {
             Ok(Self {
-                rob: BasicRobot::from_conf(conf)?
+                rob: BasicRobot::from_conf(conf, 4, 4)?
             })
         }
     // 
@@ -142,7 +147,11 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                 [ Phi(phi_b), Phi(phi_1), Phi(phi_2), Phi::ZERO ]    
             }
 
-            fn reduce_to_def(&self, pos : Vec3, dec_ang : [f32; 1]) -> Vec3 {
+            fn reduce_to_def(&self, pos : Vec3, dec_ang : &[f32]) -> Result<Vec3, Self::Error> {
+                if dec_ang.len() < 1 {  
+                    return not_enough_deco_angles!();
+                }
+
                 // Rotate onto Y-Z plane
                 let phi_b = top_down_angle(pos) - PI/2.0;
 
@@ -151,14 +160,14 @@ impl ActRobot<4, 1, 4, 4> for SyArm
                 let dec_rot = Mat3::from_rotation_z(phi_b) * Mat3::from_rotation_x(dec_ang[0]) * dec;
 
                 // Triganlge point
-                pos - dec_rot - self.mach().anchor - self.mach().dims[0]
+                Ok(pos - dec_rot - self.mach().anchor - self.mach().dims[0])
             }
 
-            fn phis_from_vec(&self, pos : Vec3, dec_ang : [f32; 1]) -> [Phi; 4] {
-                let pos_def = self.reduce_to_def(pos, dec_ang);
+            fn phis_from_vec(&self, pos : Vec3, dec_ang : &[f32]) -> Result<[Phi; 4], Self::Error> {
+                let pos_def = self.reduce_to_def(pos, dec_ang)?;
                 let mut phis = self.phis_from_def_vec(pos_def);
                 phis[3] = Phi(dec_ang[0] - (phis[1].0 + phis[2].0));
-                phis
+                Ok(phis)
             }
         //
 
@@ -241,10 +250,10 @@ impl ActRobot<4, 1, 4, 4> for SyArm
             self.apply_inertias(&self.inertias_from_vecs(&vectors));
 
             self.vars_mut().point = points[3];
-            self.vars_mut().decos = [ phis[1].0 + phis[2].0 + phis[3].0 ];
+            self.vars_mut().decos = vec![ phis[1].0 + phis[2].0 + phis[3].0 ];
 
             for rem in self.remotes_mut() {
-                rem.pub_phis(phis)?;
+                rem.publ_phis(phis)?;
             }
 
             Ok(())
@@ -255,7 +264,10 @@ impl ActRobot<4, 1, 4, 4> for SyArm
         fn measure(&mut self) -> Result<[Delta; 4], crate::Error> {
             let deltas = self.mach().meas_dist;
             let omegas = self.mach().vels;
-            let set_dists = self.mach().meas.iter().map(|meas| meas.set_val).collect::<Vec<Gamma>>().try_into().unwrap();
+            let set_dists = self.mach().meas.iter().map(
+                |meas| meas.set_val
+            ).collect::<Vec<Gamma>>().try_into().unwrap();
+
             let deltas = self.comps_mut().measure(deltas, omegas, set_dists)?;
 
             self.set_limit();
@@ -292,14 +304,14 @@ impl SyArm {
         }
 }
 
-impl SafeRobot<4, 1, 4, 4> for SyArm {
-    fn check_gammas(&self, gammas : [Gamma; 4]) -> Result<[Gamma; 4], ([Delta; 4], Self::Error)> {
+impl SafeRobot<4> for SyArm {
+    fn check_gammas(&self, gammas : [Gamma; 4]) -> Result<[Gamma; 4], Self::Error> {
         let valids = self.comps().lims_for_gammas(&gammas);
         
         for valid in valids {
             if valid.is_normal() {
-                return Err((valids, Error::new(std::io::ErrorKind::InvalidInput, 
-                    format!("The Gammas/Phis given are not valid {:?}", valids))))
+                return Err(Error::new(std::io::ErrorKind::InvalidInput, 
+                    format!("The Gammas/Phis given are not valid {:?}", valids)))
             }
         }
 
