@@ -66,7 +66,6 @@ fn main() -> std::io::Result<()> {
 ```
 "]
 #![crate_name = "sybot_lib"]
-#![deny(missing_docs)]
 
 extern crate alloc;
 
