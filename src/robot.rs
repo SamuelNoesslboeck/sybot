@@ -129,4 +129,9 @@ pub trait Robot<const C : usize> {
         /// Returns a mutable reference to all remotes of the robot
         fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<C>>>;
     // 
+
+    // Debug functions
+        /// Prints out an overview of this robots configuration
+        fn print_conf_header(&self);
+    // 
 }

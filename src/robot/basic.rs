@@ -23,33 +23,6 @@ pub struct BasicRobot<const C : usize> {
     tool_id : usize
 }
 
-impl<const C : usize> BasicRobot<C> {
-    /// Prints a brief summary of the configuration file applied to the robot
-    #[cfg(feature = "dbg-funcs")]
-    pub fn print_conf_header(&self) {
-        if let Some(conf) = &self.conf {
-            println!("{}", format!("[{}]", conf.name).bright_blue().bold());
-            println!("| {} {}", "Version:".bold(), conf.conf_version.italic().truecolor(0xEA, 0x8C, 0x43));
-
-            if let Some(author) = &conf.author {
-                println!("| {} {}", "Author:".bold(), author.italic().yellow());
-            }
-
-            println!("|");
-            println!("| {}", "[Components]".bright_blue().bold());
-            for i in 0 .. C {
-                println!("| | {}: {}", conf.comps[i].name, format!("\"{}\"", conf.comps[i].type_name.split("::").last().unwrap()).green());
-            }
-
-            println!("|");
-            println!("| {}", "[Tools]".bright_blue().bold());
-            for i in 0 .. conf.tools.len() {
-                println!("| | {}: {}", conf.tools[i].name, format!("\"{}\"", conf.tools[i].type_name.split("::").last().unwrap()).green());
-            }
-        }
-    }
-}
-
 impl<const C : usize> Robot<C> for BasicRobot<C> {
     // Setup
         fn setup(&mut self) {
@@ -260,6 +233,33 @@ impl<const C : usize> Robot<C> for BasicRobot<C> {
 
         fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote<C>>> {
             &mut self.rem
+        }
+    // 
+
+    // Debug
+        /// Prints a brief summary of the configuration file applied to the robot
+        #[cfg(feature = "dbg-funcs")]
+        fn print_conf_header(&self) {
+            if let Some(conf) = &self.conf {
+                println!("{}", format!("[{}]", conf.name).bright_blue().bold());
+                println!("| {} {}", "Version:".bold(), conf.conf_version.italic().truecolor(0xEA, 0x8C, 0x43));
+
+                if let Some(author) = &conf.author {
+                    println!("| {} {}", "Author:".bold(), author.italic().yellow());
+                }
+
+                println!("|");
+                println!("| {}", "[Components]".bright_blue().bold());
+                for i in 0 .. C {
+                    println!("| | {}: {}", conf.comps[i].name, format!("\"{}\"", conf.comps[i].type_name.split("::").last().unwrap()).green());
+                }
+
+                println!("|");
+                println!("| {}", "[Tools]".bright_blue().bold());
+                for i in 0 .. conf.tools.len() {
+                    println!("| | {}: {}", conf.tools[i].name, format!("\"{}\"", conf.tools[i].type_name.split("::").last().unwrap()).green());
+                }
+            }
         }
     // 
 }

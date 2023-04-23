@@ -2,7 +2,7 @@ use glam::Vec3;
 use stepper_lib::{SyncCompGroup, SyncComp, Tool};
 use stepper_lib::units::*;
 
-use crate::{Robot, BasicRobot};
+use crate::Robot;
 use crate::conf::{JsonConfig, MachineConfig};
 use crate::remote::PushRemote;
 use crate::robot::{Points, Vectors, RobotVars};
