@@ -1,4 +1,4 @@
-use sybot_lib::ActRobot;
+use sybot_lib::{ActRobot, Setup};
 use sybot_lib::conf::JsonConfig;
 use sybot_lib::intpr::Interpreter;
 use sybot_lib::intpr::gcode::init_intpr;
@@ -24,7 +24,7 @@ fn main() -> std::io::Result<()> {
     )?;
 
     // Run setup functions
-    syarm.setup();
+    syarm.setup()?;
     // Enables async movements (multiple motors moving at once)
     syarm.setup_async();
 

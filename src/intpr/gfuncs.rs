@@ -28,9 +28,9 @@ use crate::robot::SafeRobot;
         robot.apply_speed_f(f_speed);
 
         let deltas = if c.minor_number() == 0 {
-            robot.drive_abs(robot.gammas_from_phis(phis))?
+            robot.move_j_abs(robot.gammas_from_phis(phis))?
         } else if c.minor_number() == 1 {
-            robot.drive_abs_async(robot.gammas_from_phis(phis))?;
+            robot.move_j_abs_async(robot.gammas_from_phis(phis))?;
             robot.await_inactive()?
         } else {
             // Create error!
@@ -74,7 +74,7 @@ use crate::robot::SafeRobot;
             vec![0.0; C].as_slice()
         )?; 
 
-        robot.drive_abs_async(robot.gammas_from_phis(angles))?;
+        robot.move_j_abs_async(robot.gammas_from_phis(angles))?;
         robot.await_inactive()?;
         robot.update(None)?;
 
@@ -115,7 +115,7 @@ use crate::robot::SafeRobot;
     {
         let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
 
-        let deltas = robot.drive_abs(robot.gammas_from_phis(phis))?;
+        let deltas = robot.move_j_abs(robot.gammas_from_phis(phis))?;
         robot.update(None)?;
         Ok(serde_json::json!({ 
             "phis": Vec::from(phis),

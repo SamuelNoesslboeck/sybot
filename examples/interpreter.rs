@@ -3,7 +3,7 @@ use std::time::Instant;
 use colored::Colorize; 
 use colored_json::to_colored_json_auto;
 
-use sybot_lib::ActRobot;
+use sybot_lib::{ActRobot, Setup};
 use sybot_lib::conf::JsonConfig;
 use sybot_lib::intpr::Interpreter;
 use sybot_lib::intpr::gcode::init_intpr;
@@ -20,7 +20,7 @@ fn main() -> std::io::Result<()> {
         JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
     )?;
 
-    syarm.setup();
+    syarm.setup()?;
     syarm.setup_async();
 
     // Print Header

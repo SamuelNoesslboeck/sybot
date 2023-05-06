@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-use stepper_lib::{Tool, SyncComp, SyncCompGroup};
+use stepper_lib::{Tool, SyncComp, SyncCompGroup, Setup};
 use stepper_lib::units::*;
 
 use crate::Robot;
@@ -23,12 +23,14 @@ pub struct BasicRobot<const C : usize> {
     tool_id : usize
 }
 
+impl<const C : usize> Setup for BasicRobot<C> {
+    fn setup(&mut self) -> Result<(), stepper_lib::Error> {
+        self.comps.setup()
+    }
+}
+
 impl<const C : usize> Robot<C> for BasicRobot<C> {
     // Setup
-        fn setup(&mut self) {
-            self.comps.setup();
-        }
-
         fn setup_async(&mut self) {
             self.comps.setup_async();
         }

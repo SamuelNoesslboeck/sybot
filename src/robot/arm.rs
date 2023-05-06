@@ -6,7 +6,7 @@ use glam::{Vec3, Mat3};
 
 use stepper_lib::math::force::{forces_segment, forces_joint};
 use stepper_lib::math::inertia::{inertia_point, inertia_rod_constr, inertia_to_mass, };
-use stepper_lib::units::*;
+use stepper_lib::{units::*, Setup};
 
 use crate::{ActRobot, BasicRobot, Robot};
 use crate::robot::{SafeRobot, Vectors};
@@ -62,6 +62,11 @@ pub struct CylVectors(
     pub (Vec3, Vec3)        
 );
 
+impl Setup for SyArm {
+    fn setup(&mut self) -> Result<(), stepper_lib::Error> {
+        self.brob_mut().setup()
+    }
+}
 
 impl ActRobot<4> for SyArm {   
     // Types

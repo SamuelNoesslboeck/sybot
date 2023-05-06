@@ -1,5 +1,5 @@
 use glam::Vec3;
-use stepper_lib::units::*; 
+use stepper_lib::{units::*, Setup}; 
 
 use crate::{ActRobot, Robot, BasicRobot};
 use crate::robot::Vectors;
@@ -8,6 +8,12 @@ const G : Alpha = Alpha(-9.805);
 
 pub struct Syomat {
     rob : BasicRobot<3>
+}
+
+impl Setup for Syomat {
+    fn setup(&mut self) -> Result<(), stepper_lib::Error> {
+        self.brob_mut().setup()
+    }
 }
 
 #[allow(unused)]

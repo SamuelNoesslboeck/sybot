@@ -3,9 +3,12 @@
 
 extern crate alloc;
 
+pub use stepper_lib::{Setup, Tool, SyncComp};
+
 // Module decleration
     /// I/O for configuration files to parse whole robots out of JSON-text
     pub mod conf;
+    pub use conf::{JsonConfig, MachineConfig};
 
     /// Structures and methods for exposing the robot to the internet with a HTTP server 
     /// 
@@ -18,6 +21,9 @@ extern crate alloc;
     /// Interpreters for sending text commands to control a [BasicRobot](crate::BasicRobot)
     pub mod intpr;
     pub use intpr::Interpreter;
+
+    /// Structs and functions for calculating paths, loads and more
+    pub mod math;
 
     /// Structures and methods for exposing the robot to the internet with a MQTT server
     /// 

@@ -1,5 +1,5 @@
 use glam::Vec3;
-use stepper_lib::{SyncCompGroup, SyncComp, Tool};
+use stepper_lib::{SyncCompGroup, SyncComp, Tool, Setup};
 use stepper_lib::units::*;
 
 use crate::Robot;
@@ -7,8 +7,7 @@ use crate::conf::{JsonConfig, MachineConfig};
 use crate::remote::PushRemote;
 use crate::robot::{Points, Vectors, RobotVars};
 
-pub trait ActRobot<const C : usize>
-{
+pub trait ActRobot<const C : usize> : Setup {
     // Types
         type Error : std::error::Error;
     // 
@@ -19,11 +18,6 @@ pub trait ActRobot<const C : usize>
         fn brob_mut(&mut self) -> &mut dyn Robot<C>;
 
         // Setup
-            #[inline(always)]
-            fn setup(&mut self) {
-                self.brob_mut().setup()
-            }
-
             #[inline(always)]
             fn setup_async(&mut self) {
                 self.brob_mut().setup_async();
@@ -294,26 +288,26 @@ pub trait ActRobot<const C : usize>
 
     // Movement
         #[inline]
-        fn drive_rel(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], stepper_lib::Error> {
+        fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], stepper_lib::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_rel(deltas, vels)
         }
 
         #[inline]
-        fn drive_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], stepper_lib::Error> {
+        fn move_j_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], stepper_lib::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_abs(gammas, vels)
         }
 
         // Async 
         #[inline]
-        fn drive_rel_async(&mut self, deltas : [Delta; C]) -> Result<(), stepper_lib::Error> {
+        fn move_j_async(&mut self, deltas : [Delta; C]) -> Result<(), stepper_lib::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_rel_async(deltas, vels)
         }
         
         #[inline]
-        fn drive_abs_async(&mut self, gammas : [Gamma; C]) -> Result<(), stepper_lib::Error> {
+        fn move_j_abs_async(&mut self, gammas : [Gamma; C]) -> Result<(), stepper_lib::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_abs_async(gammas, vels)
         }

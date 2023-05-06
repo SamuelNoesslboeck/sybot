@@ -1,5 +1,6 @@
 use glam::Vec3; 
 
+use stepper_lib::Setup;
 use stepper_lib::SyncComp;
 use stepper_lib::SyncCompGroup;
 use stepper_lib::Tool;
@@ -37,11 +38,8 @@ pub type Points<const COMP : usize> = [Vec3; COMP];
 pub type Vectors<const COMP : usize> = [Vec3; COMP]; 
 
 /// A trait to define the basic data I/O that can be done with a robot
-pub trait Robot<const C : usize> {
+pub trait Robot<const C : usize> : Setup {
     // Setup
-        /// Runs all the required functions to setup the robot and make it useable
-        fn setup(&mut self); 
-
         /// Runs all the required functions to setup the async processes of the robot
         fn setup_async(&mut self);
     // 
