@@ -12,7 +12,7 @@ mod postion
     use super::*;
 
     #[test]
-    fn double_convert() -> std::io::Result<()> {
+    fn double_convert() -> Result<(), crate::Error> {
         let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
@@ -46,7 +46,7 @@ mod postion
     }
 
     #[test]
-    fn single_convert() -> std::io::Result<()>  {
+    fn single_convert() -> Result<(), crate::Error>  {
         let libs = crate::partlib::create_std_libs();
         let syarm = SyArm::from_conf(
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
@@ -61,7 +61,7 @@ mod postion
     }
 
     #[test]
-    fn angles_for_components_without_meas() -> std::io::Result<()>  {
+    fn angles_for_components_without_meas() -> Result<(), crate::Error>  {
         let libs = crate::partlib::create_std_libs();
         let syarm = SyArm::from_conf(
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
@@ -76,7 +76,7 @@ mod postion
     }    
 
     #[test]
-    fn angles_for_components_with_meas() -> std::io::Result<()> {
+    fn angles_for_components_with_meas() -> Result<(), crate::Error> {
         let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
@@ -98,7 +98,7 @@ mod load
     use super::*;
     
     #[test]
-    fn inertias() -> std::io::Result<()> {
+    fn inertias() -> Result<(), crate::Error> {
         let libs = crate::partlib::create_std_libs();
         let mut syarm = SyArm::from_conf(
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")

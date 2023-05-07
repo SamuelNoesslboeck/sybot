@@ -12,7 +12,7 @@ use sybot_lib::robot::SyArm;
 const AUTHOR : &str = "Samuel Nösslböck (Sy)";
 const VERSION : &str = "0.1.0";
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), sybot_lib::Error> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
     let libs = sybot_lib::partlib::create_std_libs();

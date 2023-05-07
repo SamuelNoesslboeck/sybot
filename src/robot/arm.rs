@@ -44,7 +44,7 @@ fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
 
 macro_rules! not_enough_deco_angles {
     () => {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "Not enough deco angles provieded!"))
+        Err("Not enough deco angles provieded!".into())
     };
 }
 
@@ -63,16 +63,12 @@ pub struct CylVectors(
 );
 
 impl Setup for SyArm {
-    fn setup(&mut self) -> Result<(), stepper_lib::Error> {
+    fn setup(&mut self) -> Result<(), crate::Error> {
         self.brob_mut().setup()
     }
 }
 
 impl ActRobot<4> for SyArm {   
-    // Types
-        type Error = stepper_lib::Error;
-    // 
-
     // Composition
         fn brob(&self) -> &dyn Robot<4> {
             &self.rob
@@ -82,7 +78,7 @@ impl ActRobot<4> for SyArm {
             &mut self.rob
         }
 
-        fn from_conf(conf : crate::conf::JsonConfig) -> Result<Self, std::io::Error>
+        fn from_conf(conf : crate::conf::JsonConfig) -> Result<Self, crate::Error>
             where
                 Self: Sized {
             Ok(Self {
@@ -152,7 +148,7 @@ impl ActRobot<4> for SyArm {
                 [ Phi(phi_b), Phi(phi_1), Phi(phi_2), Phi::ZERO ]    
             }
 
-            fn reduce_to_def(&self, pos : Vec3, dec_ang : &[f32]) -> Result<Vec3, Self::Error> {
+            fn reduce_to_def(&self, pos : Vec3, dec_ang : &[f32]) -> Result<Vec3, crate::Error> {
                 if dec_ang.len() < 1 {  
                     return not_enough_deco_angles!();
                 }
@@ -168,7 +164,7 @@ impl ActRobot<4> for SyArm {
                 Ok(pos - dec_rot - self.mach().anchor - self.mach().dims[0])
             }
 
-            fn phis_from_vec(&self, pos : Vec3, dec_ang : &[f32]) -> Result<[Phi; 4], Self::Error> {
+            fn phis_from_vec(&self, pos : Vec3, dec_ang : &[f32]) -> Result<[Phi; 4], crate::Error> {
                 let pos_def = self.reduce_to_def(pos, dec_ang)?;
                 let mut phis = self.phis_from_def_vec(pos_def);
                 phis[3] = Phi(dec_ang[0] - (phis[1].0 + phis[2].0));
@@ -310,13 +306,13 @@ impl SyArm {
 }
 
 impl SafeRobot<4> for SyArm {
-    fn check_gammas(&self, gammas : [Gamma; 4]) -> Result<[Gamma; 4], Self::Error> {
+    fn check_gammas(&self, gammas : [Gamma; 4]) -> Result<[Gamma; 4], crate::Error> {
         let valids = self.comps().lims_for_gammas(&gammas);
         
         for valid in valids {
             if valid.is_normal() {
-                return Err(Error::new(std::io::ErrorKind::InvalidInput, 
-                    format!("The Gammas/Phis given are not valid {:?}", valids)))
+                return Err(Box::new(Error::new(std::io::ErrorKind::InvalidInput, 
+                    format!("The Gammas/Phis given are not valid {:?}", valids))))
             }
         }
 

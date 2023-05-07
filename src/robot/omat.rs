@@ -11,16 +11,13 @@ pub struct Syomat {
 }
 
 impl Setup for Syomat {
-    fn setup(&mut self) -> Result<(), stepper_lib::Error> {
+    fn setup(&mut self) -> Result<(), crate::Error> {
         self.brob_mut().setup()
     }
 }
 
 #[allow(unused)]
-impl ActRobot<3> for Syomat 
-{
-    type Error = std::io::Error;
-
+impl ActRobot<3> for Syomat {
     // Composition
         fn brob(&self) -> &dyn Robot<3>{
             &self.rob
@@ -30,7 +27,7 @@ impl ActRobot<3> for Syomat
             &mut self.rob
         }
 
-        fn from_conf(conf : crate::conf::JsonConfig) -> Result<Self, std::io::Error>
+        fn from_conf(conf : crate::conf::JsonConfig) -> Result<Self, crate::Error>
             where
                 Self: Sized {
             Ok(Self {
@@ -67,12 +64,12 @@ impl ActRobot<3> for Syomat
     }
 
     #[inline]
-    fn reduce_to_def(&self, pos : Vec3, _ : &[f32]) -> Result<Vec3, Self::Error> {
+    fn reduce_to_def(&self, pos : Vec3, _ : &[f32]) -> Result<Vec3, crate::Error> {
         Ok(pos)
     }
 
     #[inline]
-    fn phis_from_vec(&self, pos : Vec3, deco : &[f32]) -> Result<[Phi; 3], Self::Error> {
+    fn phis_from_vec(&self, pos : Vec3, deco : &[f32]) -> Result<[Phi; 3], crate::Error> {
         Ok(self.phis_from_def_vec(self.reduce_to_def(pos, deco)?)) 
     }
 
@@ -129,7 +126,7 @@ impl ActRobot<3> for Syomat
         Ok(())
     }
 
-    fn measure(&mut self) -> Result<[Delta; 3], stepper_lib::Error> {
+    fn measure(&mut self) -> Result<[Delta; 3], crate::Error> {
         todo!()
     }
 }

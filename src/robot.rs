@@ -46,7 +46,7 @@ pub trait Robot<const C : usize> : Setup {
 
     // Configuration
         /// Creates a new instance of the robot from a Json-Configuration file if it's format is appropriate
-        fn from_conf(conf : JsonConfig, dim : usize, rot : usize) -> Result<Self, std::io::Error>
+        fn from_conf(conf : JsonConfig, dim : usize, rot : usize) -> Result<Self, crate::Error>
         where
             Self: Sized;    
 

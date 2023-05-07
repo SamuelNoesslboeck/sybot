@@ -4,7 +4,7 @@ use sybot_lib::intpr::Interpreter;
 use sybot_lib::intpr::gcode::init_intpr;
 use sybot_lib::robot::SyArm;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), sybot_lib::Error> {
     // Load the standard-partlibs in order to use motor names as data
     //
     // ```json

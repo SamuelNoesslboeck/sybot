@@ -17,7 +17,7 @@ pub trait SafeRobot<const C : usize> : ActRobot<C>
             )
         }
 
-        fn safe_phis(&self, phi_opts : [Option<f32>; C]) -> Result<[Phi; C], Self::Error> {
+        fn safe_phis(&self, phi_opts : [Option<f32>; C]) -> Result<[Phi; C], crate::Error> {
             let mut phis = self.phis();
 
             for i in 0 .. C {
@@ -37,17 +37,17 @@ pub trait SafeRobot<const C : usize> : ActRobot<C>
             safe_deco
         }
 
-        fn safe_phis_for_vec(&self, pos : Vec3, deco : &[f32]) -> Result<[Phi; C], Self::Error> {
+        fn safe_phis_for_vec(&self, pos : Vec3, deco : &[f32]) -> Result<[Phi; C], crate::Error> {
             let phis = self.phis_from_vec(pos, deco)?;
             self.check_phis(phis)
         }
     // 
 
     // Validation
-        fn check_gammas(&self, gammas : [Gamma; C]) -> Result<[Gamma; C], Self::Error>;
+        fn check_gammas(&self, gammas : [Gamma; C]) -> Result<[Gamma; C], crate::Error>;
 
         #[inline]
-        fn check_phis(&self, phis : [Phi; C]) -> Result<[Phi; C], Self::Error> {
+        fn check_phis(&self, phis : [Phi; C]) -> Result<[Phi; C], crate::Error> {
             Ok(self.phis_from_gammas(self.check_gammas(self.gammas_from_phis(phis))?))
         }
     // 

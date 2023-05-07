@@ -24,7 +24,7 @@ pub struct BasicRobot<const C : usize> {
 }
 
 impl<const C : usize> Setup for BasicRobot<C> {
-    fn setup(&mut self) -> Result<(), stepper_lib::Error> {
+    fn setup(&mut self) -> Result<(), crate::Error> {
         self.comps.setup()
     }
 }

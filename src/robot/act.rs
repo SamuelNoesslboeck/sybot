@@ -8,10 +8,6 @@ use crate::remote::PushRemote;
 use crate::robot::{Points, Vectors, RobotVars};
 
 pub trait ActRobot<const C : usize> : Setup {
-    // Types
-        type Error : std::error::Error;
-    // 
-
     // Inheritance
         fn brob(&self) -> &dyn Robot<C>;
 
@@ -26,7 +22,7 @@ pub trait ActRobot<const C : usize> : Setup {
     
         // Configuration
             /// Creates a new instance of the robot from a Json-Configuration file if it's format is appropriate
-            fn from_conf(conf : JsonConfig) -> Result<Self, std::io::Error>
+            fn from_conf(conf : JsonConfig) -> Result<Self, crate::Error>
                 where
                     Self: Sized;    
     
@@ -223,9 +219,9 @@ pub trait ActRobot<const C : usize> : Setup {
                 vecs
             }
 
-            fn reduce_to_def(&self, pos : Vec3, deco : &[f32]) -> Result<Vec3, Self::Error>;
+            fn reduce_to_def(&self, pos : Vec3, deco : &[f32]) -> Result<Vec3, crate::Error>;
 
-            fn phis_from_vec(&self, pos : Vec3, deco : &[f32]) -> Result<[Phi; C], Self::Error>;
+            fn phis_from_vec(&self, pos : Vec3, deco : &[f32]) -> Result<[Phi; C], crate::Error>;
 
             // Current
             fn pos(&self) -> Vec3 {
@@ -288,62 +284,62 @@ pub trait ActRobot<const C : usize> : Setup {
 
     // Movement
         #[inline]
-        fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], stepper_lib::Error> {
+        fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_rel(deltas, vels)
         }
 
         #[inline]
-        fn move_j_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], stepper_lib::Error> {
+        fn move_j_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_abs(gammas, vels)
         }
 
         // Async 
         #[inline]
-        fn move_j_async(&mut self, deltas : [Delta; C]) -> Result<(), stepper_lib::Error> {
+        fn move_j_async(&mut self, deltas : [Delta; C]) -> Result<(), crate::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_rel_async(deltas, vels)
         }
         
         #[inline]
-        fn move_j_abs_async(&mut self, gammas : [Gamma; C]) -> Result<(), stepper_lib::Error> {
+        fn move_j_abs_async(&mut self, gammas : [Gamma; C]) -> Result<(), crate::Error> {
             let vels = self.max_vels();
             self.comps_mut().drive_abs_async(gammas, vels)
         }
 
         // Single Component
             #[inline]
-            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Result<Delta, stepper_lib::Error> {
+            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Result<Delta, crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_rel(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Result<Delta, stepper_lib::Error> {
+            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Result<Delta, crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_abs(gamma, vels[index])
             }
 
             #[inline]
-            fn drive_comp_rel_async(&mut self, index : usize, delta : Delta) -> Result<(), stepper_lib::Error> {
+            fn drive_comp_rel_async(&mut self, index : usize, delta : Delta) -> Result<(), crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_rel_async(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs_async(&mut self, index : usize, gamma : Gamma) -> Result<(), stepper_lib::Error> {
+            fn drive_comp_abs_async(&mut self, index : usize, gamma : Gamma) -> Result<(), crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_abs_async(gamma, vels[index])
             }
         //
 
         // Measure
-            fn measure(&mut self) -> Result<[Delta; C], stepper_lib::Error>;
+            fn measure(&mut self) -> Result<[Delta; C], crate::Error>;
         // 
 
         #[inline]
-        fn await_inactive(&mut self) -> Result<[Delta; C], stepper_lib::Error> {
+        fn await_inactive(&mut self) -> Result<[Delta; C], crate::Error> {
             self.comps_mut().await_inactive()
         }
 

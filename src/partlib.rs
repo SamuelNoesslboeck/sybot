@@ -97,8 +97,7 @@ impl<T> PartLib<T>
     pub fn add_json(&mut self, json : serde_json::Value) -> Result<(), crate::Error> {
         let mut map : BTreeMap<String, T> = match serde_json::from_value(json) {
             Ok(map) => map, 
-            Err(err) => return Err(
-                crate::Error::new(std::io::ErrorKind::InvalidData, format!("Parsing failed! {:?}", err)))
+            Err(err) => return Err(format!("Parsing failed! {:?}", err).into())
         };
 
         self.add_map(&mut map);
@@ -110,8 +109,7 @@ impl<T> PartLib<T>
             let json_str = std::fs::read_to_string(file)?;      // Returns std::io::Error as default Error
             let json : serde_json::Value = match serde_json::from_str(&json_str) {
                 Ok(val) => val, 
-                Err(err) => return Err(
-                    crate::Error::new(std::io::ErrorKind::InvalidData, format!("Parsing failed! {:?}", err)))
+                Err(err) => return Err(format!("Parsing failed! {:?}", err).into())
             };
 
             self.add_json(json)?;

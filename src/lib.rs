@@ -49,4 +49,4 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
 
 // Types
 /// Universal error type used in the crate
-pub type Error = std::io::Error;
+pub type Error = Box<dyn std::error::Error>;

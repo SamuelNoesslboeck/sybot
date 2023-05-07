@@ -8,8 +8,8 @@ use crate::robot::SafeRobot;
 // General functions
     /// G0 X{Position} Y{Position} Z{Position} DECO{Angle} \
     /// Rapid positioning
-    pub fn g0<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, c : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn g0<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, c : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let pos = robot.safe_pos(
             arg_by_letter(args, 'X'), 
@@ -51,8 +51,8 @@ use crate::robot::SafeRobot;
 
     /// G4 X{Seconds} P{Milliseconds}
     /// Dwell (sleeping)
-    pub fn g4<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (_ : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn g4<R : SafeRobot<C>, const C : usize>
+        (_ : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let seconds = 
             arg_by_letter(args, 'X').unwrap_or(0.0)            // Seconds
@@ -63,8 +63,8 @@ use crate::robot::SafeRobot;
 
     /// G8 X{Position} Y{Position} Z{Position} DECO{Angle} \
     /// Rapid positioning async
-    pub fn g8<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn g8<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let angles = robot.safe_phis_for_vec(robot.safe_pos(
                 arg_by_letter(args, 'X'), 
@@ -83,8 +83,8 @@ use crate::robot::SafeRobot;
 
         /// G28 \
     /// Return to home position
-    pub fn g28<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error>  
+    pub fn g28<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error>  
     {
         match robot.measure() {
             Ok(deltas) => Ok(serde_json::json!(Vec::from(deltas))),
@@ -97,8 +97,8 @@ use crate::robot::SafeRobot;
 
     // /// G29 \
     // /// Return to home position async
-    // pub fn g29<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-    //     (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    // pub fn g29<R : SafeRobot<C>, const C : usize>
+    //     (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     // {
     //     // arm.measure(2);
     //     robot.measure_async(2);
@@ -110,8 +110,8 @@ use crate::robot::SafeRobot;
     // }
 
     // Extra functions
-    pub fn g100<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn g100<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
 
@@ -124,8 +124,8 @@ use crate::robot::SafeRobot;
     }
 
     // Debug
-    pub fn g1000<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn g1000<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::json!({ 
             "phis": Vec::from(robot.phis()),
@@ -134,8 +134,8 @@ use crate::robot::SafeRobot;
         }))
     }
 
-    pub fn g1100<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn g1100<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
 
@@ -146,8 +146,8 @@ use crate::robot::SafeRobot;
 //
 
 // Misc Functions
-    pub fn m3<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn m3<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // TODO: Add response
         robot.activate_tool();
@@ -156,28 +156,28 @@ use crate::robot::SafeRobot;
         Ok(serde_json::Value::Null)
     }
 
-    pub fn m4<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn m4<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::json!(robot.activate_spindle(false)))
     }
 
-    pub fn m5<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn m5<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::json!(robot.deactivate_tool()))
     }
 
-    pub fn m30<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-    (_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn m30<R : SafeRobot<C>, const C : usize>
+    (_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         println!("Program finished!");
         exit(0);
     }
 
     // Additional functions
-    pub fn m119<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn m119<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let gamma_opt = robot.gamma_tool();
 
@@ -189,8 +189,8 @@ use crate::robot::SafeRobot;
     }
 
     // Debug functions
-    pub fn m1006<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn m1006<R : SafeRobot<C>, const C : usize>
+        (robot : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::to_value(robot.get_tool().unwrap().get_json()).unwrap())
         // Ok(serde_json::to_value(
@@ -202,8 +202,8 @@ use crate::robot::SafeRobot;
 // 
 
 // Programm functions
-    pub fn o0<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-        (_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, R::Error> 
+    pub fn o0<R : SafeRobot<C>, const C : usize>
+        (_ : &mut R, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         println!("test");
         Ok(serde_json::Value::Null)
@@ -211,8 +211,8 @@ use crate::robot::SafeRobot;
 //
 
 // Tool
-pub fn t<R : SafeRobot<C, Error = stepper_lib::Error>, const C : usize>
-    (robot : &mut R, index : usize) -> Result<serde_json::Value, R::Error> 
+pub fn t<R : SafeRobot<C>, const C : usize>
+    (robot : &mut R, index : usize) -> Result<serde_json::Value, crate::Error> 
 {
     if let Some(tool) = robot.set_tool_id(index) {
         return Ok(tool.get_json())

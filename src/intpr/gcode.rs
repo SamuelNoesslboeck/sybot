@@ -127,13 +127,13 @@ impl<ROB, RES> Interpreter<ROB, RES> for GCodeIntpr<ROB, RES> {
     }
 // 
 
-pub fn init_intpr<R : SafeRobot<C, Error = stepper_lib::Error>, 
+pub fn init_intpr<R : SafeRobot<C>, 
     const C : usize>() 
-        -> GCodeIntpr<R, Result<serde_json::Value, R::Error>> 
+        -> GCodeIntpr<R, Result<serde_json::Value, crate::Error>> 
 {
     let funcs = LetterEntries::from([
         (Letter::General, NumEntries::from([
-            (0, gfuncs::g0::<R, C> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (0, gfuncs::g0::<R, C> as GCodeFunc<R, Result<serde_json::Value, crate::Error>>),
             (4, gfuncs::g4::<R, C>),
             (8, gfuncs::g8::<R, C>),
             (28, gfuncs::g28::<R, C>),
@@ -143,7 +143,7 @@ pub fn init_intpr<R : SafeRobot<C, Error = stepper_lib::Error>,
             (1100, gfuncs::g1100::<R, C>)
         ])), 
         (Letter::Miscellaneous, NumEntries::from([
-            (3, gfuncs::m3::<R, C> as GCodeFunc<R, Result<serde_json::Value, R::Error>>),
+            (3, gfuncs::m3::<R, C> as GCodeFunc<R, Result<serde_json::Value, crate::Error>>),
             (4, gfuncs::m4::<R, C>),
             (5, gfuncs::m5::<R, C>),
             (30, gfuncs::m30::<R, C>),
@@ -151,11 +151,11 @@ pub fn init_intpr<R : SafeRobot<C, Error = stepper_lib::Error>,
             (1006, gfuncs::m1006::<R, C>),
         ])), 
         (Letter::ProgramNumber, NumEntries::from([
-            (0, gfuncs::o0::<R, C> as GCodeFunc<R, Result<serde_json::Value, R::Error>>)
+            (0, gfuncs::o0::<R, C> as GCodeFunc<R, Result<serde_json::Value, crate::Error>>)
         ]))
     ]);
     
     GCodeIntpr::new(Some(gfuncs::t), funcs, |_| { 
-        Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")) 
+        Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")))
     })
 }
