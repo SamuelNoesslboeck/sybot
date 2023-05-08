@@ -1,5 +1,8 @@
 use glam::Vec3;
+use stepper_lib::math::PathBuilder;
 use stepper_lib::units::*;
+
+pub mod wo;
 
 use crate::ActRobot;
 
@@ -28,7 +31,7 @@ pub fn convert_to_phis<const C : usize>(robot : &impl ActRobot<C>, deco : &[f32]
 }
 
 pub fn build_path<const C : usize>(robot : &impl ActRobot<C>, phis : &Vec<[Phi; C]>) {
-    let mut builder = robot.comps().get_pathbuilder([Omega::ZERO; C]);
+    let mut builder : PathBuilder<C> = robot.comps().get_pathbuilder([Omega::ZERO; C]);
     
     let mut tstack = vec![];
     let mut dstack = vec![];

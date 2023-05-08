@@ -5,6 +5,9 @@ pub mod gcode;
 /// Basic GCode applied for the `SafeRobot` trait
 pub mod gfuncs;
 
+#[cfg(feature = "lua")]
+pub mod lua;
+
 /// Interpreters convert a string prompt into actions for the robot
 pub trait Interpreter<ROB, RES> {
     /// Interpret a code string for a given robot

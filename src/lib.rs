@@ -50,3 +50,13 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
 // Types
 /// Universal error type used in the crate
 pub type Error = Box<dyn std::error::Error>;
+
+// Lua lib
+#[cfg(feature = "lua")]
+use mlua::{Lua, Result, Table};
+
+#[cfg(feature = "lua")]
+#[mlua::lua_module]
+fn sybot_lib(lua : &Lua) -> Result<Table> {
+    intpr::lua::init_lib(lua)
+}

@@ -130,6 +130,7 @@ pub trait Robot<const C : usize> : Setup {
 
     // Debug functions
         /// Prints out an overview of this robots configuration
+        #[cfg(feature = "dbg-funcs")]
         fn print_conf_header(&self);
     // 
 }

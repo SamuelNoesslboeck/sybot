@@ -109,6 +109,7 @@ For more features, see [stepper_lib#features](https://crates.io/crates/stepper_l
   - [ ] Paths
 - [x] [Controls](/docs/controls.md)
   - [x] GCode
+  - [ ] Lua scripting
 - [ ] [Networking](/docs/networking.md)
   - [x] HTTP
   - [x] MQTT
