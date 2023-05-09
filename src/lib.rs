@@ -12,8 +12,6 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
 
     pub mod pkg;
 
-    pub mod premade;
-
     /// Structures and methods for exposing the robot to the internet with a HTTP server 
     /// 
     /// # Features

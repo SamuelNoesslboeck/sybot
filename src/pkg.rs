@@ -2,8 +2,8 @@ use std::fs;
 use std::path::Path;
 
 // Submodules
-    mod comps;
-    pub use comps::*;
+    mod elem;
+    pub use elem::*;
 
     mod info;
     pub use info::*;

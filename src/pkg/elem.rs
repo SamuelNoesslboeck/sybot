@@ -1,7 +1,3 @@
-#![doc = r"File"]
-//! 
-//! 
-
 use alloc::string::String;
 use alloc::boxed::Box;
 
