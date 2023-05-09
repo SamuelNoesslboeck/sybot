@@ -5,8 +5,13 @@ use stepper_lib::units::*;
 
 use crate::Robot;
 use crate::conf::{JsonConfig, MachineConfig};
+use crate::pkg::RobotInfo;
 use crate::remote::PushRemote;
 use crate::robot::RobotVars;
+
+pub trait BasicRobot_ {
+    fn info<'a>(&'a self) -> &'a RobotInfo;
+}
 
 /// A basic robot structure which new robot types can derive upon
 pub struct BasicRobot<const C : usize> {

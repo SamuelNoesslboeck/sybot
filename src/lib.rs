@@ -10,6 +10,10 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     pub mod conf;
     pub use conf::{JsonConfig, MachineConfig};
 
+    pub mod pkg;
+
+    pub mod premade;
+
     /// Structures and methods for exposing the robot to the internet with a HTTP server 
     /// 
     /// # Features
