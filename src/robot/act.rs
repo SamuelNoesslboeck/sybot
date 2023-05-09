@@ -310,29 +310,39 @@ pub trait ActRobot<const C : usize> : Setup {
 
         // Single Component
             #[inline]
-            fn drive_comp_rel(&mut self, index : usize, delta : Delta) -> Result<Delta, crate::Error> {
+            fn move_j_comp(&mut self, index : usize, delta : Delta) -> Result<Delta, crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_rel(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs(&mut self, index : usize, gamma : Gamma) -> Result<Delta, crate::Error> {
+            fn move_j_comp_abs(&mut self, index : usize, gamma : Gamma) -> Result<Delta, crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_abs(gamma, vels[index])
             }
 
             #[inline]
-            fn drive_comp_rel_async(&mut self, index : usize, delta : Delta) -> Result<(), crate::Error> {
+            fn move_j_comp_async(&mut self, index : usize, delta : Delta) -> Result<(), crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_rel_async(delta, vels[index])
             }
 
             #[inline]
-            fn drive_comp_abs_async(&mut self, index : usize, gamma : Gamma) -> Result<(), crate::Error> {
+            fn move_j_comp_abs_async(&mut self, index : usize, gamma : Gamma) -> Result<(), crate::Error> {
                 let vels = self.max_vels();
                 self.comps_mut()[index].drive_abs_async(gamma, vels[index])
             }
         //
+
+        // #[inline]
+        // fn move_l(&mut self, delta_pos : Vec3) -> Result<(), crate::Error> {
+        //     let vels = self.max_vels();
+        // }
+
+        // #[inline]
+        // fn move_l_abs(&mut self, abs_pos : Vec3) -> Result<(), crate::Error> {
+        //     let vels = self.max_vels();
+        // }
 
         // Measure
             fn measure(&mut self) -> Result<[Delta; C], crate::Error>;

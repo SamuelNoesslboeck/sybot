@@ -1,2 +1,2 @@
 @echo off
-cargo rustc --features="lua" --crate-type=cdylib
+cargo rustc --features="lua" --crate-type=cdylib --lib 
