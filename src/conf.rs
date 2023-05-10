@@ -6,10 +6,6 @@ use stepper_lib::data::LinkedData;
 use stepper_lib::comp::Tool;
 use stepper_lib::units::*;
 
-// Submodules
-mod elem;
-use elem::*;
-
 mod json;
 pub use json::*;
 

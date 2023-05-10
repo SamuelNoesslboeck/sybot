@@ -1,7 +1,7 @@
 [
   {
     "name": "AxisBearing_Mk1",
-    "type_name": "stepper_lib::comp::tool::axial_joint::AxialJoint",
+    "type_name": "AxialJoint",
     "obj": {
     "servo": {
       "consts": "MG996R",
@@ -13,7 +13,7 @@
   },
   {
     "name": "AxisTongs_Mk1",
-    "type_name": "stepper_lib::comp::tool::axis_tongs::AxisTongs",
+    "type_name": "AxisTongs",
     "obj": {
       "axis": {
         "servo": {
@@ -36,13 +36,8 @@
     }
   },
   {
-    "name": "No_Tool",
-    "type_name": "stepper_lib::comp::tool::no_tool::NoTool",
-    "obj": { }
-  }, 
-  {
     "name": "Edding_Tool",
-    "type_name": "stepper_lib::comp::tool::pencil_tool::PencilTool",
+    "type_name": "PencilTool",
     "obj": {
       "length": 100.0,
       "mass": 0.25
@@ -50,7 +45,7 @@
   }, 
   {
     "name": "SimpleTongs_Mk2",
-    "type_name": "stepper_lib::comp::tool::tongs::Tongs",
+    "type_name": "Tongs",
     "obj": {
       "servo": {
         "consts": "MG996R",

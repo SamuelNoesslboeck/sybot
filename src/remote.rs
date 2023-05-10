@@ -3,6 +3,14 @@ use std::sync::Mutex;
 
 use stepper_lib::units::*;
 
+// Submodules 
+    #[cfg(feature = "http")]
+    pub mod http;
+
+    #[cfg(feature = "mqtt")]
+    pub mod mqtt;
+// 
+
 /// A `PushRemote` defines a remote connection that the robot can push values to
 pub trait PushRemote<const C : usize> {
     /// Publish a set of phis to the remote connection

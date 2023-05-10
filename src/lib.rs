@@ -10,15 +10,13 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     pub mod conf;
     pub use conf::{JsonConfig, MachineConfig};
 
-    pub mod pkg;
-
     /// Structures and methods for exposing the robot to the internet with a HTTP server 
     /// 
     /// # Features
     /// 
     /// Only available if the "http"-feature is available
     #[cfg(feature = "http")]
-    pub mod http;
+    pub use remote::http;
 
     /// Interpreters for sending text commands to control a [BasicRobot](crate::BasicRobot)
     pub mod intpr;
@@ -33,10 +31,14 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     /// 
     /// Only available if the "mqtt"-feature is enabled
     #[cfg(feature = "mqtt")]
-    pub mod mqtt;
+    pub use remote::mqtt as mqtt;
 
     /// Partlibs help to simplify configuration files by storing standard-parts and motors
     pub mod partlib;
+
+    pub use sybot_pkg as pkg;
+
+    pub use sybot_rcs as rcs;
 
     /// Universal trait for input and output events happening in the robot. Used for 
     pub mod remote;
@@ -44,6 +46,9 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     /// Contains predefined robots and traits to describe them
     pub mod robot;
     pub use robot::{ActRobot, BasicRobot, Robot};
+
+    pub use sybot_robs as robs;
+    pub use robs::*;
 
     #[cfg(test)]
     mod tests;

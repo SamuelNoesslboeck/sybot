@@ -1,0 +1,13 @@
+[package]
+name = "sybot_rcs"
+authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
+version = "0.1.1"
+description = "The coordinate and positioning system of the sybot_library"
+edition = "2021"
+
+[lib]
+name = "sybot_rcs"
+path = "src/lib.rs"
+
+[dependencies]
+glam = "0.24.0"

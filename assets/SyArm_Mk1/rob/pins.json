@@ -1,0 +1,22 @@
+{
+  "base": {
+    "step": 0,
+    "dir": 0,
+    "meas": 16
+  },
+  "arm1": {
+    "step": 0, 
+    "dir": 0,
+    "meas": 25
+  },
+  "arm2": {
+    "step": 0,
+    "dir": 0,
+    "meas": 7
+  },
+  "arm3": {
+    "step": 0,
+    "dir": 0,
+    "meas": 8
+  }
+}

@@ -1,0 +1,31 @@
+[
+  {
+    "name": "base",
+
+    "sim": {
+      "mass": 0.2,
+      "fric": 2.0
+    }
+  },
+  {
+    "name": "arm1",
+
+    "sim": {
+      "mass": 0.5
+    }
+  },
+  {
+    "name": "arm2",
+
+    "sim": {
+      "mass": 0.5
+    }
+  },
+  {
+    "name": "arm3",
+
+    "sim": {
+      "mass": 0.25
+    }
+  }
+]

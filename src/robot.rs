@@ -9,27 +9,25 @@ use stepper_lib::units::*;
 use crate::conf::{JsonConfig, MachineConfig};
 use crate::remote::PushRemote;
 
-// Robots
-mod arm;
-pub use arm::SyArm;
-
-mod omat;
-pub use omat::Syomat;
-//
-
 // Submodules
-mod act; 
-pub use act::ActRobot;
-
 mod basic;
 pub use basic::BasicRobot;
 
-mod safe;
-pub use safe::SafeRobot;
+mod segments;
 
 mod vars;
 pub use vars::RobotVars;
+
+mod types;
 //
+
+/// A `PushRemote` defines a remote connection that the robot can push values to
+pub trait PushRemote<const C : usize> {
+    /// Publish a set of phis to the remote connection
+    fn publ_phis(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error>;
+
+    // fn pub_drive(&mut self);
+}
 
 // Types
 /// Positions of the robot represented with endpoints
@@ -97,24 +95,6 @@ pub trait Robot<const C : usize> : Setup {
 
         /// Sets the id of the tool to be used and performs an automatic tool swap if necessary
         fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
-
-        // Specific
-            /// Returns the absolute position of the additinal axis of the tool and `None` if no `AxisTool` is being used
-            fn gamma_tool(&self) -> Option<Gamma>;
-
-            /// Rotates the tool to the given *absolute* position and returns the angle, returns `None` if no `AxisTool` is being used
-            fn rotate_tool_abs(&mut self, gamma : Gamma) -> Option<Gamma>;
-
-            // Actions 
-            /// Activates the tool and returns the active status, returns `None` if no `SimpleTool` is being used
-            fn activate_tool(&mut self) -> Option<bool>;
-
-            /// Activates the spindle of the tool and returns the active status, returns `None` if no `SpindleTool` is being used
-            fn activate_spindle(&mut self, cw : bool) -> Option<bool>;
-
-            /// Deativates the tool and returns the active status, returns `None` if no `SimpleTool` or `SpindleTool` is being used
-            fn deactivate_tool(&mut self) -> Option<bool>;
-        //
     //
 
     // Remotes
