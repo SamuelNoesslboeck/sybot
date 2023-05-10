@@ -4,7 +4,8 @@ use glam::Vec3;
 use stepper_lib::{SyncCompGroup, SyncComp, Tool};
 use stepper_lib::units::*;
 
-use sybot_pkg::RobotInfo;
+use sybot_pkg::{RobotInfo, CompInfo};
+use sybot_rcs::WorldObj;
 
 pub type Error = Box<dyn std::error::Error>;
 
@@ -53,25 +54,86 @@ pub trait BasicRobot {
 
 pub trait Robot<const C : usize> : AsRef<dyn BasicRobot> + AsMut<dyn BasicRobot> {
     // Data
+        fn comp_infos<'a>(&'a self) -> &'a [CompInfo];
+
         /// Returns a reference to the component group of the robot
-        fn comps(&self) -> &dyn SyncCompGroup<dyn SyncComp, C>;
+        fn comps<'a>(&'a self) -> &'a dyn SyncCompGroup<dyn SyncComp, C>;
 
         /// Returns a mutable reference to the component group of the robot 
-        fn comps_mut(&mut self) -> &mut dyn SyncCompGroup<dyn SyncComp, C>;
+        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn SyncCompGroup<dyn SyncComp, C>;
+
+        fn wobj<'a>(&'a self) -> &'a WorldObj;
+
+        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
+    // 
+
+    // Move data
+        /// Returns all the angles used by the controls to represent the components extension/drive distance
+        #[inline]
+        fn gammas(&self) -> [Gamma; C] {
+            self.comps().gammas()
+        }
+
+        /// Converts all angles (by adding offset and sometimes mirroring the value)
+        fn gammas_from_phis(&self, phis : [Phi; C]) -> [Gamma; C] {
+            let mut gammas = [Gamma::ZERO; C];
+            let infos = self.comp_infos();
+
+            for i in 0 .. C {
+                gammas[i] = infos[i].ang.gamma_from_phi(phis[i]);
+            }
+
+            gammas
+        }
+
+        #[inline]
+        fn phis(&self) -> [Phi; C] {
+            self.phis_from_gammas(self.gammas())
+        }
+
+        /// Converts all teh angles (by adding offset and sometimes mirroring the value)
+        fn phis_from_gammas(&self, gammas : [Gamma; C]) -> [Phi; C] {
+            let mut phis = [Phi::ZERO; C];
+            let infos = self.comp_infos();
+
+            for i in 0 .. C {
+                phis[i] = infos[i].ang.phi_from_gamma(gammas[i]);
+            }
+
+            phis
+        }
     // 
 
     // Movements
         #[inline]
         fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error> {
-            let vels = self.max_vels();
-            self.comps_mut().drive_rel(deltas, vels)
+            self.comps_mut().drive_rel(deltas)
         }
 
         #[inline]
         fn move_j_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error> {
-            let vels = self.max_vels();
-            self.comps_mut().drive_abs(gammas, vels)
+            self.comps_mut().drive_abs(gammas)
         }
+    // 
+
+    // Loads
+        #[inline]
+        fn apply_forces(&mut self, forces : &[Force; C]) {
+            self.comps_mut().apply_forces(forces)
+        }
+
+        #[inline]
+        fn apply_inertias(&mut self, inertias : &[Inertia; C]) {
+            self.comps_mut().apply_inertias(inertias)
+        }
+    // 
+
+    // Events
+        fn pre_update(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error> {
+            self.update()
+        }
+
+        fn update(&mut self) -> Result<(), crate::Error>;
     // 
 }
 

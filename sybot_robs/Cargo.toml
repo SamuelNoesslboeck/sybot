@@ -12,4 +12,6 @@ path = "src/lib.rs"
 [dependencies]
 glam = "0.24.0"
 stepper_lib = { version = "0.11.3", features = [ ] }
+
 sybot_pkg = { path = "../sybot_pkg" }
+sybot_rcs = { path = "../sybot_rcs" }

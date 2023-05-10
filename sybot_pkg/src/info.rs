@@ -34,11 +34,29 @@ pub struct MeasInfo {
     }
 
     #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
-    pub struct ValInfo {
+    pub struct AngInfo {
         #[serde(default)]
         pub offset : Delta,
         #[serde(default)]
         pub counter : bool
+    }
+
+    impl AngInfo {
+        pub fn phi_from_gamma(&self, gamma : Gamma) -> Phi {
+            (if self.counter { 
+                -gamma
+            } else { 
+                gamma
+            } + self.offset).force_to_phi()
+        }
+
+        pub fn gamma_from_phi(&self, phi : Phi) -> Gamma {
+            if self.counter { 
+                -phi.force_to_gamma() + self.offset
+            } else { 
+                phi.force_to_gamma() - self.offset
+            }
+        }
     }
 //
 
@@ -48,9 +66,9 @@ pub struct CompInfo {
     pub obj : serde_json::Value,
 
     #[serde(default)]
-    pub ang : ValInfo,
+    pub ang : AngInfo,
     pub meas : Option<String>,
-    pub limit : Option<LimitInfo>
+    pub limit : LimitInfo
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

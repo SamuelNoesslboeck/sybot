@@ -22,7 +22,6 @@ pub struct SyArm {
 
 /// Returns the angle of a vector to the X-Axis viewed from the Z-Axis
 fn top_down_angle(point : Vec3) -> f32 {
-
     if point.x > 0.0 {
         (point.y / point.x).atan()
     } else if point.x < 0.0 {
