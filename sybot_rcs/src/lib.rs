@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use core::cell::RefCell;
+use core::{cell::RefCell, fmt::Debug};
 
 use alloc::{collections::BTreeMap, rc::Rc};
 use glam::{Vec3, Mat3};
@@ -10,7 +10,7 @@ use glam::{Vec3, Mat3};
     mod test;
 // 
 
-pub trait Point {
+pub trait Point : Debug {
     fn pos<'a>(&'a self) -> &'a Vec3;
     fn ori<'a>(&'a self) -> &'a Mat3;
 
@@ -20,7 +20,7 @@ pub trait Point {
     fn as_wo<'a>(&'a self) -> Option<&'a WorldObj>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Position {
     pos : Vec3,
     ori : Mat3
@@ -74,7 +74,7 @@ impl Position {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct WorldObj {
     pos : Position,
 

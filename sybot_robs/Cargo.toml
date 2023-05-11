@@ -9,9 +9,13 @@ edition = "2021"
 name = "sybot_robs"
 path = "src/lib.rs"
 
+[[bin]]
+name = "parse"
+path = "bin/parse.rs"
+
 [dependencies]
 glam = "0.24.0"
-stepper_lib = { version = "0.11.3", features = [ ] }
+stepper_lib = { path = "../../stepper_lib", features = [ ] }
 
 sybot_pkg = { path = "../sybot_pkg" }
 sybot_rcs = { path = "../sybot_rcs" }

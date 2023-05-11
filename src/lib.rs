@@ -33,22 +33,16 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     #[cfg(feature = "mqtt")]
     pub use remote::mqtt as mqtt;
 
-    /// Partlibs help to simplify configuration files by storing standard-parts and motors
-    pub mod partlib;
+    mod remote;
 
     pub use sybot_pkg as pkg;
 
     pub use sybot_rcs as rcs;
 
-    /// Universal trait for input and output events happening in the robot. Used for 
-    pub mod remote;
-
-    /// Contains predefined robots and traits to describe them
-    pub mod robot;
-    pub use robot::{ActRobot, BasicRobot, Robot};
-
     pub use sybot_robs as robs;
     pub use robs::*;
+
+    pub use sybot_scr as scr;
 
     #[cfg(test)]
     mod tests;
@@ -57,13 +51,3 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
 // Types
 /// Universal error type used in the crate
 pub type Error = Box<dyn std::error::Error>;
-
-// Lua lib
-#[cfg(feature = "lua")]
-use mlua::{Lua, Result, Table};
-
-#[cfg(feature = "lua")]
-#[mlua::lua_module]
-fn sybot_lib(lua : &Lua) -> Result<Table> {
-    intpr::lua::init_lib(lua)
-}
