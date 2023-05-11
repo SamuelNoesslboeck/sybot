@@ -1,13 +1,9 @@
 extern crate alloc;
 
-use core::ops::Deref;
-use std::os::raw::c_int;
-
-use glam::Vec3;
-use stepper_lib::{SyncCompGroup, SyncComp, Tool};
+use stepper_lib::{SyncCompGroup, SyncComp, Tool, Setup};
 use stepper_lib::units::*;
 
-use sybot_pkg::{RobotInfo, CompInfo, Package};
+use sybot_pkg::{RobotInfo, CompInfo};
 use sybot_rcs::WorldObj;
 
 pub type Error = Box<dyn std::error::Error>;
@@ -18,9 +14,17 @@ pub type Error = Box<dyn std::error::Error>;
 // 
 
 // TODO: REWORK VARS
-#[derive(Clone, Debug, Default)]
-pub struct Vars {
-    pub phis : Vec<Phi>
+#[derive(Clone, Debug)]
+pub struct Vars<const C : usize> {
+    pub phis : [Phi; C]
+}
+
+impl<const C : usize> Default for Vars<C> {
+    fn default() -> Self {
+        Self {
+            phis: [Phi::default(); C]
+        }
+    }
 }
 
 /// A `PushRemote` defines a remote connection that the robot can push values to
@@ -31,19 +35,41 @@ pub trait PushRemote {
     // fn pub_drive(&mut self);
 }
 
-pub trait InfoRobot : TryFrom<Package> {
+pub trait RobotDesc<const C : usize> : Setup {
+    // Events
+        fn update(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error>;
+    // 
+        
+    fn forces(&self, phis : &[Phi; C]) -> [Force; C];
+
+    fn inertias(&self, phis : &[Phi; C]) -> [Inertia; C];
+}
+
+pub trait InfoRobot<const C : usize> {
+    // Upcast
+        fn basic_rob<'a>(&'a self) -> Option<&'a dyn BasicRobot<C>> { None }
+
+        fn basic_rob_mut<'a>(&'a mut self) -> Option<&'a mut dyn BasicRobot<C>> { None }
+    // 
+
     // Data
         fn info<'a>(&'a self) -> &'a RobotInfo;
 
         /// Returns a reference to the robots variables
-        fn vars<'a>(&'a self) -> &'a Vars;
+        fn vars<'a>(&'a self) -> &'a Vars<C>;
 
         /// Returns a mutable reference to the robots variables
-        fn vars_mut<'a>(&'a mut self) -> &'a mut Vars;
+        fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C>;
     // 
 }
 
-pub trait BasicRobot<const C : usize> : TryFrom<Package> {
+pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
+    // Upcast
+        fn complex_rob<'a>(&'a self) -> Option<&'a dyn ComplexRobot<C>> { None }
+
+        fn complex_rob_mut<'a>(&'a mut self) -> Option<&'a mut dyn ComplexRobot<C>> { None }
+    // 
+
     // Data
         fn cinfos<'a>(&'a self) -> &'a [CompInfo];
 
@@ -89,17 +115,19 @@ pub trait BasicRobot<const C : usize> : TryFrom<Package> {
 
             phis
         }
+
+        fn valid_phis(&self, phis : [Phi; C]) -> Result<(), crate::Error>;
     // 
 
     // Movements
         #[inline]
-        fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error> {
+        fn move_j_sync(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error> {
             todo!()
             // self.comps_mut().drive_rel(deltas)
         }
 
         #[inline]
-        fn move_j_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error> {
+        fn move_abs_j_sync(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error> {
             todo!()
             // self.comps_mut().drive_abs(gammas)
         }
@@ -117,44 +145,52 @@ pub trait BasicRobot<const C : usize> : TryFrom<Package> {
         }
     // 
 
-    // Events
-        // fn pre_setup(&mut self) -> Result<(), crate::Error>; 
-        
-        fn pre_update(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error> {
-            self.update()
-        }
+    // Tools
+        /// Returns a reference to the tool that is currently being used by the robot
+        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>>;
 
+        /// Returns a mutable reference to the tool that is currently being used by the robot
+        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+
+        /// Returns a reference to all the tools registered in the robot
+        fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
+
+        /// Sets the id of the tool to be used and performs an automatic tool swap if necessary
+        fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+    // 
+
+    // Remote
+        /// Adds a new remote to the robot
+        fn add_remote(&mut self, remote : Box<dyn PushRemote + 'static>);
+
+        /// Returns a reference to all remotes of the robot
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote>>;
+
+        /// Returns a mutable reference to all remotes of the robot
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote>>;
+    //
+
+    // Events
         fn update(&mut self) -> Result<(), crate::Error>;
     // 
 }
 
-pub trait WorldRobot<const C : usize> {
-    fn wobj<'a>(&'a self) -> &'a WorldObj;
+pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
+    // World object
+        fn wobj<'a>(&'a self) -> &'a WorldObj;
 
-    fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
-}
+        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
+    // 
 
-pub trait ToolBot<const C : usize> {
-    /// Returns a reference to the tool that is currently being used by the robot
-    fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>>;
+    // Movement
+        fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error>;
 
-    /// Returns a mutable reference to the tool that is currently being used by the robot
-    fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+        fn move_abs_j(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
+    // 
 
-    /// Returns a reference to all the tools registered in the robot
-    fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
+    // Descriptor
+        fn set_desc(&mut self, desc : dyn RobotDesc<C>);
 
-    /// Sets the id of the tool to be used and performs an automatic tool swap if necessary
-    fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
-}
-
-pub trait RemoteBot<const C : usize> {
-    /// Adds a new remote to the robot
-    fn add_remote(&mut self, remote : Box<dyn PushRemote + 'static>);
-
-    /// Returns a reference to all remotes of the robot
-    fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote>>;
-
-    /// Returns a mutable reference to all remotes of the robot
-    fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote>>;
+        fn desc<'a>(&'a self) -> &'a dyn RobotDesc<C>;
+    // 
 }
