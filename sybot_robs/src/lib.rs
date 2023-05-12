@@ -35,7 +35,17 @@ pub trait PushRemote {
     // fn pub_drive(&mut self);
 }
 
+pub trait AxisConf {
+    fn phis<'a>(&'a self) -> &'a [Phi];
+
+    fn configure(&mut self, phis : Vec<Phi>); 
+}
+
 pub trait RobotDesc<const C : usize> : Setup {
+    fn apply_aconf(&mut self, conf : Box<dyn AxisConf>); 
+        
+    fn aconf<'a>(&'a self) -> Option<&'a dyn AxisConf>;
+
     // Events
         fn update(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
@@ -122,14 +132,12 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
     // Movements
         #[inline]
         fn move_j_sync(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error> {
-            todo!()
-            // self.comps_mut().drive_rel(deltas)
+            self.comps_mut().drive_rel(deltas)
         }
 
         #[inline]
         fn move_abs_j_sync(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error> {
-            todo!()
-            // self.comps_mut().drive_abs(gammas)
+            self.comps_mut().drive_abs(gammas)
         }
     // 
 
@@ -188,9 +196,29 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
         fn move_abs_j(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
     // 
 
+    // Axis config
+        #[inline]
+        fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) {
+            if let Some(desc) = self.desc_mut() {
+                desc.apply_aconf(conf)
+            }
+        }
+        
+        #[inline]
+        fn aconf<'a>(&'a self) -> Option<&'a dyn AxisConf> {
+            if let Some(desc) = self.desc() {
+                desc.aconf()
+            } else {
+                None
+            }
+        }
+    // 
+
     // Descriptor
         fn set_desc(&mut self, desc : dyn RobotDesc<C>);
 
-        fn desc<'a>(&'a self) -> &'a dyn RobotDesc<C>;
+        fn desc<'a>(&'a self) -> Option<&'a dyn RobotDesc<C>>;
+
+        fn desc_mut<'a>(&'a self) -> Option<&'a mut dyn RobotDesc<C>>;
     // 
 }

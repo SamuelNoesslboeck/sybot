@@ -95,8 +95,41 @@ impl<const C : usize> BasicRobot<C> for BasicStepperRobot<C> {
     fn update(&mut self) -> Result<(), crate::Error> {
         todo!()
     }
+
+    fn valid_phis(&self, phis : [stepper_lib::units::Phi; C]) -> Result<(), crate::Error> {
+        todo!()
+    }
+
+    fn get_tool(&self) -> Option<&Box<dyn stepper_lib::Tool + std::marker::Send>> {
+        todo!()
+    }
+
+    fn get_tool_mut(&mut self) -> Option<&mut Box<dyn stepper_lib::Tool + std::marker::Send>> {
+        todo!()
+    }
+
+    fn get_tools(&self) -> &Vec<Box<dyn stepper_lib::Tool + std::marker::Send>> {
+        todo!()
+    }
+
+    fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn stepper_lib::Tool + std::marker::Send>> {
+        todo!()
+    }
+
+    fn add_remote(&mut self, remote : Box<dyn crate::PushRemote + 'static>) {
+        todo!()
+    }
+
+    fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn crate::PushRemote>> {
+        todo!()
+    }
+
+    fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn crate::PushRemote>> {
+        todo!()
+    }
 }
 
 pub struct ComplexStepperRobot<const C : usize> {
     
 }
+
