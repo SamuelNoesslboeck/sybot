@@ -130,15 +130,11 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
     // 
 
     // Movements
-        #[inline]
-        fn move_j_sync(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error> {
-            self.comps_mut().drive_rel(deltas)
-        }
+        fn set_speed_f(&mut self, speed_f : f32) -> Result<(), crate::Error>; 
 
-        #[inline]
-        fn move_abs_j_sync(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error> {
-            self.comps_mut().drive_abs(gammas)
-        }
+        fn move_j_sync(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error>;
+
+        fn move_abs_j_sync(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
     // 
 
     // Loads
