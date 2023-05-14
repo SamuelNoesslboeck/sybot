@@ -1,7 +1,7 @@
-use stepper_lib::{Setup, SyncCompGroup};
+use stepper_lib::{Setup, SyncCompGroup, Tool};
 use sybot_pkg::{RobotInfo, CompInfo, Package};
 
-use crate::{InfoRobot, Vars, BasicRobot};
+use crate::{InfoRobot, Vars, BasicRobot, PushRemote};
 
 #[derive(Debug)]
 pub struct TheoRobot<const C : usize> {
@@ -42,7 +42,10 @@ pub struct BasicStepperRobot<const C : usize> {
     cinfos : [CompInfo; C], 
     comps : [Box<dyn stepper_lib::SyncComp>; C],
 
-    speed_f : f32
+    tools : Vec<Box<dyn Tool + std::marker::Send>>,
+    tool_id : Option<usize>,
+
+    remotes : Vec<Box<dyn PushRemote>>
 }
 
 impl<const C : usize> TryFrom<Package> for BasicStepperRobot<C> {
@@ -102,54 +105,54 @@ impl<const C : usize> BasicRobot<C> for BasicStepperRobot<C> {
         todo!()
     }
 
-    // Movements
-        fn set_speed_f(&mut self, speed_f : f32) -> Result<(), crate::Error> {
-            if (1.0 < speed_f) | (0.0 > speed_f) {
-                return Err(format!("Invalid speed_f! ({})", speed_f).into());
-            }
-
-            self.speed_f = speed_f;
-            Ok(())
-        }
-
-        fn move_j_sync(&mut self, deltas : [stepper_lib::units::Delta; C]) -> Result<[stepper_lib::units::Delta; C], crate::Error> {
-            self.comps.drive_rel(deltas, [self.speed_f; C])
-        }
-
-        fn move_abs_j_sync(&mut self, gammas : [stepper_lib::units::Gamma; C]) -> Result<[stepper_lib::units::Delta; C], crate::Error> {
-            self.comps.drive_abs(gammas, [self.speed_f; C])
-        }
-    // 
-
     // Tools
         fn get_tool(&self) -> Option<&Box<dyn stepper_lib::Tool + std::marker::Send>> {
-            todo!()
+            if let Some(tool_id) = self.tool_id {
+                self.tools.get(tool_id)
+            } else {
+                None 
+            }
         }
 
         fn get_tool_mut(&mut self) -> Option<&mut Box<dyn stepper_lib::Tool + std::marker::Send>> {
-            todo!()
+            if let Some(tool_id) = self.tool_id {
+                self.tools.get_mut(tool_id)
+            } else {
+                None 
+            }
         }
 
         fn get_tools(&self) -> &Vec<Box<dyn stepper_lib::Tool + std::marker::Send>> {
-            todo!()
+            &self.tools 
         }
 
-        fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn stepper_lib::Tool + std::marker::Send>> {
-            todo!()
+        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn stepper_lib::Tool + std::marker::Send>> {
+            if let Some(id) = tool_id {   
+                if id < self.tools.len() {
+                    self.tool_id = tool_id;
+                    Some(&mut self.tools[id])
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         }
     // 
 
-    fn add_remote(&mut self, remote : Box<dyn crate::PushRemote + 'static>) {
-        todo!()
-    }
+    // Remote
+        fn add_remote(&mut self, remote : Box<dyn crate::PushRemote>) {
+            self.remotes.push(remote)
+        }
 
-    fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn crate::PushRemote>> {
-        todo!()
-    }
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn crate::PushRemote>> {
+            &self.remotes
+        }
 
-    fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn crate::PushRemote>> {
-        todo!()
-    }
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn crate::PushRemote>> {
+            &mut self.remotes
+        }
+    //
 }
 
 pub struct ComplexStepperRobot<const C : usize> {

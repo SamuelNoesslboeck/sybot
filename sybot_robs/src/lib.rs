@@ -28,7 +28,7 @@ impl<const C : usize> Default for Vars<C> {
 }
 
 /// A `PushRemote` defines a remote connection that the robot can push values to
-pub trait PushRemote {
+pub trait PushRemote : alloc::fmt::Debug {
     /// Publish a set of phis to the remote connection
     fn publ_phis(&mut self, phis : &[Phi]) -> Result<(), Error>;
 
@@ -42,17 +42,19 @@ pub trait AxisConf {
 }
 
 pub trait RobotDesc<const C : usize> : Setup {
-    fn apply_aconf(&mut self, conf : Box<dyn AxisConf>); 
+    fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error>; 
         
     fn aconf<'a>(&'a self) -> Option<&'a dyn AxisConf>;
 
     // Events
-        fn update(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error>;
+        fn setup(&mut self, rob : &mut dyn ComplexRobot<C>) -> Result<(), crate::Error>;
+
+        fn update(&mut self, rob : &mut dyn ComplexRobot<C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
         
-    fn forces(&self, phis : &[Phi; C]) -> [Force; C];
+    // fn forces(&self, phis : &[Phi; C]) -> [Force; C];
 
-    fn inertias(&self, phis : &[Phi; C]) -> [Inertia; C];
+    // fn inertias(&self, phis : &[Phi; C]) -> [Inertia; C];
 }
 
 pub trait InfoRobot<const C : usize> {
@@ -130,11 +132,21 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
     // 
 
     // Movements
-        fn set_speed_f(&mut self, speed_f : f32) -> Result<(), crate::Error>; 
+        fn set_limits(&mut self, min : &[Option<Gamma>; C], max : &[Option<Gamma>; C]) {
+            self.comps_mut().set_limits(min, max)
+        }
 
-        fn move_j_sync(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error>;
+        fn set_omega_max(&mut self, omega_max : [Omega; C]) {
+            self.comps_mut().set_omega_max(omega_max)
+        }
 
-        fn move_abs_j_sync(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
+        fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
+            self.comps_mut().drive_rel(deltas, speed_f)
+        }
+
+        fn move_abs_j_sync(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
+            self.comps_mut().drive_abs(gammas, speed_f)
+        }
     // 
 
     // Loads
@@ -160,12 +172,12 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
         fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
 
         /// Sets the id of the tool to be used and performs an automatic tool swap if necessary
-        fn set_tool_id(&mut self, tool_id : usize) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
     // 
 
     // Remote
         /// Adds a new remote to the robot
-        fn add_remote(&mut self, remote : Box<dyn PushRemote + 'static>);
+        fn add_remote(&mut self, remote : Box<dyn PushRemote>);
 
         /// Returns a reference to all remotes of the robot
         fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote>>;
@@ -190,13 +202,19 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
         fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error>;
 
         fn move_abs_j(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
+
+        fn move_l(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error>;
+
+        fn move_l_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
     // 
 
     // Axis config
         #[inline]
-        fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) {
+        fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error> {
             if let Some(desc) = self.desc_mut() {
                 desc.apply_aconf(conf)
+            } else {
+                Err("No robot descriptor appended yet!".into())
             }
         }
         
@@ -218,3 +236,8 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
         fn desc_mut<'a>(&'a self) -> Option<&'a mut dyn RobotDesc<C>>;
     // 
 }
+
+// For future releases 
+// trait AsyncRobot {
+
+// }

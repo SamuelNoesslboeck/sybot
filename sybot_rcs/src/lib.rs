@@ -1,11 +1,14 @@
 extern crate alloc;
 
-use core::{cell::RefCell, fmt::Debug};
+use core::{cell::RefCell, fmt::Debug, ops::{Deref, DerefMut}};
 
 use alloc::{collections::BTreeMap, rc::Rc};
 use glam::{Vec3, Mat3};
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 
 // Submodules
+    mod des;
+
     #[cfg(test)]
     mod test;
 // 
@@ -17,6 +20,7 @@ pub trait Point : Debug {
     fn shift(&mut self, by : Vec3);
     fn transform(&mut self, by : Mat3);
 
+    fn as_pos<'a>(&'a self) -> Option<&'a Position>;
     fn as_wo<'a>(&'a self) -> Option<&'a WorldObj>;
 }
 
@@ -55,6 +59,10 @@ impl Point for Position {
     fn as_wo<'a>(&'a self) -> Option<&'a WorldObj> {
         None
     }
+
+    fn as_pos<'a>(&'a self) -> Option<&'a Position> {
+        Some(self)
+    }
 }
 
 impl Position {
@@ -74,11 +82,27 @@ impl Position {
     }
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Debug)]
+pub struct PointRef(pub Rc<RefCell<dyn Point>>);
+
+impl Deref for PointRef {
+    type Target = Rc<RefCell<dyn Point>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for PointRef {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct WorldObj {
     pos : Position,
-
-    pub sub : BTreeMap<String, Rc<RefCell<dyn Point>>>
+    pub sub : BTreeMap<String, PointRef>
 }
 
 impl AsRef<Position> for WorldObj {
@@ -107,6 +131,10 @@ impl Point for WorldObj {
     fn as_wo<'a>(&'a self) -> Option<&'a WorldObj> {
         Some(self)
     }
+
+    fn as_pos<'a>(&'a self) -> Option<&'a Position> {
+        Some(&self.pos)
+    }
 }
 
 impl WorldObj {
@@ -117,12 +145,18 @@ impl WorldObj {
         }
     }
 
+    pub fn new_sub(pos : Position, sub : BTreeMap<String, PointRef>) -> Self {
+        Self {
+            pos, sub
+        }
+    }
+
     pub fn add_point(&mut self, name : String, point : Rc<RefCell<dyn Point>>) {
         if name.contains('/') {
             panic!("Bad point name! Point names must not contain '/'! (Name: {})", name);
         }
         
-        self.sub.insert(name, point);
+        self.sub.insert(name, PointRef(point));
     }
 
     fn trans_pos_step(&self, split : &[String], index : usize) -> Option<Vec3> {
