@@ -1,14 +1,19 @@
 extern crate alloc;
 
+use core::fmt::Debug;
+
 use stepper_lib::{SyncCompGroup, SyncComp, Tool, Setup};
 use stepper_lib::units::*;
 
 use sybot_pkg::{RobotInfo, CompInfo};
-use sybot_rcs::WorldObj;
+use sybot_rcs::{WorldObj, Position};
 
 pub type Error = Box<dyn std::error::Error>;
 
 // Submodules
+    mod seg;
+    pub use seg::*;
+
     mod structs;
     pub use structs::*;
 // 
@@ -28,7 +33,7 @@ impl<const C : usize> Default for Vars<C> {
 }
 
 /// A `PushRemote` defines a remote connection that the robot can push values to
-pub trait PushRemote : alloc::fmt::Debug {
+pub trait PushRemote {
     /// Publish a set of phis to the remote connection
     fn publ_phis(&mut self, phis : &[Phi]) -> Result<(), Error>;
 
@@ -38,23 +43,23 @@ pub trait PushRemote : alloc::fmt::Debug {
 pub trait AxisConf {
     fn phis<'a>(&'a self) -> &'a [Phi];
 
-    fn configure(&mut self, phis : Vec<Phi>); 
+    fn configure(&mut self, phis : Vec<Phi>) -> Result<(), crate::Error>; 
 }
 
-pub trait RobotDesc<const C : usize> : Setup {
+pub trait RobotDesc<const C : usize> {
     fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error>; 
         
-    fn aconf<'a>(&'a self) -> Option<&'a dyn AxisConf>;
+    fn aconf<'a>(&'a self) -> &'a Box<dyn AxisConf>;
 
     // Events
         fn setup(&mut self, rob : &mut dyn ComplexRobot<C>) -> Result<(), crate::Error>;
 
         fn update(&mut self, rob : &mut dyn ComplexRobot<C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
-        
-    // fn forces(&self, phis : &[Phi; C]) -> [Force; C];
 
-    // fn inertias(&self, phis : &[Phi; C]) -> [Inertia; C];
+    // Calculation
+        fn convert_pos(&self, pos : Position) -> Result<[Phi; C], crate::Error>;
+    //
 }
 
 pub trait InfoRobot<const C : usize> {
@@ -199,13 +204,21 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
     // 
 
     // Movement
-        fn move_j(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error>;
+        fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error> {
+            self.comps_mut().drive_rel_async(deltas, speed_f)
+        }
 
-        fn move_abs_j(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
+        fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error> {
+            self.comps_mut().drive_abs_async(gammas, speed_f)
+        }
 
-        fn move_l(&mut self, deltas : [Delta; C]) -> Result<[Delta; C], crate::Error>;
+        fn move_l(&mut self, deltas : [Delta; C]) -> Result<(), crate::Error>;
 
-        fn move_l_abs(&mut self, gammas : [Gamma; C]) -> Result<[Delta; C], crate::Error>;
+        fn move_l_abs(&mut self, gammas : [Gamma; C]) -> Result<(), crate::Error>;
+
+        fn await_inactive(&mut self) -> Result<[Delta; C], crate::Error> {
+            self.comps_mut().await_inactive()
+        }
     // 
 
     // Axis config
@@ -219,9 +232,9 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
         }
         
         #[inline]
-        fn aconf<'a>(&'a self) -> Option<&'a dyn AxisConf> {
+        fn aconf<'a>(&'a self) -> Option<&'a Box<dyn AxisConf>> {
             if let Some(desc) = self.desc() {
-                desc.aconf()
+                Some(desc.aconf())
             } else {
                 None
             }
@@ -229,11 +242,17 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
     // 
 
     // Descriptor
-        fn set_desc(&mut self, desc : dyn RobotDesc<C>);
+        fn set_desc(&mut self, desc : Box<dyn RobotDesc<C>>);
 
-        fn desc<'a>(&'a self) -> Option<&'a dyn RobotDesc<C>>;
+        fn desc<'a>(&'a self) -> Option<&'a Box<dyn RobotDesc<C>>>;
 
-        fn desc_mut<'a>(&'a self) -> Option<&'a mut dyn RobotDesc<C>>;
+        fn desc_mut<'a>(&'a mut self) -> Option<&'a mut Box<dyn RobotDesc<C>>>;
+    // 
+
+    // Segments
+        fn seg_chain<'a>(&'a self) -> &'a Box<dyn SegmentChain<C>>;
+
+        fn seg_chain_mut<'a>(&'a mut self) -> &'a mut Box<dyn SegmentChain<C>>;
     // 
 }
 

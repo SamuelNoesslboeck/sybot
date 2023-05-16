@@ -1,9 +1,9 @@
 use sybot_pkg::Package;
-use sybot_robs::{TheoRobot, InfoRobot, SimpleRobot, BasicRobot};
+use sybot_robs::{TheoRobot, BasicStepperRobot};
 
 fn main() -> Result<(), sybot_robs::Error> {
     let pkg = Package::load("../assets/SyArm_Mk1")?;
-    let theo = TheoRobot::from_package(pkg);
+    let theo = TheoRobot::try_from(pkg)?;
 
     println!("Parsing 'Theorobot' ... ");
     dbg!(theo);

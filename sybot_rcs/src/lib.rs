@@ -4,7 +4,8 @@ use core::{cell::RefCell, fmt::Debug, ops::{Deref, DerefMut}};
 
 use alloc::{collections::BTreeMap, rc::Rc};
 use glam::{Vec3, Mat3};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use serde::{Serialize, Deserialize};
+// use serde::de::DeserializeOwned;
 
 // Submodules
     mod des;
@@ -15,7 +16,10 @@ use serde::{Serialize, Deserialize, de::DeserializeOwned};
 
 pub trait Point : Debug {
     fn pos<'a>(&'a self) -> &'a Vec3;
+    fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3;
+
     fn ori<'a>(&'a self) -> &'a Mat3;
+    fn ori_mut<'a>(&'a mut self) -> &'a mut Mat3;
 
     fn shift(&mut self, by : Vec3);
     fn transform(&mut self, by : Mat3);
@@ -43,9 +47,17 @@ impl Point for Position {
     fn pos<'a>(&'a self) -> &'a Vec3 {
         &self.pos   
     }
+
+    fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3 {
+        &mut self.pos
+    }
     
     fn ori<'a>(&'a self) -> &'a Mat3 {
         &self.ori
+    }
+
+    fn ori_mut<'a>(&'a mut self) -> &'a mut Mat3 {
+        &mut self.ori
     }
 
     fn shift(&mut self, by : Vec3) {
@@ -99,6 +111,20 @@ impl DerefMut for PointRef {
     }
 }
 
+impl PointRef {
+    pub fn clone_no_ref(&self) -> PointRef {
+        let p = self.borrow(); 
+
+        if let Some(wo) = p.as_wo() {
+            PointRef(Rc::new(RefCell::new(wo.clone())))
+        } else if let Some(pos) = p.as_pos() { 
+            PointRef(Rc::new(RefCell::new(pos.clone())))
+        } else {
+            panic!("Bad implementation of trait 'Point'!");
+        }
+    }
+}
+
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct WorldObj {
     pos : Position,
@@ -116,8 +142,16 @@ impl Point for WorldObj {
         self.pos.pos()
     }
 
+    fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3 {
+        &mut self.pos.pos
+    }
+
     fn ori<'a>(&'a self) -> &'a Mat3 {
         self.pos.ori()
+    }
+
+    fn ori_mut<'a>(&'a mut self) -> &'a mut Mat3 {
+        &mut self.pos.ori
     }
 
     fn shift(&mut self, by : Vec3) {

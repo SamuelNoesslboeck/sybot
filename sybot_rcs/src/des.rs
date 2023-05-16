@@ -1,32 +1,38 @@
-use core::{cell::RefCell, ops::Deref};
+use core::cell::RefCell;
 
 use alloc::{rc::Rc, collections::BTreeMap};
 use glam::{Vec3, Mat3};
-use serde::{Serialize, Deserialize, ser::{SerializeMap, SerializeStruct}, de::Visitor};
+use serde::{Serialize, Deserialize};
 
-use crate::{Position, Point, WorldObj, PointRef};
+use crate::{Position, WorldObj, PointRef, Point};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct PositionDes {
     pub pos : [f32; 3],
-    pub ori : [[f32; 3]; 3]
+    pub ori : Option<[[f32; 3]; 3]>
 }
 
 impl From<Position> for PositionDes {
     fn from(pos : Position) -> Self {
         PositionDes { 
             pos: pos.pos.to_array(), 
-            ori: pos.ori.to_cols_array_2d()
+            ori: Some(pos.ori.to_cols_array_2d())
         }
     }
 }
 
 impl Into<Position> for PositionDes {
     fn into(self) -> Position {
-        Position::new_ori(
-            Vec3::from(self.pos),
-            Mat3::from_cols_array_2d(&self.ori)
-        )
+        if let Some(ori) = &self.ori {
+            Position::new_ori(
+                Vec3::from(self.pos),
+                Mat3::from_cols_array_2d(ori)
+            )
+        } else {
+            Position::new(
+                Vec3::from(self.pos)
+            )
+        }
     }
 }
 
@@ -47,16 +53,32 @@ impl<'de> Deserialize<'de> for Position {
     }
 }
 
-impl Serialize for dyn Point {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer {
-        if let Some(wo) = self.as_wo() {
-            wo.serialize(serializer)
-        } else if let Some(pos) = self.as_pos() {
-            pos.serialize(serializer)
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+enum PointEnum {
+    Pos { ori : Option<[[f32; 3]; 3]>, pos : [f32; 3] }, 
+    Wo { pos : Position, sub : BTreeMap<String, PointRef> },
+    WoDir { pos: [f32; 3], sub : BTreeMap<String, PointRef> }
+}
+
+impl From<PointRef> for PointEnum {
+    fn from(value: PointRef) -> Self {
+        let poi = value.borrow();
+
+        if let Some(wo) = poi.as_wo() {
+            if wo.pos.ori == Mat3::IDENTITY {
+                Self::WoDir { pos: wo.pos.pos().to_array(), sub: wo.sub.clone() }
+            } else {
+                Self::Wo { pos: wo.pos.clone(), sub: wo.sub.clone() }
+            }
+        } else if let Some(pos) = poi.as_pos() {
+            if pos.ori == Mat3::IDENTITY {
+                Self::Pos { pos: pos.pos.to_array(), ori: None }
+            } else {
+                Self::Pos { ori: Some(pos.ori.to_cols_array_2d()), pos: pos.pos.to_array() }
+            }
         } else {
-            panic!("Unknown implementation of Point! Your point must be either convertable to a Position or a Worldobject!");
+            panic!("Bad implementation of the trait 'Point'!")
         }
     }
 }
@@ -65,32 +87,7 @@ impl Serialize for PointRef {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: serde::Serializer {
-        let point = self.borrow();
-        point.serialize(serializer)
-    }
-}
-
-impl<'de> Visitor<'de> for PointRef {
-    type Value = Self;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(formatter, "A position or worldobj obj")
-    }
-
-    // TODO: Make parsing safer
-    fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
-        where
-            A: serde::de::MapAccess<'de>, {
-        if let Some(pos) = map.next_entry::<String, Position>()? {
-            let sub = map.next_entry::<String, BTreeMap<String, PointRef>>()?.unwrap();
-
-            return Ok(PointRef(Rc::new(RefCell::new(WorldObj::new(
-                pos.1,
-                sub.1
-            )))))
-        } 
-
-        
+        PointEnum::from(self.clone()).serialize(serializer)
     }
 }
 
@@ -98,10 +95,19 @@ impl<'de> Deserialize<'de> for PointRef {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: serde::Deserializer<'de> {
-        if let Ok(wo) = WorldObj::dese {
-            return Ok(PointRef(Rc::new(RefCell::new(wo))))
-        } 
-            
-        Ok(PointRef(Rc::new(RefCell::new(Position::deserialize(deserializer)?))))
+        let point = PointEnum::deserialize(deserializer)?;
+        
+        Ok(match point {
+            PointEnum::Pos { ori, pos } => 
+                PointRef(Rc::new(RefCell::new(Position::new_ori(Vec3::from(pos), if let Some(o) = &ori {
+                    Mat3::from_cols_array_2d(o)
+                } else {
+                    Mat3::IDENTITY
+                })))),
+            PointEnum::Wo { pos, sub } => 
+                PointRef(Rc::new(RefCell::new(WorldObj::new_sub(pos, sub)))),
+            PointEnum::WoDir { pos, sub } => 
+                PointRef(Rc::new(RefCell::new(WorldObj::new_sub(Position::new(Vec3::from(pos)), sub))))
+        })
     }
 }

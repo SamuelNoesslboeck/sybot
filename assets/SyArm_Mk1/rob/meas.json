@@ -2,7 +2,7 @@
   "base": {
     "sys": "basic",
     "obj": {
-      "pin": "<pin:base/meas>",
+      "pin": "<pin://base/meas>",
       "set_val": 0.0,
       "dist": 0.0
     }
@@ -10,7 +10,7 @@
   "arm1": {
     "sys": "basic", 
     "obj": {
-      "pin": "<pin:arm1/meas>",
+      "pin": "<pin://arm1/meas>",
       "set_val": 0.3856,
       "dist": -250.0
     }
@@ -18,7 +18,7 @@
   "arm2": {
     "sys": "basic", 
     "obj": {
-      "pin": "<pin:arm2/meas>",
+      "pin": "<pin://arm2/meas>",
       "set_val": 0.75,
       "dist": -250.0
     }
@@ -26,7 +26,7 @@
   "arm3": {
     "sys": "basic",
     "obj": {
-      "pin": "<pin:arm3/meas>",
+      "pin": "<pin://arm3/meas>",
       "set_val": -1.84,
       "dist": -6.3
     }

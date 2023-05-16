@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use sybot_pkg::Package;
 
 fn main() {
@@ -11,9 +13,16 @@ fn main() {
     }
 
     let path = &args[1];
+
+    let inst = Instant::now();
+    let pkg_res = Package::load(path);  
+    let el = inst.elapsed().as_secs_f32();
     
-    match Package::load(path) {
-        Ok(pkg) => { dbg!(pkg); },
+    match pkg_res {
+        Ok(pkg) => { 
+            dbg!(&pkg); 
+            println!(" => Loaded pkg '{}' in {}s", &pkg.info.name, el);
+        },
         Err(err) => {
             eprintln!("{}", err);
         }
