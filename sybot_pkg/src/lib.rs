@@ -86,7 +86,7 @@ impl Package {
             let mut j_cont : serde_json::Value = serde_json::from_str(&cont)?;
 
             self.replace_links(&mut j_cont)?;
-            Ok(Some(serde_json::from_str::<T>(&cont)?))
+            Ok(Some(serde_json::from_value::<T>(j_cont)?))
         } else {
             Ok(None)
         }
@@ -155,4 +155,6 @@ impl Package {
 
         Err(format!("Link '<{}://{}>' could not be resolved ('{}' not found in '{}')", link, target, target, link).into())
     }
+
+    pub fn parse_components(&self, comps )
 }
