@@ -4,6 +4,7 @@ use sybot_pkg::Package;
 
 fn main() {
     let args : Vec<String> = std::env::args().collect();
+    // let args : Vec<&str> = vec![ "dump.exe", "assets/SyArm_Mk1" ];
     
     if args.len() < 2 {
         eprintln!("Bad syntax!");

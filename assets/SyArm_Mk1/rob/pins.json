@@ -1,7 +1,7 @@
 {
   "base": {
-    "step": 0,
-    "dir": 0,
+    "step": 26,
+    "dir": 17,
     "meas": 16
   },
   "arm1": {

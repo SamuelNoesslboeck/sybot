@@ -67,7 +67,18 @@ impl<const C : usize> TryFrom<Package> for BasicStepperRobot<C> {
 
 impl<const C : usize> TryFrom<Package> for BasicStepperRobot<C> {
     fn try_from(pkg: Package) -> Result<Self, Self::Error> {
-        
+        Self {
+            info: pkg.info,
+            vars: Vars::default(),
+
+            cinfos: pkg.comps,
+            comps: todo!(), 
+
+            tools : pkg.tools,
+            tool_id: None,
+
+            remotes: vec![]
+        }
     }
 }
 

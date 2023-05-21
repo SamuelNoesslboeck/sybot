@@ -67,7 +67,7 @@ pub struct CompInfo {
 
     #[serde(default)]
     pub ang : AngInfo,
-    pub meas : Option<String>,
+    pub meas : Option<MeasInfo>,
     pub limit : LimitInfo
 }
 
