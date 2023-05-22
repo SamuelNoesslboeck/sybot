@@ -8,7 +8,7 @@ use crate::{ Position, PointRef};
 #[test]
 fn parsing_rcs() -> Result<(), Box<dyn std::error::Error>> {
     let j_str =     // include_str!("../assets/rcs.json");
-                    include_str!("../assets/pos.json");
+                    include_str!("assets/pos.json");
     let wo : PointRef = serde_json::from_str(j_str)?;
 
     dbg!(wo);

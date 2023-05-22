@@ -1,13 +1,13 @@
 [package]
 name = "sybot_scr"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.1.0"
+version = "0.1.1"
 description = "Rua scripting - Lua based robot scripting"
 edition = "2021"
 
 [lib]
 name = "sybot_scr"
-path = "src/lib.rs"
+path = "lib.rs"
 
 [dependencies]
 glam = "0.24.0"
@@ -19,3 +19,6 @@ stepper_lib = { version = "0.11.3", features = [ ] }
 sybot_pkg = { path = "../sybot_pkg" }
 sybot_rcs = { path = "../sybot_rcs" }
 sybot_robs = { path = "../sybot_robs" }
+
+[features]
+lua = [ ]

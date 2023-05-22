@@ -1,4 +1,5 @@
-use stepper_lib::{units::*, Setup};
+use stepper_lib::units::*;
+use sybot_rcs::Point;
 use sybot_robs::AxisConf;
 
 use crate::RobotDesc;
@@ -37,7 +38,7 @@ impl RobotDesc<4> for SyArmDesc {
     }
 
     // Event
-        fn setup(&mut self, rob : &mut dyn sybot_robs::ComplexRobot<4>) -> Result<(), sybot_robs::Error> {
+        fn setup(&mut self, _ : &mut dyn sybot_robs::ComplexRobot<4>) -> Result<(), sybot_robs::Error> {
             Ok(())
         }
 
@@ -47,7 +48,7 @@ impl RobotDesc<4> for SyArmDesc {
     // 
 
     // Calculate
-        fn convert_pos(&self, _ : sybot_rcs::Position) -> Result<[Phi; 4], sybot_robs::Error> {
+        fn convert_pos(&self, pos : sybot_rcs::Position) -> Result<[Phi; 4], sybot_robs::Error> {
             
         }
     //

@@ -34,14 +34,14 @@ pub struct MeasInfo {
     }
 
     #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
-    pub struct AngInfo {
+    pub struct AngConf {
         #[serde(default)]
         pub offset : Delta,
         #[serde(default)]
         pub counter : bool
     }
 
-    impl AngInfo {
+    impl AngConf {
         pub fn phi_from_gamma(&self, gamma : Gamma) -> Phi {
             (if self.counter { 
                 -gamma
@@ -62,11 +62,12 @@ pub struct MeasInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompInfo {
+    pub name : String, 
     pub type_name : String,
     pub obj : serde_json::Value,
 
     #[serde(default)]
-    pub ang : AngInfo,
+    pub ang : AngConf,
     pub meas : Option<MeasInfo>,
     pub limit : LimitInfo
 }
@@ -76,4 +77,10 @@ pub struct ToolInfo {
     pub name : String,
     pub type_name : String,
     pub obj : serde_json::Value
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SegmentInfo {
+    pub name : String,
+    pub meas : SimInfo
 }

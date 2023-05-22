@@ -6,6 +6,7 @@ use std::path::Path;
 use alloc::collections::BTreeMap;
 use regex::Regex;
 use serde::Deserialize;
+use stepper_lib::{SyncComp, Tool};
 use stepper_lib::data::LinkedData;
 
 // Submodules
@@ -28,11 +29,12 @@ pub struct Package {
     
     pub lk : Option<LinkedData>,
     pub pins : Option<Pins>,
-    pub comps : Option<BTreeMap<String, CompInfo>>,
+    pub cinfos : Option<Vec<CompInfo>>,
     pub meas : Option<BTreeMap<String, MeasInfo>>, 
     
     pub tools : Option<Vec<ToolInfo>>,
-    pub rcs_init : Option<WorldObj>,
+    pub wobj : Option<WorldObj>,
+    pub segments : Option<Vec<SegmentInfo>>, 
 
     pub libs : PartLib
 }
@@ -44,11 +46,12 @@ impl Package {
 
             lk: None,
             pins: None,
-            comps: None,
+            cinfos: None,
             meas: None,
 
             tools: None,
-            rcs_init: None,
+            wobj: None,
+            segments: None,
 
             libs: PartLib::std()?
         })
@@ -67,7 +70,8 @@ impl Package {
             _self.lk = _self.load_file(comp_dir.join("lk.json"))?;
             _self.pins = _self.load_file(comp_dir.join("pins.json"))?;
             _self.meas = _self.load_file(comp_dir.join("meas.json"))?;
-            _self.comps = _self.load_file(comp_dir.join("comps.json"))?;
+            _self.cinfos = _self.load_file(comp_dir.join("comps.json"))?;
+            _self.segments = _self.load_file(comp_dir.join("segments.json"))?;
         }
 
         if lib_dir.exists() {
@@ -75,7 +79,7 @@ impl Package {
         } 
 
         if rcs_dir.exists() {
-            _self.rcs_init = _self.load_file(rcs_dir.join("init.json"))?;
+            _self.wobj = _self.load_file(rcs_dir.join("init.json"))?;
         }
 
         Ok(_self)
@@ -156,5 +160,48 @@ impl Package {
         Err(format!("Link '<{}://{}>' could not be resolved ('{}' not found in '{}')", link, target, target, link).into())
     }
 
-    pub fn parse_components(&self, comps )
+    pub fn parse_ang_confs<const C : usize>(&self) -> Option<Vec<AngConf>> {
+        let mut ang_confs = vec![];
+
+        if let Some(cinfos) = &self.cinfos {
+            for info in cinfos {
+                ang_confs.push(info.ang);
+            }
+
+            Some(ang_confs)
+        } else {
+            None
+        }
+    }
+
+    pub fn parse_components<const C : usize>(&self) -> Result<[Box<dyn SyncComp>; C], crate::Error> {
+        let mut comps = vec![];
+
+        if let Some(cinfos) = &self.cinfos {
+            for info in cinfos {
+                comps.push(
+                    self.libs.parse_comp(info)?
+                )
+            }
+        }
+
+        match comps.try_into() {
+            Ok(c) => Ok(c),
+            Err(v) => Err(
+                format!("Not enough components defined for robot (Given: {}, Required: {})", v.len(), C).into()
+            )
+        }
+    }
+
+    pub fn parse_tools(&self) -> Result<Vec<Box<dyn Tool + Send>>, crate::Error> {
+        let mut tools = vec![];
+
+        if let Some(tinfos) = &self.tools {
+            for info in tinfos {
+                tools.push(self.libs.parse_tool(info)?);
+            }
+        }
+
+        Ok(tools)
+    }
 }

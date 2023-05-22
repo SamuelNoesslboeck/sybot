@@ -5,7 +5,7 @@ use core::fmt::Debug;
 use stepper_lib::{SyncCompGroup, SyncComp, Tool, Setup};
 use stepper_lib::units::*;
 
-use sybot_pkg::{RobotInfo, CompInfo};
+use sybot_pkg::{RobotInfo, CompInfo, AngConf};
 use sybot_rcs::{WorldObj, Position};
 
 pub type Error = Box<dyn std::error::Error>;
@@ -33,7 +33,7 @@ impl<const C : usize> Default for Vars<C> {
 }
 
 /// A `PushRemote` defines a remote connection that the robot can push values to
-pub trait PushRemote {
+pub trait PushRemote : Debug {
     /// Publish a set of phis to the remote connection
     fn publ_phis(&mut self, phis : &[Phi]) -> Result<(), Error>;
 
@@ -58,7 +58,7 @@ pub trait RobotDesc<const C : usize> {
     // 
 
     // Calculation
-        fn convert_pos(&self, pos : Position) -> Result<[Phi; C], crate::Error>;
+        fn convert_pos(&self, rob : &mut dyn ComplexRobot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
     //
 }
 
@@ -88,7 +88,7 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
     // 
 
     // Data
-        fn cinfos<'a>(&'a self) -> &'a [CompInfo];
+        fn ang_confs<'a>(&'a self) -> &'a [AngConf];
 
         /// Returns a reference to the component group of the robot
         fn comps<'a>(&'a self) -> &'a dyn SyncCompGroup<dyn SyncComp, C>;
@@ -107,10 +107,10 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
         /// Converts all angles (by adding offset and sometimes mirroring the value)
         fn gammas_from_phis(&self, phis : [Phi; C]) -> [Gamma; C] {
             let mut gammas = [Gamma::ZERO; C];
-            let infos = self.cinfos();
+            let infos = self.ang_confs();
 
             for i in 0 .. C {
-                gammas[i] = infos[i].ang.gamma_from_phi(phis[i]);
+                gammas[i] = infos[i].gamma_from_phi(phis[i]);
             }
 
             gammas
@@ -124,10 +124,10 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
         /// Converts all teh angles (by adding offset and sometimes mirroring the value)
         fn phis_from_gammas(&self, gammas : [Gamma; C]) -> [Phi; C] {
             let mut phis = [Phi::ZERO; C];
-            let infos = self.cinfos();
+            let infos = self.ang_confs();
 
             for i in 0 .. C {
-                phis[i] = infos[i].ang.phi_from_gamma(gammas[i]);
+                phis[i] = infos[i].phi_from_gamma(gammas[i]);
             }
 
             phis

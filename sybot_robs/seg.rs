@@ -11,8 +11,8 @@ pub enum SegmentMovement {
 
 #[derive(Debug)]
 pub struct Segment {
-    pub phi : Phi,
-    pub movement : SegmentMovement,
+    phi : Phi,
+    movement : SegmentMovement,
 
     pub point_0 : PointRef,
     pub point : PointRef

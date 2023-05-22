@@ -1,5 +1,6 @@
-{
-  "base": {
+[
+  {
+    "name": "base",
     "type_name": "GearJoint",
     "obj": {
       "ctrl": {
@@ -16,7 +17,8 @@
       "max": 3.14
     }
   },
-  "arm_1": {
+  {
+    "name": "arm1",
     "type_name": "CylinderTriangle",
     "obj": {
       "cylinder": {
@@ -40,7 +42,8 @@
       "vel": 50.0
     }
   },
-  "arm_2": {
+  {
+    "name": "arm2",
     "type_name": "CylinderTriangle",
     "obj": {
       "cylinder": {
@@ -63,7 +66,8 @@
       "vel": 50.0
     }
   },
-  "arm_3": {
+  {
+    "name": "arm3",
     "type_name": "GearJoint",
     "obj": {
       "ctrl": {
@@ -79,4 +83,4 @@
       "vel": 2.0
     }
   }
-}
+]

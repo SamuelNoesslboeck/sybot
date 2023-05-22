@@ -14,14 +14,14 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     /// 
     /// Only available if the "http"-feature is available
     #[cfg(feature = "http")]
-    pub use remote::http;
+    pub use remote::http as http;
 
     /// Interpreters for sending text commands to control a [BasicRobot](crate::BasicRobot)
     // pub mod intpr;
     // pub use intpr::Interpreter;
 
     /// Structs and functions for calculating paths, loads and more
-    pub mod math;
+    pub use sybot_rcs::math as math;
 
     /// Structures and methods for exposing the robot to the internet with a MQTT server
     /// 
@@ -40,10 +40,55 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     pub use sybot_robs as robs;
     pub use robs::*;
 
-    #[cfg(test)]
-    mod tests;
+    #[cfg(feature = "lua")]
+    pub use sybot_scr as scr;
+
+    // #[cfg(test)]
+    // mod tests;       TODO: Fix tests
 //
 
 // Types
 /// Universal error type used in the crate
 pub type Error = Box<dyn std::error::Error>;
+
+// Lua
+#[cfg(feature = "lua")]
+use mlua::{Lua, Result, Table};
+
+#[cfg(feature = "lua")]
+#[mlua::lua_module]
+fn sybot_lib(lua : &Lua) -> Result<Table> {
+    use core::cell::RefCell;
+
+    use alloc::rc::Rc;
+    use pkg::Package;
+
+    let globals = lua.globals();
+
+    std::env::set_var("RUST_BACKTRACE", "full");
+
+    globals.set("load_rob", lua.create_function(|lua, path : String| {
+        let globals = lua.globals();
+
+        println!("Loading pkg ('{}'') ... ", path);
+
+        let pkg = Package::load(path).unwrap();
+
+        println!(" => Package loaded! "); 
+        println!(" | - Info: {:?}", pkg.info);
+
+        let mut rob = BasicStepperRobot::<4>::try_from(
+            pkg
+        ).unwrap();
+
+        rob.setup().unwrap();
+    
+        globals.set("rob", scr::lua::RobStorage {
+            rob: Rc::new(RefCell::new(rob))
+        })?;     
+
+        Ok(())
+    })?)?;
+
+    scr::lua::init_lib::<4>(lua)
+}

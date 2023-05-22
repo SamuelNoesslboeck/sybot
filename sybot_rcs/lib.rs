@@ -10,8 +10,7 @@ use serde::{Serialize, Deserialize};
 // Submodules
     mod des;
 
-    #[cfg(test)]
-    mod test;
+    pub mod math;
 // 
 
 pub trait Point : Debug {

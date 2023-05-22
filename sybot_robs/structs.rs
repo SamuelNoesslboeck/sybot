@@ -1,9 +1,9 @@
 use stepper_lib::{Setup, Tool};
 use stepper_lib::units::*;
-use sybot_pkg::{RobotInfo, CompInfo, Package};
+use sybot_pkg::{RobotInfo, CompInfo, Package, AngConf};
 use sybot_rcs::WorldObj;
 
-use crate::{InfoRobot, Vars, BasicRobot, PushRemote, RobotDesc, ComplexRobot, SegmentChain};
+use crate::{InfoRobot, Vars, BasicRobot, PushRemote, RobotDesc, ComplexRobot, SegmentChain, LinSegmentChain, Segment};
 
 #[derive(Debug)]
 pub struct TheoRobot<const C : usize> {
@@ -36,11 +36,12 @@ impl<const C : usize> InfoRobot<C> for TheoRobot<C> {
     }
 }
 
+#[derive(Debug)]
 pub struct BasicStepperRobot<const C : usize> {
     info : RobotInfo,
     vars : Vars<C>,
 
-    cinfos : [CompInfo; C], 
+    ang_confs : Vec<AngConf>,
     comps : [Box<dyn stepper_lib::SyncComp>; C],
 
     tools : Vec<Box<dyn Tool + std::marker::Send>>,
@@ -51,34 +52,30 @@ pub struct BasicStepperRobot<const C : usize> {
 
 impl<const C : usize> TryFrom<Package> for BasicStepperRobot<C> {
     type Error = crate::Error;
-
+    
     fn try_from(pkg: Package) -> Result<Self, Self::Error> {
-        if let Some(cinfos) = pkg.comps {
-            if cinfos.len() != C {
-                return Err(format!("Robot requires {} components, but {} were given!", C, cinfos.len()).into());
-            }
+        let comps = pkg.parse_components()?;
+        let tools = pkg.parse_tools()?;
+        let ang_confs = pkg.parse_ang_confs().unwrap();
 
-            
-        }
-
-        Err("No components declared!".into())
-    }
-}
-
-impl<const C : usize> TryFrom<Package> for BasicStepperRobot<C> {
-    fn try_from(pkg: Package) -> Result<Self, Self::Error> {
-        Self {
+        let mut rob = Self {
             info: pkg.info,
             vars: Vars::default(),
 
-            cinfos: pkg.comps,
-            comps: todo!(), 
+            ang_confs,
+            comps, 
 
-            tools : pkg.tools,
+            tools,
             tool_id: None,
 
             remotes: vec![]
+        };
+
+        if let Some(link) = pkg.lk {
+            rob.comps_mut().write_link(link);
         }
+
+        Ok(rob)
     }
 }
 
@@ -103,17 +100,19 @@ impl<const C : usize> InfoRobot<C> for BasicStepperRobot<C> {
 }
 
 impl<const C : usize> BasicRobot<C> for BasicStepperRobot<C> {
-    fn cinfos<'a>(&'a self) -> &'a [sybot_pkg::CompInfo] {
-        &self.cinfos
-    }
+    // Data
+        fn ang_confs<'a>(&'a self) -> &'a [sybot_pkg::AngConf] {
+            &self.ang_confs
+        }
 
-    fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
-        &self.comps
-    }
+        fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
+            &self.comps
+        }
 
-    fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
-        &mut self.comps
-    }
+        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
+            &mut self.comps
+        }
+    //
 
     fn update(&mut self) -> Result<(), crate::Error> {
         Ok(())
@@ -185,7 +184,7 @@ pub struct ComplexStepperRobot<const C : usize> {
     // 
 
     // Basic
-        cinfos : [CompInfo; C], 
+        ang_confs : Vec<AngConf>,
         comps : [Box<dyn stepper_lib::SyncComp>; C],
 
         tools : Vec<Box<dyn Tool + std::marker::Send>>,
@@ -197,23 +196,42 @@ pub struct ComplexStepperRobot<const C : usize> {
     // Complex
         wobj : WorldObj,
         desc : Option<Box<dyn RobotDesc<C>>>,
-        seg_chain : Box<dyn SegmentChain<C>>
+        seg_chain : Option<LinSegmentChain<C>
     // 
 }
 
-impl<const C : usize> TryFrom<Package> for ComplexStepperRobot<C> {
-    type Error = crate::Error;
+impl<const C : usize> ComplexStepperRobot<C> {
+    fn try_from_pkg(pkg: Package, ) -> Result<Self, crate::Error> {
+        let comps = pkg.parse_components()?;
+        let tools = pkg.parse_tools()?;
+        let ang_confs = pkg.parse_ang_confs().unwrap();
 
-    fn try_from(pkg: Package) -> Result<Self, Self::Error> {
-        if let Some(cinfos) = pkg.comps {
-            if cinfos.len() != C {
-                return Err(format!("Robot requires {} components, but {} were given!", C, cinfos.len()).into());
-            }
+        let wobj = if let Some(wobj) = pkg.wobj {
+            wobj
+        } else {
+            return Err("No coordinate system has been defined in the package! (rcs/init.json)".into());
+        };
+    
+        let mut rob = Self {
+            info: pkg.info,
+            vars: Vars::default(),
 
-            
+            comps, 
+
+            tools,
+            tool_id: None,
+
+            remotes: vec![],
+
+            wobj,
+            desc: None
+        };
+
+        if let Some(link) = pkg.lk {
+            rob.comps_mut().write_link(link);
         }
 
-        Err("No components declared!".into())
+        Ok(rob)
     }
 }
 

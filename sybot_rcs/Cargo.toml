@@ -7,7 +7,7 @@ edition = "2021"
 
 [lib]
 name = "sybot_rcs"
-path = "src/lib.rs"
+path = "lib.rs"
 
 [dependencies]
 glam = "0.24.0"

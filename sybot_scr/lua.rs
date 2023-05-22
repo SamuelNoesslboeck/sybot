@@ -4,14 +4,23 @@ use alloc::rc::Rc;
 use glam::Vec3;
 use mlua::{Lua, Result, Table, UserData, LuaSerdeExt};
 use serde::{Serialize, Deserialize};
-use sybot_robs::InfoRobot;
+use sybot_robs::BasicRobot;
 
 #[derive(Clone)]
-struct RobStorage {
-    pub rob : Rc<RefCell<dyn InfoRobot>>
+pub struct RobStorage<const C : usize> {
+    pub rob : Rc<RefCell<dyn BasicRobot<C>>>
 }
 
-impl UserData for RobStorage { }
+impl<const C : usize> UserData for RobStorage<C> { 
+    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(_fields: &mut F) {
+        _fields.add_field_method_get("phis", |lua, this| { 
+            let rob = this.rob.borrow();
+            let phis = rob.phis();
+            let farray = phis.iter().map(|p| p.0 );
+            lua.create_sequence_from(farray)
+        });
+    }
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 struct LVec3 {
@@ -28,29 +37,18 @@ impl Into<Vec3> for LVec3 {
 
 impl UserData for LVec3 { }
 
-pub fn init_lib(lua : &Lua) -> Result<Table> {
+pub fn init_lib<const C : usize>(lua : &Lua) -> Result<Table> {
     let exports = lua.create_table()?;
     let globals = lua.globals();
 
-    globals.set("load_rob", lua.create_function(|lua, path : String| {
-        let libs = create_std_libs();
-        let globals = lua.globals();
-    
-        globals.set("__rob", RobStorage {
-            rob: Rc::new(RefCell::new(SyArm::from_conf(JsonConfig::read_from_file(&libs, &path)).unwrap()))
-        })?;     
+    // globals.set("print_rob", lua.create_function(|lua, ()| {
+    //     let globals = lua.globals();
+    //     let _ : RobStorage<C> = globals.get("__rob")?;
 
-        Ok(())
-    })?)?;
+    //     // robs.rob.borrow().brob().print_conf_header();
 
-    globals.set("print_rob", lua.create_function(|lua, ()| {
-        let globals = lua.globals();
-        let robs : RobStorage = globals.get("__rob")?;
-        
-        robs.rob.borrow().brob().print_conf_header();
-
-        Ok(())
-    })?)?;
+    //     Ok(())
+    // })?)?;
 
     // Movement
         // globals.set("measure", lua.create_function(|lua, ()| {
@@ -73,15 +71,15 @@ pub fn init_lib(lua : &Lua) -> Result<Table> {
     //
 
     // Tools
-        globals.set("set_tool", lua.create_function(|lua, index : usize| {
+        globals.set("set_tool", lua.create_function(|lua, index : Option<usize>| {
             let globals = lua.globals();
-            let rob_storage : RobStorage = globals.get("__rob")?;
+            let rob_storage : RobStorage<C> = globals.get("rob")?;
             let mut rob = rob_storage.rob.borrow_mut();
             
             if let Some(tool) = rob.set_tool_id(index) {
                 lua.to_value(&tool.get_json())
             } else {
-                Err(mlua::Error::RuntimeError("No tool found for the given index!".to_owned()))
+                lua.to_value(&mlua::Value::Nil) 
             }
         })?)?;
     // 

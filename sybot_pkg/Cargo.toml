@@ -1,13 +1,13 @@
 [package]
 name = "sybot_pkg"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.1.0"
+version = "0.2.0"
 description = "Robot package parsing tool for the sybot_library"
 edition = "2021"
 
 [lib]
 name = "sybot_pkg"
-path = "src/lib.rs"
+path = "lib.rs"
 
 [[bin]]
 name = "dump"
