@@ -5,7 +5,7 @@ use core::fmt::Debug;
 use stepper_lib::{SyncCompGroup, SyncComp, Tool, Setup};
 use stepper_lib::units::*;
 
-use sybot_pkg::{RobotInfo, CompInfo, AngConf};
+use sybot_pkg::{RobotInfo, AngConf, Package};
 use sybot_rcs::{WorldObj, Position};
 
 pub type Error = Box<dyn std::error::Error>;
@@ -59,6 +59,8 @@ pub trait RobotDesc<const C : usize> {
 
     // Calculation
         fn convert_pos(&self, rob : &mut dyn ComplexRobot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
+
+        fn create_seg_chain(&self, pkg : &Package) -> Result<Box<dyn SegmentChain<C>>, crate::Error>;
     //
 }
 
@@ -212,47 +214,13 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
             self.comps_mut().drive_abs_async(gammas, speed_f)
         }
 
-        fn move_l(&mut self, deltas : [Delta; C]) -> Result<(), crate::Error>;
+        fn move_l(&mut self, desc : &mut dyn RobotDesc<C>, deltas : [Delta; C]) -> Result<(), crate::Error>;
 
-        fn move_l_abs(&mut self, gammas : [Gamma; C]) -> Result<(), crate::Error>;
+        fn move_l_abs(&mut self, desc : &mut dyn RobotDesc<C>, gammas : [Gamma; C]) -> Result<(), crate::Error>;
 
         fn await_inactive(&mut self) -> Result<[Delta; C], crate::Error> {
             self.comps_mut().await_inactive()
         }
-    // 
-
-    // Axis config
-        #[inline]
-        fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error> {
-            if let Some(desc) = self.desc_mut() {
-                desc.apply_aconf(conf)
-            } else {
-                Err("No robot descriptor appended yet!".into())
-            }
-        }
-        
-        #[inline]
-        fn aconf<'a>(&'a self) -> Option<&'a Box<dyn AxisConf>> {
-            if let Some(desc) = self.desc() {
-                Some(desc.aconf())
-            } else {
-                None
-            }
-        }
-    // 
-
-    // Descriptor
-        fn set_desc(&mut self, desc : Box<dyn RobotDesc<C>>);
-
-        fn desc<'a>(&'a self) -> Option<&'a Box<dyn RobotDesc<C>>>;
-
-        fn desc_mut<'a>(&'a mut self) -> Option<&'a mut Box<dyn RobotDesc<C>>>;
-    // 
-
-    // Segments
-        fn seg_chain<'a>(&'a self) -> &'a Box<dyn SegmentChain<C>>;
-
-        fn seg_chain_mut<'a>(&'a mut self) -> &'a mut Box<dyn SegmentChain<C>>;
     // 
 }
 

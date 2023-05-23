@@ -1,9 +1,9 @@
 use stepper_lib::{Setup, Tool};
 use stepper_lib::units::*;
-use sybot_pkg::{RobotInfo, CompInfo, Package, AngConf};
+use sybot_pkg::{RobotInfo, Package, AngConf};
 use sybot_rcs::WorldObj;
 
-use crate::{InfoRobot, Vars, BasicRobot, PushRemote, RobotDesc, ComplexRobot, SegmentChain, LinSegmentChain, Segment};
+use crate::{InfoRobot, Vars, BasicRobot, PushRemote, RobotDesc, ComplexRobot};
 
 #[derive(Debug)]
 pub struct TheoRobot<const C : usize> {
@@ -50,6 +50,24 @@ pub struct BasicStepperRobot<const C : usize> {
     remotes : Vec<Box<dyn PushRemote>>
 }
 
+impl<const C : usize> BasicStepperRobot<C> {
+    pub fn new(info : RobotInfo, ang_confs : Vec<AngConf>, comps : [Box<dyn stepper_lib::SyncComp>; C], 
+    tools : Vec<Box<dyn Tool + std::marker::Send>>) -> Self {
+        Self {
+            info,
+            vars: Vars::default(),
+
+            ang_confs,
+            comps,
+            
+            tools,
+            tool_id: None,
+
+            remotes: vec![]
+        }
+    }
+}
+
 impl<const C : usize> TryFrom<Package> for BasicStepperRobot<C> {
     type Error = crate::Error;
     
@@ -58,18 +76,9 @@ impl<const C : usize> TryFrom<Package> for BasicStepperRobot<C> {
         let tools = pkg.parse_tools()?;
         let ang_confs = pkg.parse_ang_confs().unwrap();
 
-        let mut rob = Self {
-            info: pkg.info,
-            vars: Vars::default(),
-
-            ang_confs,
-            comps, 
-
-            tools,
-            tool_id: None,
-
-            remotes: vec![]
-        };
+        let mut rob = Self::new(
+            pkg.info, ang_confs, comps, tools
+        );
 
         if let Some(link) = pkg.lk {
             rob.comps_mut().write_link(link);
@@ -177,6 +186,10 @@ impl<const C : usize> BasicRobot<C> for BasicStepperRobot<C> {
     //
 }
 
+// pub struct ComplexCollective<const C : usize> {
+
+// }
+
 pub struct ComplexStepperRobot<const C : usize> {
     // Info 
         info : RobotInfo,
@@ -194,10 +207,28 @@ pub struct ComplexStepperRobot<const C : usize> {
     //
 
     // Complex
-        wobj : WorldObj,
-        desc : Option<Box<dyn RobotDesc<C>>>,
-        seg_chain : Option<LinSegmentChain<C>
+        wobj : WorldObj
     // 
+}
+
+impl<const C : usize> ComplexStepperRobot<C> {
+    pub fn new(info : RobotInfo, ang_confs : Vec<AngConf>, comps : [Box<dyn stepper_lib::SyncComp>; C], 
+    tools : Vec<Box<dyn Tool + std::marker::Send>>, wobj : WorldObj) -> Self {
+        Self {
+            info,
+            vars: Vars::default(),
+
+            ang_confs,
+            comps,
+            
+            tools,
+            tool_id: None,
+
+            remotes: vec![],
+
+            wobj
+        }
+    }
 }
 
 impl<const C : usize> ComplexStepperRobot<C> {
@@ -212,20 +243,9 @@ impl<const C : usize> ComplexStepperRobot<C> {
             return Err("No coordinate system has been defined in the package! (rcs/init.json)".into());
         };
     
-        let mut rob = Self {
-            info: pkg.info,
-            vars: Vars::default(),
-
-            comps, 
-
-            tools,
-            tool_id: None,
-
-            remotes: vec![],
-
-            wobj,
-            desc: None
-        };
+        let mut rob = Self::new(
+            pkg.info, ang_confs, comps, tools, wobj
+        );
 
         if let Some(link) = pkg.lk {
             rob.comps_mut().write_link(link);
@@ -256,17 +276,19 @@ impl<const C : usize> InfoRobot<C> for ComplexStepperRobot<C> {
 }
 
 impl<const C : usize> BasicRobot<C> for ComplexStepperRobot<C> {
-    fn cinfos<'a>(&'a self) -> &'a [sybot_pkg::CompInfo] {
-        &self.cinfos
-    }
+    // Data
+        fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
+            &self.ang_confs
+        }
 
-    fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
-        &self.comps
-    }
+        fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
+            &self.comps
+        }
 
-    fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
-        &mut self.comps
-    }
+        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
+            &mut self.comps
+        }
+    // 
 
     fn update(&mut self) -> Result<(), crate::Error> {
         todo!()
@@ -343,44 +365,12 @@ impl<const C : usize> ComplexRobot<C> for ComplexStepperRobot<C> {
     // 
 
     // Movement
-        fn move_l(&mut self, _ : [Delta; C]) -> Result<(), crate::Error> {
+        fn move_l(&mut self, desc : &mut dyn RobotDesc<C>, _ : [Delta; C]) -> Result<(), crate::Error> {
             todo!()
         }
 
-        fn move_l_abs(&mut self, _ : [Gamma; C]) -> Result<(), crate::Error> {
+        fn move_l_abs(&mut self, desc : &mut dyn RobotDesc<C>, _ : [Gamma; C]) -> Result<(), crate::Error> {
             todo!()
         }
     //
-
-    // Description
-        fn set_desc(&mut self, desc : Box<dyn RobotDesc<C>>) {
-            self.desc = Some(desc)
-        }
-
-        fn desc<'a>(&'a self) -> Option<&'a Box<dyn RobotDesc<C>>> {
-            if let Some(desc) = &self.desc {
-                Some(desc)
-            } else {
-                None
-            }
-        }
-
-        fn desc_mut<'a>(&'a mut self) -> Option<&'a mut Box<dyn RobotDesc<C>>> {
-            if let Some(desc) = &mut self.desc {
-                Some(desc) 
-            } else {
-                None
-            }
-        }
-    // 
-
-    // Segments
-        fn seg_chain<'a>(&'a self) -> &'a Box<dyn crate::SegmentChain<C>> {
-            &self.seg_chain
-        }
-
-        fn seg_chain_mut<'a>(&'a mut self) -> &'a mut Box<dyn SegmentChain<C>> {
-            &mut self.seg_chain
-        }
-    // 
 }

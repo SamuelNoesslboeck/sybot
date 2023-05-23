@@ -192,6 +192,31 @@ impl WorldObj {
         self.sub.insert(name, PointRef(point));
     }
 
+    pub fn point<'a>(&'a self, path : String) -> Option<&'a PointRef> {
+        let path_split : Vec<String> = path.split('/').map(|elem| elem.to_owned()).collect();
+        self.resolve_path_step(&path_split, 0)
+    }
+
+    fn resolve_path_step<'a>(&'a self, split : &[String], index : usize) -> Option<&'a PointRef> {
+        if index > split.len() {
+            return None;
+        }
+
+        if let Some(point) = self.sub.get(&split[index]) {
+            let p = point.borrow();
+
+            if split.len() == index {
+                return Some(point);
+            }
+
+            if let Some(wo) = p.as_wo() {
+                return wo.resolve_path_step(split, index + 1);
+            } 
+        } 
+
+        None
+    }
+
     fn trans_pos_step(&self, split : &[String], index : usize) -> Option<Vec3> {
         if index > split.len() {
             return None;

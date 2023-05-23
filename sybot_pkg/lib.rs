@@ -160,7 +160,7 @@ impl Package {
         Err(format!("Link '<{}://{}>' could not be resolved ('{}' not found in '{}')", link, target, target, link).into())
     }
 
-    pub fn parse_ang_confs<const C : usize>(&self) -> Option<Vec<AngConf>> {
+    pub fn parse_ang_confs(&self) -> Option<Vec<AngConf>> {
         let mut ang_confs = vec![];
 
         if let Some(cinfos) = &self.cinfos {

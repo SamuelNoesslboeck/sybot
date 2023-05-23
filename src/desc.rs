@@ -51,5 +51,13 @@ impl RobotDesc<4> for SyArmDesc {
         fn convert_pos(&self, pos : sybot_rcs::Position) -> Result<[Phi; 4], sybot_robs::Error> {
             
         }
+
+        fn create_seg_chain(&self, pkg : &mut sybot_pkg::Package) -> Result<Box<dyn sybot_robs::SegmentChain<4>>, sybot_robs::Error> {
+            if let Some(wobj) = &mut pkg.wobj {
+                
+            } else {
+                Err("Define a world object in this package to parse segments from!".into())
+            }
+        }
     //
 }
