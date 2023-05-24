@@ -1,3 +1,4 @@
+use glam::Vec3;
 use serde::{Serialize, Deserialize};
 use stepper_lib::units::*;
 
@@ -60,6 +61,14 @@ pub struct MeasInfo {
     }
 //
 
+// Segments
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+    pub enum SegmentMovementInfo {
+        Rotation,
+        Linear([f32; 3])
+    }
+// 
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompInfo {
     pub name : String, 
@@ -82,5 +91,7 @@ pub struct ToolInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SegmentInfo {
     pub name : String,
-    pub meas : SimInfo
+    pub meas : SimInfo,
+    #[serde(alias = "move")]
+    pub movement : SegmentMovementInfo
 }

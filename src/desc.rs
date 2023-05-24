@@ -1,11 +1,14 @@
+use serde::de::IntoDeserializer;
 use stepper_lib::units::*;
-use sybot_rcs::{Point, WorldObj};
-use sybot_robs::{AxisConf, SegmentChain};
+use sybot_pkg::Package;
+use sybot_rcs::{WorldObj, PointRef, Point};
+use sybot_robs::{AxisConf, SegmentChain, LinSegmentChain};
 
 use crate::RobotDesc;
 
+#[derive(Default)]
 pub struct SyArmConf {
-    pub phis : [Phi; 1],
+    pub phis : [Phi; 1]
 }
 
 impl AxisConf for SyArmConf {
@@ -24,9 +27,29 @@ impl AxisConf for SyArmConf {
 }
 
 pub struct SyArmDesc {
-    conf : Box<dyn AxisConf>,
     wobj : WorldObj,
-    segments : Box<dyn SegmentChain<4>>
+    segments : LinSegmentChain<4>,
+    conf : Box<dyn AxisConf>
+}
+
+impl TryFrom<Package> for SyArmDesc {
+    type Error = crate::Error;
+
+    fn try_from(pkg: Package) -> Result<Self, Self::Error> {
+        if let Some(mut wobj) = pkg.wobj {
+            if let Some(segments) = &pkg.segments {
+                Ok(Self {
+                    segments: LinSegmentChain::from_wobj(segments, &mut wobj)?,
+                    wobj,
+                    conf: Box::new(SyArmConf::default())
+                })
+            } else {
+                Err("Define segments for this descriptor!".into())
+            }
+        } else {
+            Err("The SyArm descriptor requires a vaild world object".into())
+        }
+    }
 }
 
 impl RobotDesc<4> for SyArmDesc {
@@ -41,11 +64,27 @@ impl RobotDesc<4> for SyArmDesc {
         }
     //
 
+    // Segments
+        fn segments<'a>(&'a self) -> &'a dyn SegmentChain<4> {
+            &self.segments
+        }
+
+        fn segments_mut<'a>(&'a mut self) -> &'a mut dyn SegmentChain<4> {
+            &mut self.segments
+        }
     // 
 
+    // World object
+        fn wobj<'a>(&'a self) -> &'a WorldObj {
+            &self.wobj
+        }
+
+        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj {
+            &mut self.wobj
+        }
     // 
 
-    // Event
+    // Events
         fn setup(&mut self, _ : &mut dyn sybot_robs::ComplexRobot<4>) -> Result<(), sybot_robs::Error> {
             Ok(())
         }
@@ -57,7 +96,7 @@ impl RobotDesc<4> for SyArmDesc {
 
     // Calculate
         fn convert_pos(&self, rob : &mut dyn sybot_robs::ComplexRobot<4>, pos : sybot_rcs::Position) -> Result<[Phi; 4], sybot_robs::Error> {
-            
+            todo!()
         }
-    //
+    // 
 }

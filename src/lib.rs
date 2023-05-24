@@ -77,7 +77,7 @@ fn sybot_lib(lua : &Lua) -> Result<Table> {
         println!(" => Package loaded! "); 
         println!(" | - Info: {:?}", pkg.info);
 
-        let mut rob = BasicStepperRobot::<4>::try_from(
+        let mut rob = StepperRobot::<4>::try_from(
             pkg
         ).unwrap();
 

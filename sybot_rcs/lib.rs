@@ -13,6 +13,8 @@ use serde::{Serialize, Deserialize};
     pub mod math;
 // 
 
+pub type Error = Box<dyn std::error::Error>;
+
 pub trait Point : Debug {
     fn pos<'a>(&'a self) -> &'a Vec3;
     fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3;
@@ -192,17 +194,39 @@ impl WorldObj {
         self.sub.insert(name, PointRef(point));
     }
 
-    pub fn point(&self, path : String) -> Option<PointRef> {
-        let path_split : Vec<String> = path.split('/').map(|elem| elem.to_owned()).collect();
-        self.resolve_path_step(&path_split, 0)
+    pub fn point<S : Into<String>>(&self, path : S) -> Option<PointRef> {
+        let path_s = path.into();
+        let path_split : Vec<&str> = path_s.split('/').collect();
+        self.point_path(&path_split)
     }
 
-    fn resolve_path_step(&self, split : &[String], index : usize) -> Option<PointRef> {
+    pub fn req_point<S : Into<String>>(&self, path : S) -> Result<PointRef, crate::Error> {
+        let path_s = path.into();
+        if let Some(p) = self.point(path_s.clone()) {
+            Ok(p)
+        } else {
+            Err(format!("The system requires a point with path '{}'", &path_s).into())
+        }
+    }
+
+    pub fn point_path(&self, path : &[&str]) -> Option<PointRef> {
+        self.resolve_path_step(path, 0)
+    }
+
+    pub fn req_point_path(&self, path : &[&str]) -> Result<PointRef, crate::Error> {
+        if let Some(p) = self.point_path(path) {
+            Ok(p)
+        } else {
+            Err(format!("The system requires a point with path ({:?})", path).into())
+        }
+    }
+
+    fn resolve_path_step(&self, split : &[&str], index : usize) -> Option<PointRef> {
         if index > split.len() {
             return None;
         }
 
-        if let Some(point) = self.sub.get(&split[index]) {
+        if let Some(point) = self.sub.get(split[index]) {
             let p = point.borrow();
 
             if split.len() == index {
@@ -217,30 +241,30 @@ impl WorldObj {
         None
     }
 
-    fn trans_pos_step(&self, split : &[String], index : usize) -> Option<Vec3> {
-        if index > split.len() {
-            return None;
-        }
+    // fn trans_pos_step(&self, split : &[String], index : usize) -> Option<Vec3> {
+    //     if index > split.len() {
+    //         return None;
+    //     }
 
-        if let Some(point) = self.sub.get(&split[index]) {
-            let p = point.borrow();
+    //     if let Some(point) = self.sub.get(&split[index]) {
+    //         let p = point.borrow();
 
-            if split.len() == index {
-                return Some((*self.ori()) * (*p.pos()) + *self.pos());
-            }
+    //         if split.len() == index {
+    //             return Some((*self.ori()) * (*p.pos()) + *self.pos());
+    //         }
 
-            if let Some(wo) = p.as_wo() {
-                if let Some(pos) = wo.trans_pos_step(split, index + 1) {
-                    return Some((*self.ori()) * (pos) + *self.pos());
-                } 
-            } 
-        } 
+    //         if let Some(wo) = p.as_wo() {
+    //             if let Some(pos) = wo.trans_pos_step(split, index + 1) {
+    //                 return Some((*self.ori()) * (pos) + *self.pos());
+    //             } 
+    //         } 
+    //     } 
 
-        None
-    }
+    //     None
+    // }
 
-    pub fn trans_pos(&self, path : String) -> Option<Vec3> {
-        let path_split : Vec<String> = path.split('/').map(|elem| elem.to_owned()).collect();
-        self.trans_pos_step(&path_split, 0)
-    }
+    // pub fn trans_pos(&self, path : String) -> Option<Vec3> {
+    //     let path_split : Vec<String> = path.split('/').map(|elem| elem.to_owned()).collect();
+    //     self.trans_pos_step(&path_split, 0)
+    // }
 }

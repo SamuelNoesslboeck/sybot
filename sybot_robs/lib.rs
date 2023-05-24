@@ -5,7 +5,7 @@ use core::fmt::Debug;
 use stepper_lib::{SyncCompGroup, SyncComp, Tool, Setup};
 use stepper_lib::units::*;
 
-use sybot_pkg::{RobotInfo, AngConf, Package};
+use sybot_pkg::{RobotInfo, AngConf};
 use sybot_rcs::{WorldObj, Position};
 
 pub type Error = Box<dyn std::error::Error>;
@@ -54,7 +54,9 @@ pub trait RobotDesc<const C : usize> {
     // 
 
     // Segments
-        fn segments<'a>(&'a self) -> Box<&'a dyn SegmentChain<C>>; 
+        fn segments<'a>(&'a self) -> &'a dyn SegmentChain<4>; 
+
+        fn segments_mut<'a>(&'a mut self) -> &'a mut dyn SegmentChain<4>;
     // 
 
     // Events

@@ -1,12 +1,22 @@
 use glam::{Vec3, Mat3};
 use stepper_lib::units::*;
 
-use sybot_rcs::{PointRef, Position, Point};
+use sybot_pkg::{SegmentInfo, SegmentMovementInfo};
+use sybot_rcs::{PointRef, Position, Point, WorldObj};
 
 #[derive(Debug)]
 pub enum SegmentMovement {
     Rotation,
     Linear(Vec3)
+}
+
+impl From<SegmentMovementInfo> for SegmentMovement {
+    fn from(info : SegmentMovementInfo) -> Self {
+        match info {
+            SegmentMovementInfo::Rotation => SegmentMovement::Rotation,
+            SegmentMovementInfo::Linear(fvec) => SegmentMovement::Linear(Vec3::from(fvec))
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -19,6 +29,16 @@ pub struct Segment {
 }
 
 impl Segment {
+    pub fn new(point : PointRef, info : &SegmentInfo) -> Self {
+        Self {
+            phi: Phi::ZERO,
+            movement: SegmentMovement::from(info.movement),
+
+            point_0 : point.clone_no_ref(),
+            point
+        }
+    }
+
     pub fn update(&mut self, phi : Phi) -> Result<(), crate::Error> {
         self.phi = phi;
 
@@ -75,7 +95,33 @@ pub trait SegmentChain<const C : usize> : core::fmt::Debug {
 
 #[derive(Debug)]
 pub struct LinSegmentChain<const C : usize> {
-    pub segments : [Segment; C]
+    segments : [Segment; C]
+}
+
+impl<const C : usize> LinSegmentChain<C> {
+    pub fn from_wobj(infos : &Vec<SegmentInfo>, wobj : &mut WorldObj) -> Result<Self, crate::Error> {
+        if infos.len() < C {
+            return Err(format!("Not enough segments declared! (Required: {}, Given: {})", C, infos.len()).into())
+        }
+
+        let mut path = vec![];
+        let mut segments = vec![];
+
+        for i in 0 .. C {
+            path.push(infos[i].name.as_str());
+            segments.push(
+                Segment::new(wobj.req_point_path(&path)?, &infos[i])
+            )
+        }
+
+        Ok(Self {
+            segments: segments.try_into().unwrap()
+        })
+    }
+
+    pub fn start_point(&self) -> &PointRef {
+        &self.segments[0].point
+    }
 }
 
 impl<const C : usize> SegmentChain<C> for LinSegmentChain<C> {

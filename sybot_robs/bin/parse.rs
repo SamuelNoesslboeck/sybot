@@ -1,5 +1,5 @@
 use sybot_pkg::Package;
-use sybot_robs::{TheoRobot, BasicStepperRobot};
+use sybot_robs::{TheoRobot, StepperRobot};
 
 fn main() -> Result<(), sybot_robs::Error> {
     let pkg = Package::load("../assets/SyArm_Mk1")?;
@@ -9,7 +9,7 @@ fn main() -> Result<(), sybot_robs::Error> {
     dbg!(theo);
 
     let pkg = Package::load("../assets/SyArm_Mk1")?;
-    let simple = BasicStepperRobot::<4>::try_from(pkg)?;
+    let simple = StepperRobot::<4>::try_from(pkg)?;
 
     println!("Parsing 'SimpleRobot' ... ");
     dbg!(simple);
