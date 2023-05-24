@@ -192,12 +192,12 @@ impl WorldObj {
         self.sub.insert(name, PointRef(point));
     }
 
-    pub fn point<'a>(&'a self, path : String) -> Option<&'a PointRef> {
+    pub fn point(&self, path : String) -> Option<PointRef> {
         let path_split : Vec<String> = path.split('/').map(|elem| elem.to_owned()).collect();
         self.resolve_path_step(&path_split, 0)
     }
 
-    fn resolve_path_step<'a>(&'a self, split : &[String], index : usize) -> Option<&'a PointRef> {
+    fn resolve_path_step(&self, split : &[String], index : usize) -> Option<PointRef> {
         if index > split.len() {
             return None;
         }
@@ -206,7 +206,7 @@ impl WorldObj {
             let p = point.borrow();
 
             if split.len() == index {
-                return Some(point);
+                return Some(point.clone());
             }
 
             if let Some(wo) = p.as_wo() {

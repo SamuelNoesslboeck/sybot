@@ -354,22 +354,24 @@ impl<const C : usize> BasicRobot<C> for ComplexStepperRobot<C> {
 }
 
 impl<const C : usize> ComplexRobot<C> for ComplexStepperRobot<C> {
-    // RCS
-        fn wobj<'a>(&'a self) -> &'a WorldObj {
-            &self.wobj
-        }
-
-        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj {
-            &mut self.wobj
-        }
-    // 
-
     // Movement
         fn move_l(&mut self, desc : &mut dyn RobotDesc<C>, _ : [Delta; C]) -> Result<(), crate::Error> {
             todo!()
         }
 
         fn move_l_abs(&mut self, desc : &mut dyn RobotDesc<C>, _ : [Gamma; C]) -> Result<(), crate::Error> {
+            todo!()
+        }
+
+        fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error> {
+            todo!()
+        }
+
+        fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error> {
+            todo!()
+        }
+
+        fn await_inactive(&mut self) -> Result<[Delta; C], crate::Error> {
             todo!()
         }
     //

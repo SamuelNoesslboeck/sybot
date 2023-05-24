@@ -47,9 +47,15 @@ pub trait AxisConf {
 }
 
 pub trait RobotDesc<const C : usize> {
-    fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error>; 
-        
-    fn aconf<'a>(&'a self) -> &'a Box<dyn AxisConf>;
+    // Axis conf
+        fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error>; 
+            
+        fn aconf<'a>(&'a self) -> &'a Box<dyn AxisConf>;
+    // 
+
+    // Segments
+        fn segments<'a>(&'a self) -> Box<&'a dyn SegmentChain<C>>; 
+    // 
 
     // Events
         fn setup(&mut self, rob : &mut dyn ComplexRobot<C>) -> Result<(), crate::Error>;
@@ -59,9 +65,14 @@ pub trait RobotDesc<const C : usize> {
 
     // Calculation
         fn convert_pos(&self, rob : &mut dyn ComplexRobot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
-
-        fn create_seg_chain(&self, pkg : &Package) -> Result<Box<dyn SegmentChain<C>>, crate::Error>;
     //
+
+    // World object
+        fn wobj<'a>(&'a self) -> &'a WorldObj;
+
+        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
+    // 
+
 }
 
 pub trait InfoRobot<const C : usize> {
@@ -199,12 +210,6 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
 }
 
 pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
-    // World object
-        fn wobj<'a>(&'a self) -> &'a WorldObj;
-
-        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
-    // 
-
     // Movement
         fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error> {
             self.comps_mut().drive_rel_async(deltas, speed_f)

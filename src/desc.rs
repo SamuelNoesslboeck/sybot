@@ -1,11 +1,11 @@
 use stepper_lib::units::*;
-use sybot_rcs::Point;
-use sybot_robs::AxisConf;
+use sybot_rcs::{Point, WorldObj};
+use sybot_robs::{AxisConf, SegmentChain};
 
 use crate::RobotDesc;
 
 pub struct SyArmConf {
-    pub phis : [Phi; 1]
+    pub phis : [Phi; 1],
 }
 
 impl AxisConf for SyArmConf {
@@ -24,18 +24,26 @@ impl AxisConf for SyArmConf {
 }
 
 pub struct SyArmDesc {
-    pub conf : Box<dyn AxisConf>
+    conf : Box<dyn AxisConf>,
+    wobj : WorldObj,
+    segments : Box<dyn SegmentChain<4>>
 }
 
 impl RobotDesc<4> for SyArmDesc {
-    fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), sybot_robs::Error> {
-        self.conf = conf;
-        Ok(())
-    }
+    // Axis config
+        fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), sybot_robs::Error> {
+            self.conf = conf;
+            Ok(())
+        }
 
-    fn aconf<'a>(&'a self) -> &'a Box<dyn AxisConf> {
-        &self.conf
-    }
+        fn aconf<'a>(&'a self) -> &'a Box<dyn AxisConf> {
+            &self.conf
+        }
+    //
+
+    // 
+
+    // 
 
     // Event
         fn setup(&mut self, _ : &mut dyn sybot_robs::ComplexRobot<4>) -> Result<(), sybot_robs::Error> {
@@ -48,16 +56,8 @@ impl RobotDesc<4> for SyArmDesc {
     // 
 
     // Calculate
-        fn convert_pos(&self, pos : sybot_rcs::Position) -> Result<[Phi; 4], sybot_robs::Error> {
+        fn convert_pos(&self, rob : &mut dyn sybot_robs::ComplexRobot<4>, pos : sybot_rcs::Position) -> Result<[Phi; 4], sybot_robs::Error> {
             
-        }
-
-        fn create_seg_chain(&self, pkg : &mut sybot_pkg::Package) -> Result<Box<dyn sybot_robs::SegmentChain<4>>, sybot_robs::Error> {
-            if let Some(wobj) = &mut pkg.wobj {
-                
-            } else {
-                Err("Define a world object in this package to parse segments from!".into())
-            }
         }
     //
 }
