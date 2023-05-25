@@ -91,7 +91,7 @@ pub struct ToolInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SegmentInfo {
     pub name : String,
-    pub meas : SimInfo,
+    pub sim : SimInfo,
     #[serde(alias = "move")]
     pub movement : SegmentMovementInfo
 }

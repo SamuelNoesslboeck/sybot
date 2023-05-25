@@ -16,6 +16,10 @@ use serde::{Serialize, Deserialize};
 pub type Error = Box<dyn std::error::Error>;
 
 pub trait Point : Debug {
+    fn x(&self) -> f32;
+    fn y(&self) -> f32;
+    fn z(&self) -> f32;
+
     fn pos<'a>(&'a self) -> &'a Vec3;
     fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3;
 
@@ -45,6 +49,20 @@ impl Default for Position {
 }
 
 impl Point for Position {
+    // Positions
+        fn x(&self) -> f32 {
+            self.pos.x
+        }
+
+        fn y(&self) -> f32 {
+            self.pos.y
+        }
+
+        fn z(&self) -> f32 {
+            self.pos.z
+        }
+    // 
+
     fn pos<'a>(&'a self) -> &'a Vec3 {
         &self.pos   
     }
@@ -139,6 +157,20 @@ impl AsRef<Position> for WorldObj {
 }
 
 impl Point for WorldObj {
+        // Positions
+        fn x(&self) -> f32 {
+            self.pos.x()
+        }
+
+        fn y(&self) -> f32 {
+            self.pos.y()
+        }
+
+        fn z(&self) -> f32 {
+            self.pos.z()
+        }
+    // 
+
     fn pos<'a>(&'a self) -> &'a Vec3 {
         self.pos.pos()
     }
@@ -186,12 +218,12 @@ impl WorldObj {
         }
     }
 
-    pub fn add_point(&mut self, name : String, point : Rc<RefCell<dyn Point>>) {
+    pub fn add_point(&mut self, name : String, point : PointRef) {
         if name.contains('/') {
             panic!("Bad point name! Point names must not contain '/'! (Name: {})", name);
         }
         
-        self.sub.insert(name, PointRef(point));
+        self.sub.insert(name, point);
     }
 
     pub fn point<S : Into<String>>(&self, path : S) -> Option<PointRef> {
@@ -221,7 +253,7 @@ impl WorldObj {
         }
     }
 
-    fn resolve_path_step(&self, split : &[&str], index : usize) -> Option<PointRef> {
+    fn resolve_path_step(&self, split : &[&str], mut index : usize) -> Option<PointRef> {
         if index > split.len() {
             return None;
         }
@@ -229,12 +261,14 @@ impl WorldObj {
         if let Some(point) = self.sub.get(split[index]) {
             let p = point.borrow();
 
+            index += 1;
+            
             if split.len() == index {
                 return Some(point.clone());
             }
 
             if let Some(wo) = p.as_wo() {
-                return wo.resolve_path_step(split, index + 1);
+                return wo.resolve_path_step(split, index);
             } 
         } 
 

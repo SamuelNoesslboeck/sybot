@@ -85,7 +85,7 @@ impl Package {
         Ok(_self)
     }
 
-    pub fn load_file<T : for<'de> Deserialize<'de>, P : AsRef<Path>>(&self, path : P) -> Result<Option<T>, Error> {
+    fn load_file<T : for<'de> Deserialize<'de>, P : AsRef<Path>>(&self, path : P) -> Result<Option<T>, Error> {
         if let Ok(cont) = fs::read_to_string(path) {
             let mut j_cont : serde_json::Value = serde_json::from_str(&cont)?;
 
@@ -96,7 +96,7 @@ impl Package {
         }
     }
 
-    pub fn replace_links(&self, val : &mut serde_json::Value) -> Result<(), crate::Error> {
+    fn replace_links(&self, val : &mut serde_json::Value) -> Result<(), crate::Error> {
         match val {
             serde_json::Value::String(s) => {
                 // Replace the link

@@ -6,7 +6,9 @@ extern crate alloc;
 pub use stepper_lib::{Setup, Tool, SyncComp};
 
 // Module decleration
+    /// Premade descriptors 
     pub mod desc;
+    pub use desc::SyArm;
     
     /// Structures and methods for exposing the robot to the internet with a HTTP server 
     /// 
@@ -23,6 +25,8 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     /// Structs and functions for calculating paths, loads and more
     pub use sybot_rcs::math as math;
 
+    pub mod prelude; 
+
     /// Structures and methods for exposing the robot to the internet with a MQTT server
     /// 
     /// # Features 
@@ -34,6 +38,7 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     mod remote;
 
     pub use sybot_pkg as pkg;
+    pub use pkg::Package;
 
     pub use sybot_rcs as rcs;
 

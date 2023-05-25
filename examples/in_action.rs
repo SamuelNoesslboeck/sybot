@@ -1,43 +1,26 @@
-use sybot_lib::{ActRobot, Setup};
-use sybot_lib::conf::JsonConfig;
-use sybot_lib::intpr::Interpreter;
-use sybot_lib::intpr::gcode::init_intpr;
-use sybot_lib::robot::SyArm;
+use std::time::Instant;
+
+use stepper_lib::units::*;
+use sybot_lib::prelude::*;
 
 fn main() -> Result<(), sybot_lib::Error> {
-    // Load the standard-partlibs in order to use motor names as data
-    //
-    // ```json
-    // "ctrl": {
-    //     "consts": "MOT_17HE15_1504S",    // Motor name, see
-    // // <https://docs.rs/stepper_lib/0.11.1/stepper_lib/data/struct.StepperConst.html#associatedconstant.MOT_17HE15_1504S>
-    //     "pin_dir": 17,
-    //     "pin_step": 26
-    // },
-    // ```
-    let libs = sybot_lib::partlib::create_std_libs();
+    let inst = Instant::now();
 
-    // Create the robot out of the [configuration file]
-    // (https://github.com/SamuelNoesslboeck/sybot_lib/blob/master/res/SyArm_Mk1.conf.json)
-    let mut syarm = SyArm::from_conf(
-        JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
-    )?;
+    let pkg = Package::load("assets/SyArm_Mk1")?;
+    let mut syarm = SyArm::try_from(pkg)?;
 
-    // Run setup functions
-    syarm.setup()?;
-    // Enables async movements (multiple motors moving at once)
-    syarm.setup_async();
+    println!(" => Created in {}s", inst.elapsed().as_secs_f32());
 
-    // DEBUG
-        // Select "NoTool" at index 2
-        syarm.set_tool_id(2);
-    // 
+    println!("SyArm");
+    println!(" => Segments: {:?}", syarm.desc.segments.calculate_end());
 
-    // Create a new GCode interpreter
-    let intpr = init_intpr();
+    let inst = Instant::now();
 
-    // Run a GCode script
-    dbg!(intpr.interpret_file(&mut syarm, "res/gcode/basicYZpos.gcode"));
+    // syarm.desc.update(&mut syarm.rob, &[ Phi(0.5), Phi(1.5), Phi(-1.5), Phi(0.2) ])?;
+    syarm.desc.update(&mut syarm.rob, &[ Phi::ZERO, Phi(1.5707963), Phi(-1.5707963), Phi::ZERO ])?;
+
+    println!(" => Created in {}s", inst.elapsed().as_secs_f32());
+    println!(" => Segments: {:?}", syarm.desc.segments.calculate_end());
 
     Ok(())
 }

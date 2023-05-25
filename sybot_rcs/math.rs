@@ -1,6 +1,24 @@
+use core::f32::consts::PI;
+
 use glam::Vec3;
 // use stepper_lib::math::PathBuilder;
 // use stepper_lib::units::*;
+
+pub fn full_atan(x : f32, y : f32) -> f32 {
+    if x > 0.0 {
+        (y / x).atan()
+    } else if x < 0.0 {
+        PI + (y / x).atan()
+    } else {
+        if y > 0.0 {
+            PI / 2.0
+        } else if y < 0.0 {
+            PI / -2.0
+        } else {
+            0.0
+        }
+    }
+}
 
 pub fn split_linear(pos_0 : Vec3, delta_pos : Vec3, split_len : f32) -> Vec<Vec3> {
     let n_split = (delta_pos.length() / split_len).ceil() as usize;

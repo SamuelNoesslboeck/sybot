@@ -1,3 +1,5 @@
+use core::ops::Index;
+
 use glam::{Vec3, Mat3};
 use stepper_lib::units::*;
 
@@ -21,10 +23,10 @@ impl From<SegmentMovementInfo> for SegmentMovement {
 
 #[derive(Debug)]
 pub struct Segment {
-    phi : Phi,
     movement : SegmentMovement,
+    point_0 : PointRef,
 
-    pub point_0 : PointRef,
+    phi : Phi,
     pub point : PointRef
 }
 
@@ -62,19 +64,39 @@ impl Segment {
 }
 
 pub trait SegmentChain<const C : usize> : core::fmt::Debug {
-    fn segments<'a>(&'a self) -> &'a [Segment; C]; 
+    // Segments
+        fn segments<'a>(&'a self) -> &'a [Segment; C]; 
 
-    fn segments_mut<'a>(&'a mut self) -> &'a mut [Segment; C];
+        fn segments_mut<'a>(&'a mut self) -> &'a mut [Segment; C];
 
-    fn calculate_end(&self, mut pos_0 : Position) -> Position {
+        fn tcp<'a>(&'a self) -> &'a PointRef;
+
+        fn tcp_mut<'a>(&'a mut self) -> &'a mut PointRef;
+    // 
+
+    // Data
+        fn phis<'a>(&'a self) -> [Phi; C] {
+            let mut phis = [Phi::ZERO; C];
+            for i in 0 .. C {
+                phis[i] = self.segments()[i].phi;
+            }
+            phis
+        }
+    // 
+    
+    fn calculate_end(&self) -> Position {
         let segments = self.segments(); 
+        let mut pos_0 = Position::new(self.tcp().borrow().pos().clone());
 
+        println!("=> {}", pos_0.pos());
         for i in 1 ..= C {
             let index = C - i;
             let point = segments[index].point.borrow();
     
             pos_0.transform(*point.ori());
             pos_0.shift(*point.pos());
+
+            println!("{}: {}", index, pos_0.pos());
         }
 
         pos_0
@@ -95,11 +117,20 @@ pub trait SegmentChain<const C : usize> : core::fmt::Debug {
 
 #[derive(Debug)]
 pub struct LinSegmentChain<const C : usize> {
-    segments : [Segment; C]
+    segments : [Segment; C],
+    tcp : PointRef
+}
+
+impl<const C : usize> Index<usize> for LinSegmentChain<C> {
+    type Output = Segment;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.segments[index]
+    }
 }
 
 impl<const C : usize> LinSegmentChain<C> {
-    pub fn from_wobj(infos : &Vec<SegmentInfo>, wobj : &mut WorldObj) -> Result<Self, crate::Error> {
+    pub fn from_wobj(infos : &Vec<SegmentInfo>, wobj : &mut WorldObj, tcp_name : &str) -> Result<Self, crate::Error> {
         if infos.len() < C {
             return Err(format!("Not enough segments declared! (Required: {}, Given: {})", C, infos.len()).into())
         }
@@ -109,13 +140,21 @@ impl<const C : usize> LinSegmentChain<C> {
 
         for i in 0 .. C {
             path.push(infos[i].name.as_str());
-            segments.push(
-                Segment::new(wobj.req_point_path(&path)?, &infos[i])
-            )
+
+            let seg = Segment::new(wobj.req_point_path(&path)?, &infos[i]);
+
+            let mut init_name = infos[i].name.clone();
+            init_name.push_str("_init");
+
+            wobj.add_point(init_name, seg.point_0.clone());
+            segments.push(seg);
         }
 
+        path.push(tcp_name);
+
         Ok(Self {
-            segments: segments.try_into().unwrap()
+            segments: segments.try_into().unwrap(),
+            tcp: wobj.req_point_path(&path)?
         })
     }
 
@@ -125,11 +164,23 @@ impl<const C : usize> LinSegmentChain<C> {
 }
 
 impl<const C : usize> SegmentChain<C> for LinSegmentChain<C> {
-    fn segments<'a>(&'a self) -> &'a [Segment; C] {
-        &self.segments
-    }
+    // Segments
+        fn segments<'a>(&'a self) -> &'a [Segment; C] {
+            &self.segments
+        }
 
-    fn segments_mut<'a>(&'a mut self) -> &'a mut [Segment; C] {
-        &mut self.segments
-    }
+        fn segments_mut<'a>(&'a mut self) -> &'a mut [Segment; C] {
+            &mut self.segments
+        }
+    // 
+
+    // TCP
+        fn tcp<'a>(&'a self) -> &'a PointRef {
+            &self.tcp
+        }
+
+        fn tcp_mut<'a>(&'a mut self) -> &'a mut PointRef {
+            &mut self.tcp
+        }
+    // 
 }

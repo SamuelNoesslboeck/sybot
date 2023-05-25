@@ -69,19 +69,19 @@ impl<const C : usize> StepperRobot<C> {
     }
 }
 
-impl<const C : usize> TryFrom<Package> for StepperRobot<C> {
+impl<const C : usize> TryFrom<&Package> for StepperRobot<C> {
     type Error = crate::Error;
     
-    fn try_from(pkg: Package) -> Result<Self, Self::Error> {
+    fn try_from(pkg: &Package) -> Result<Self, Self::Error> {
         let comps = pkg.parse_components()?;
         let tools = pkg.parse_tools()?;
         let ang_confs = pkg.parse_ang_confs().unwrap();
 
         let mut rob = Self::new(
-            pkg.info, ang_confs, comps, tools
+            pkg.info.clone(), ang_confs, comps, tools
         );
 
-        if let Some(link) = pkg.lk {
+        if let Some(link) = pkg.lk.clone() {
             rob.comps_mut().write_link(link);
         }
 

@@ -40,7 +40,7 @@ pub trait PushRemote : Debug {
     // fn pub_drive(&mut self);
 }
 
-pub trait AxisConf {
+pub trait AxisConf : Debug {
     fn phis<'a>(&'a self) -> &'a [Phi];
 
     fn configure(&mut self, phis : Vec<Phi>) -> Result<(), crate::Error>; 
@@ -51,12 +51,6 @@ pub trait RobotDesc<const C : usize> {
         fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error>; 
             
         fn aconf<'a>(&'a self) -> &'a Box<dyn AxisConf>;
-    // 
-
-    // Segments
-        fn segments<'a>(&'a self) -> &'a dyn SegmentChain<4>; 
-
-        fn segments_mut<'a>(&'a mut self) -> &'a mut dyn SegmentChain<4>;
     // 
 
     // Events
@@ -148,7 +142,15 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
             phis
         }
 
-        fn valid_phis(&self, phis : [Phi; C]) -> Result<(), crate::Error>;
+        fn valid_phis(&self, phis : &[Phi; C]) -> Result<(), crate::Error> {
+            if self.comps().valid_gammas(
+                &self.gammas_from_phis(*phis)
+            ) {
+                Ok(())
+            } else {
+                Err("The given phis are invalid!".into())
+            }
+        }
     // 
 
     // Movements
