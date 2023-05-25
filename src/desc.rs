@@ -85,15 +85,17 @@ impl RobotDesc<4> for SyArmDesc {
         fn convert_pos(&self, rob : &mut dyn sybot_robs::ComplexRobot<4>, mut pos : sybot_rcs::Position) 
         -> Result<[Phi; 4], sybot_robs::Error> {
             let phi_b = full_atan(pos.x(), pos.y());
-            let phi_dec = self.aconf().phis()[0];
+            let phi_dec = self.aconf().phis()[0].0;
 
             let mut tcp_vec = *self.segments.tcp().borrow().pos();
             tcp_vec = Mat3::from_rotation_z(phi_b) * tcp_vec;
             tcp_vec = Mat3::from_rotation_y(-phi_dec) * tcp_vec;
 
             pos.shift(-tcp_vec);
-            pos.shift(-self.wobj.pos());
-            pos.shift(-(Mat3::from_rotation_z(phi_b) * self.segments[0].point));
+            pos.shift(-*self.wobj.pos());
+            pos.shift(-(Mat3::from_rotation_z(phi_b) * self.segments[0].point.borrow().pos().clone()));
+
+            
         }
     // 
 }

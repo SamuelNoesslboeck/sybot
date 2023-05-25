@@ -1,6 +1,8 @@
 use core::f32::consts::PI;
 
 use glam::Vec3;
+
+use crate::{PointRef, Point};
 // use stepper_lib::math::PathBuilder;
 // use stepper_lib::units::*;
 
@@ -18,6 +20,11 @@ pub fn full_atan(x : f32, y : f32) -> f32 {
             0.0
         }
     }
+}
+
+pub fn calc_triangle(a_p : &dyn Point, b_p : &dyn Point, c_p : &dyn Point) -> (f32, f32, f32) {
+    let a = *c_p.pos() - *b_p.pos();
+    let b = 
 }
 
 pub fn split_linear(pos_0 : Vec3, delta_pos : Vec3, split_len : f32) -> Vec<Vec3> {
