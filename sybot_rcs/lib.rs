@@ -16,9 +16,11 @@ use serde::{Serialize, Deserialize};
 pub type Error = Box<dyn std::error::Error>;
 
 pub trait Point : Debug {
-    fn x(&self) -> f32;
-    fn y(&self) -> f32;
-    fn z(&self) -> f32;
+    // Coords
+        fn x(&self) -> f32;
+        fn y(&self) -> f32;
+        fn z(&self) -> f32;
+    // 
 
     fn pos<'a>(&'a self) -> &'a Vec3;
     fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3;
@@ -31,6 +33,18 @@ pub trait Point : Debug {
 
     fn as_pos<'a>(&'a self) -> Option<&'a Position>;
     fn as_wo<'a>(&'a self) -> Option<&'a WorldObj>;
+
+    fn trans_other(&self, v : Vec3) -> Vec3 {
+        (*self.ori()) * v 
+    }
+
+    fn shift_other(&self, v : Vec3) -> Vec3 {
+        (*self.pos()) + v
+    }
+
+    fn to_higher_system(&self, v : Vec3) -> Vec3 {
+        self.shift_other(self.trans_other(v))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -131,6 +145,10 @@ impl DerefMut for PointRef {
 }
 
 impl PointRef {
+    pub fn pos(&self) -> Vec3 {
+        *self.borrow().pos()
+    }
+
     pub fn clone_no_ref(&self) -> PointRef {
         let p = self.borrow(); 
 

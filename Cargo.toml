@@ -47,10 +47,10 @@ sybot_robs = { path = "sybot_robs" }
 sybot_scr = { path = "sybot_scr" }
 
 [features]
-default = [ ]
+default = [ "lua" ]
 
 # scripting
-lua = [ "sybot_scr/lua" ]
+lua = [ "sybot_scr/lua", "dep:mlua" ]
 
 # platform features
 rasp = [ "stepper_lib/rasp" ]

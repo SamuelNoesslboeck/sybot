@@ -1,7 +1,7 @@
 [package]
 name = "sybot_scr"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.1.1"
+version = "0.1.2"
 description = "Rua scripting - Lua based robot scripting"
 edition = "2021"
 

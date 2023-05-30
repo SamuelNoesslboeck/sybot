@@ -11,6 +11,9 @@ use sybot_rcs::{WorldObj, Position};
 pub type Error = Box<dyn std::error::Error>;
 
 // Submodules
+    mod device;
+    pub use device::*;
+
     mod seg;
     pub use seg::*;
 
@@ -32,35 +35,52 @@ impl<const C : usize> Default for Vars<C> {
     }
 }
 
-/// A `PushRemote` defines a remote connection that the robot can push values to
-pub trait PushRemote : Debug {
-    /// Publish a set of phis to the remote connection
-    fn publ_phis(&mut self, phis : &[Phi]) -> Result<(), Error>;
+pub enum PushMsg {
 
-    // fn pub_drive(&mut self);
 }
 
-pub trait AxisConf : Debug {
+/// A `PushRemote` defines a remote connection that the robot can push values to
+pub trait PushRemote {
+    /// Publish a set of phis to the remote connection
+    fn push_phis(&mut self, phis : &[Phi]) -> Result<(), Error>;
+
+    fn push_other(&mut self, other : PushMsg) -> Result<(), Error>;
+
+    fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), Error>;
+}
+
+pub trait AxisConf {
     fn phis<'a>(&'a self) -> &'a [Phi];
 
     fn configure(&mut self, phis : Vec<Phi>) -> Result<(), crate::Error>; 
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct EmptyConf { }
+
+impl AxisConf for EmptyConf {
+    fn phis<'a>(&'a self) -> &'a [Phi] {
+        &[]
+    }
+
+    fn configure(&mut self, _ : Vec<Phi>) -> Result<(), crate::Error> {
+        Ok(())
+    }
+}
+
 pub trait RobotDesc<const C : usize> {
     // Axis conf
-        fn apply_aconf(&mut self, conf : Box<dyn AxisConf>) -> Result<(), crate::Error>; 
-            
-        fn aconf<'a>(&'a self) -> &'a Box<dyn AxisConf>;
-    // 
+        fn aconf<'a>(&'a self) -> &'a dyn AxisConf;
+
+        fn aconf_mut<'a>(&'a mut self) -> &'a mut dyn AxisConf;
+    //
 
     // Events
-        fn setup(&mut self, rob : &mut dyn ComplexRobot<C>) -> Result<(), crate::Error>;
-
-        fn update(&mut self, rob : &mut dyn ComplexRobot<C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
+        fn update(&mut self, rob : &mut dyn BasicRobot<C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
 
     // Calculation
-        fn convert_pos(&self, rob : &mut dyn ComplexRobot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
+        fn convert_pos(&self, rob : &mut dyn BasicRobot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
     //
 
     // World object
@@ -169,6 +189,14 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
         fn move_abs_j_sync(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
             self.comps_mut().drive_abs(gammas, speed_f)
         }
+ 
+        // fn move_p_sync(&mut self, desc : &mut dyn RobotDesc<C>, p : Vec3, speed_f : f32) -> Result<(), crate::Error> {
+        //     self.move_j_abs_sync(
+
+        //     )
+        // }
+
+        fn move_p_sync(&mut self, desc : &mut dyn RobotDesc<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
 
     // Loads
@@ -185,16 +213,22 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
 
     // Tools
         /// Returns a reference to the tool that is currently being used by the robot
-        fn get_tool(&self) -> Option<&Box<dyn Tool + std::marker::Send>>;
+        fn get_tool(&self) -> Option<&Box<dyn Tool>>;
 
         /// Returns a mutable reference to the tool that is currently being used by the robot
-        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool>>;
 
         /// Returns a reference to all the tools registered in the robot
-        fn get_tools(&self) -> &Vec<Box<dyn Tool + std::marker::Send>>;
+        fn get_tools(&self) -> &Vec<Box<dyn Tool>>;
 
         /// Sets the id of the tool to be used and performs an automatic tool swap if necessary
-        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn Tool + std::marker::Send>>;
+        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn Tool>>;
+    // 
+
+    // Device   
+        fn device_manager(&self) -> Option<&dyn DeviceManager>;
+
+        fn device_manager_mut(&mut self) -> Option<&mut dyn DeviceManager>;
     // 
 
     // Remote
@@ -206,6 +240,10 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
 
         /// Returns a mutable reference to all remotes of the robot
         fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote>>;
+    //
+
+    // Meas
+        fn full_meas(&mut self) -> Result<(), crate::Error>;
     //
 
     // Events
@@ -225,7 +263,17 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
 
         fn move_l(&mut self, desc : &mut dyn RobotDesc<C>, deltas : [Delta; C]) -> Result<(), crate::Error>;
 
-        fn move_l_abs(&mut self, desc : &mut dyn RobotDesc<C>, gammas : [Gamma; C]) -> Result<(), crate::Error>;
+        fn move_abs_l(&mut self, desc : &mut dyn RobotDesc<C>, gammas : [Gamma; C]) -> Result<(), crate::Error>;
+
+        fn move_p(&mut self, desc: &mut dyn RobotDesc<C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
+        where Self: Sized {
+            let phis = desc.convert_pos(self, p)?;
+            let gammas = self.gammas_from_phis(phis);
+            self.move_abs_j(
+                gammas,
+                speed_f
+            )
+        }
 
         fn await_inactive(&mut self) -> Result<[Delta; C], crate::Error> {
             self.comps_mut().await_inactive()

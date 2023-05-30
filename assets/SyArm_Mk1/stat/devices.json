@@ -1,0 +1,26 @@
+[
+  {
+    "name": "AxisTongs_Mk1",
+    "type_name": "AxisTongs",
+    "obj": {
+      "axis": {
+        "servo": {
+          "consts": "<lib://servo/MG996R>",
+          "pwm": 23
+        }, 
+        "length": 50.0,
+        "mass": 0.1
+      },
+      "tongs": {
+        "servo": {
+          "consts": "<lib://servo/MG996R>",
+          "pwm": 13
+        }, 
+        "perc_open": 0.7,
+        "perc_close": 0.4,
+        "length": 50.0,
+        "mass": 0.1
+      }
+    }
+  }
+]

@@ -41,6 +41,11 @@ impl Segment {
         }
     }
 
+    #[inline]
+    pub fn pos(&self) -> Vec3 {
+        self.point.pos()    
+    }
+
     pub fn update(&mut self, phi : Phi) -> Result<(), crate::Error> {
         self.phi = phi;
 
