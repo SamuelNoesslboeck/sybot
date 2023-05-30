@@ -92,7 +92,7 @@ impl<const C : usize> TryFrom<&Package> for StepperRobot<C> {
         if let Some(devs) = &pkg.devices {
             for d in devs {
                 rob.devices.push(
-                    Device::new(d.name.clone(), pkg.libs.parse_tool(d).unwrap())
+                    Device::new(d.name.clone(), pkg.libs.parse_tool_dyn(d).unwrap())
                 );
             }
         }

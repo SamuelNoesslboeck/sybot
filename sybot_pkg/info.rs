@@ -1,6 +1,10 @@
 use serde::{Serialize, Deserialize};
 use stepper_lib::units::*;
 
+pub trait EmbeddedJsonInfo {
+    fn obj<'a>(&'a self) -> &'a serde_json::Value;
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RobotInfo {
     pub name : String,
@@ -15,6 +19,12 @@ pub struct MeasInfo {
     pub name: String,
     pub sys : String, 
     pub obj : serde_json::Value
+}
+
+impl EmbeddedJsonInfo for MeasInfo {
+    fn obj<'a>(&'a self) -> &'a serde_json::Value {
+        &self.obj
+    }
 }
 
 // Sub-Structs
@@ -81,11 +91,23 @@ pub struct CompInfo {
     pub limit : LimitInfo
 }
 
+impl EmbeddedJsonInfo for CompInfo {
+    fn obj<'a>(&'a self) -> &'a serde_json::Value {
+        &self.obj
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolInfo {
     pub name : String,
     pub type_name : String,
     pub obj : serde_json::Value
+}
+
+impl EmbeddedJsonInfo for ToolInfo {
+    fn obj<'a>(&'a self) -> &'a serde_json::Value {
+        &self.obj
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

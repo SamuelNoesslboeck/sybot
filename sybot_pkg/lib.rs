@@ -189,7 +189,7 @@ impl Package {
         if let Some(cinfos) = &self.cinfos {
             for info in cinfos {
                 comps.push(
-                    self.libs.parse_comp(info)?
+                    self.libs.parse_comp_dyn(info)?
                 )
             }
         }
@@ -207,7 +207,7 @@ impl Package {
 
         if let Some(tinfos) = &self.tools {
             for info in tinfos {
-                tools.push(self.libs.parse_tool(info)?);
+                tools.push(self.libs.parse_tool_dyn(info)?);
             }
         }
 
@@ -219,7 +219,7 @@ impl Package {
 
         if let Some(minfos) = &self.meas {
             for info in minfos {
-                meas.push(self.libs.parse_meas(info)?);
+                meas.push(self.libs.parse_meas_dyn(info)?);
             }
         }
 

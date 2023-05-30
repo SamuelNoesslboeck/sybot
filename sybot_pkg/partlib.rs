@@ -1,6 +1,7 @@
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
+use serde::de::DeserializeOwned;
 use stepper_lib::meas::EndSwitch;
 use stepper_lib::prelude::SimpleMeas;
 use stepper_lib::{SyncComp, StepperCtrl, Tool};
@@ -67,7 +68,11 @@ impl PartLib {
         self.json_lib.get(res)
     }
 
-    pub fn parse_comp(&self, info : &CompInfo) -> Result<Box<dyn SyncComp>, crate::Error> {
+    pub fn parse_comp<T : SyncComp + DeserializeOwned>(&self, info : &CompInfo) -> Result<T, crate::Error> {
+        Ok(serde_json::from_value::<T>(info.obj.clone())?)
+    } 
+
+    pub fn parse_comp_dyn(&self, info : &CompInfo) -> Result<Box<dyn SyncComp>, crate::Error> {
         if let Some(c_func) = self.comp_lib.get(&info.type_name) {
             Ok(c_func(info.obj.clone())?)
         } else {
@@ -75,7 +80,9 @@ impl PartLib {
         }
     }
 
-    pub fn parse_tool(&self, info : &ToolInfo) -> Result<Box<dyn Tool>, crate::Error> {
+    
+
+    pub fn parse_tool_dyn(&self, info : &ToolInfo) -> Result<Box<dyn Tool>, crate::Error> {
         if let Some(t_func) = self.tool_lib.get(&info.type_name) {
             Ok(t_func(info.obj.clone())?)
         } else {
@@ -83,7 +90,7 @@ impl PartLib {
         }
     }
 
-    pub fn parse_meas(&self, info : &MeasInfo) -> Result<Box<dyn SimpleMeas>, crate::Error> {
+    pub fn parse_meas_dyn(&self, info : &MeasInfo) -> Result<Box<dyn SimpleMeas>, crate::Error> {
         if let Some(t_func) = self.meas_lib.get(&info.sys) {
             Ok(t_func(info.obj.clone())?)
         } else {
