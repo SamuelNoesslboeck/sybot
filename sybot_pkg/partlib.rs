@@ -1,22 +1,34 @@
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
+use stepper_lib::meas::EndSwitch;
+use stepper_lib::prelude::SimpleMeas;
 use stepper_lib::{SyncComp, StepperCtrl, Tool};
 use stepper_lib::comp::{Cylinder, CylinderTriangle, GearJoint};
 use stepper_lib::comp::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
 
-use crate::{CompInfo, ToolInfo};
+use crate::{CompInfo, ToolInfo, MeasInfo};
 
 type JsonLib = BTreeMap<String, serde_json::Value>;
-type CompLibFunc = fn(serde_json::Value) -> Result<Box<dyn SyncComp>, crate::Error>;
-type CompLib = BTreeMap<String, CompLibFunc>;
-type ToolLibFunc = fn(serde_json::Value) -> Result<Box<dyn Tool + Send>, crate::Error>;
-type ToolLib = BTreeMap<String, ToolLibFunc>;
+type LibFunc<T> = fn(serde_json::Value) -> Result<T, crate::Error>;
+type Lib<T> = BTreeMap<String, LibFunc<T>>;
+
+macro_rules! dyn_lib {
+    ( $ftype:ident, [ $( $name:ident ),* ] ) => {
+        BTreeMap::from([
+            $(( String::from(stringify!($name)), {
+                    let func : LibFunc<Box<dyn $ftype>> = |val| { Ok(Box::new(serde_json::from_value::<$name>(val)?)) };
+                    func
+            }),)*
+        ])
+    };
+}
 
 pub struct PartLib {
     json_lib : JsonLib,
-    comp_lib : CompLib,
-    tool_lib : ToolLib
+    comp_lib : Lib<Box<dyn SyncComp>>,
+    tool_lib : Lib<Box<dyn Tool>>,
+    meas_lib : Lib<Box<dyn SimpleMeas>>
 }
 
 impl Debug for PartLib {
@@ -26,40 +38,28 @@ impl Debug for PartLib {
 }
 
 impl PartLib {
-    pub fn new(json_lib : JsonLib, comp_lib : CompLib, tool_lib : ToolLib) -> Self {
+    pub fn new(json_lib : JsonLib, comp_lib : Lib<Box<dyn SyncComp>>, 
+        tool_lib : Lib<Box<dyn Tool>>, meas_lib : Lib<Box<dyn SimpleMeas>>) -> Self {
         Self {
             json_lib,
             comp_lib,
-            tool_lib
+            tool_lib,
+            meas_lib
         }
     }
 
     pub fn std() -> Result<Self, crate::Error> {
-        let stepper_ctrl_func : CompLibFunc = |val| { Ok(Box::new(serde_json::from_value::<StepperCtrl>(val)?)) };
-        let cylinder_func : CompLibFunc = |val| { Ok(Box::new(serde_json::from_value::<Cylinder>(val)?)) };
-        let cylinder_triangle_func : CompLibFunc = |val| { Ok(Box::new(serde_json::from_value::<CylinderTriangle>(val)?)) };
-        let gearjoint_func : CompLibFunc = |val| { Ok(Box::new(serde_json::from_value::<GearJoint>(val)?)) };
-
-        let axial_joint_func : ToolLibFunc = |val| { Ok(Box::new(serde_json::from_value::<AxialJoint>(val)?)) };
-        let axis_tongs_func : ToolLibFunc = |val| { Ok(Box::new(serde_json::from_value::<AxisTongs>(val)?)) };
-        let pencil_tool_func : ToolLibFunc = |val| { Ok(Box::new(serde_json::from_value::<PencilTool>(val)?)) };
-        let tongs_tool_func : ToolLibFunc = |val| { Ok(Box::new(serde_json::from_value::<Tongs>(val)?)) };
-
         Ok(Self::new(BTreeMap::from([
             // Steppers
             ( "stepper/MOT_17HE15_1504S".to_owned(), serde_json::to_value(stepper_lib::StepperConst::MOT_17HE15_1504S)? ),
             // Servo
             ( "servo/MG996R".to_owned(), serde_json::to_value(stepper_lib::data::servo::ServoConst::MG996R )? )
-        ]), BTreeMap::from([
-            ( "StepperCtrl".to_owned(), stepper_ctrl_func ),
-            ( "Cylinder".to_owned(), cylinder_func ),
-            ( "CylinderTriangle".to_owned(), cylinder_triangle_func ),
-            ( "GearJoint".to_owned(), gearjoint_func )
-        ]), BTreeMap::from([
-            ( "AxialJoint".to_owned(), axial_joint_func ),
-            ( "AxisTongs".to_owned(), axis_tongs_func ),
-            ( "PencilTool".to_owned(), pencil_tool_func ),
-            ( "Tongs".to_owned(), tongs_tool_func )
+        ]), dyn_lib!(SyncComp, [ 
+            StepperCtrl, Cylinder, CylinderTriangle, GearJoint
+        ]), dyn_lib!(Tool, [
+            AxialJoint, AxisTongs, PencilTool, Tongs
+        ]), dyn_lib!(SimpleMeas, [
+            EndSwitch
         ])))
     }
 
@@ -75,11 +75,19 @@ impl PartLib {
         }
     }
 
-    pub fn parse_tool(&self, info : &ToolInfo) -> Result<Box<dyn Tool + Send>, crate::Error> {
+    pub fn parse_tool(&self, info : &ToolInfo) -> Result<Box<dyn Tool>, crate::Error> {
         if let Some(t_func) = self.tool_lib.get(&info.type_name) {
             Ok(t_func(info.obj.clone())?)
         } else {
             Err(format!("Tool with typename '{}' not found!", info.type_name).into())
+        }
+    }
+
+    pub fn parse_meas(&self, info : &MeasInfo) -> Result<Box<dyn SimpleMeas>, crate::Error> {
+        if let Some(t_func) = self.meas_lib.get(&info.sys) {
+            Ok(t_func(info.obj.clone())?)
+        } else {
+            Err(format!("Measurement with typename '{}' not found!", info.sys).into())
         }
     }
 }

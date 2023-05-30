@@ -82,14 +82,15 @@ fn sybot_lib(lua : &Lua) -> Result<Table> {
         println!(" => Package loaded! "); 
         println!(" | - Info: {:?}", pkg.info);
 
-        let mut rob = StepperRobot::<4>::try_from(
+        let mut syarm = SyArm::try_from(
             pkg
         ).unwrap();
 
-        rob.setup().unwrap();
+        syarm.rob.setup().unwrap();
     
         globals.set("rob", scr::lua::RobStorage {
-            rob: Rc::new(RefCell::new(rob))
+            rob: Rc::new(RefCell::new(syarm.rob)),
+            desc: Rc::new(RefCell::new(syarm.desc))
         })?;     
 
         Ok(())

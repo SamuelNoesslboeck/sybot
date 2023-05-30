@@ -3,9 +3,9 @@ extern crate alloc;
 use std::fs;
 use std::path::Path;
 
-use alloc::collections::BTreeMap;
 use regex::Regex;
 use serde::Deserialize;
+use stepper_lib::prelude::SimpleMeas;
 use stepper_lib::{SyncComp, Tool};
 use stepper_lib::data::LinkedData;
 
@@ -30,9 +30,10 @@ pub struct Package {
     pub lk : Option<LinkedData>,
     pub pins : Option<Pins>,
     pub cinfos : Option<Vec<CompInfo>>,
-    pub meas : Option<BTreeMap<String, MeasInfo>>, 
+    pub meas : Option<Vec<MeasInfo>>, 
     
     pub tools : Option<Vec<ToolInfo>>,
+    pub devices : Option<Vec<ToolInfo>>,
     pub wobj : Option<WorldObj>,
     pub segments : Option<Vec<SegmentInfo>>, 
 
@@ -50,6 +51,7 @@ impl Package {
             meas: None,
 
             tools: None,
+            devices: None,
             wobj: None,
             segments: None,
 
@@ -61,14 +63,19 @@ impl Package {
         let comp_dir = path.as_ref().join("rob");
         let lib_dir = path.as_ref().join("lib");
         let rcs_dir = path.as_ref().join("rcs");
+        let stat_dir = path.as_ref().join("stat");
 
         let info = serde_json::from_str(&fs::read_to_string(path.as_ref().join("info.json"))?)?;
 
         let mut _self = Self::new(info)?;
 
+        if stat_dir.exists() {
+            _self.pins = _self.load_file(stat_dir.join("pins.json"))?;
+            _self.devices = _self.load_file(stat_dir.join("devices.json"))?;
+        }
+
         if comp_dir.exists() {
             _self.lk = _self.load_file(comp_dir.join("lk.json"))?;
-            _self.pins = _self.load_file(comp_dir.join("pins.json"))?;
             _self.meas = _self.load_file(comp_dir.join("meas.json"))?;
             _self.cinfos = _self.load_file(comp_dir.join("comps.json"))?;
             _self.segments = _self.load_file(comp_dir.join("segments.json"))?;
@@ -142,8 +149,10 @@ impl Package {
             }, 
             "meas" => {
                 if let Some(meas_map) = &self.meas {
-                    if let Some(meas) = meas_map.get(target) {
-                        return Ok(serde_json::to_value(meas)?);
+                    for meas in meas_map {
+                        if meas.name == target {
+                            return Ok(serde_json::to_value(meas)?);
+                        }
                     }
                 }
             },
@@ -193,7 +202,7 @@ impl Package {
         }
     }
 
-    pub fn parse_tools(&self) -> Result<Vec<Box<dyn Tool + Send>>, crate::Error> {
+    pub fn parse_tools(&self) -> Result<Vec<Box<dyn Tool>>, crate::Error> {
         let mut tools = vec![];
 
         if let Some(tinfos) = &self.tools {
@@ -203,5 +212,17 @@ impl Package {
         }
 
         Ok(tools)
+    }
+
+    pub fn parse_meas(&self) -> Result<Vec<Box<dyn SimpleMeas>>, crate::Error> {
+        let mut meas = vec![];
+
+        if let Some(minfos) = &self.meas {
+            for info in minfos {
+                meas.push(self.libs.parse_meas(info)?);
+            }
+        }
+
+        Ok(meas)
     }
 }

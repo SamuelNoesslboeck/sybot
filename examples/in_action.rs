@@ -1,6 +1,8 @@
 use std::time::Instant;
 
-use stepper_lib::units::*;
+use glam::Vec3;
+use rcs::Position;
+// use stepper_lib::units::*;
 use sybot_lib::prelude::*;
 
 fn main() -> Result<(), sybot_lib::Error> {
@@ -11,16 +13,20 @@ fn main() -> Result<(), sybot_lib::Error> {
 
     println!(" => Created in {}s", inst.elapsed().as_secs_f32());
 
-    println!("SyArm");
-    println!(" => Segments: {:?}", syarm.desc.segments.calculate_end());
+    let pos = Position::new(Vec3::new(330.0, 0.0, 400.0));
 
-    let inst = Instant::now();
+    println!("{:?}", syarm.desc.convert_pos(&mut syarm.rob, pos));
 
-    // syarm.desc.update(&mut syarm.rob, &[ Phi(0.5), Phi(1.5), Phi(-1.5), Phi(0.2) ])?;
-    syarm.desc.update(&mut syarm.rob, &[ Phi::ZERO, Phi(1.5707963), Phi(-1.5707963), Phi::ZERO ])?;
+    // println!("SyArm");
+    // println!(" => Segments: {:?}", syarm.desc.segments.calculate_end());
 
-    println!(" => Created in {}s", inst.elapsed().as_secs_f32());
-    println!(" => Segments: {:?}", syarm.desc.segments.calculate_end());
+    // let inst = Instant::now();
+
+    // // syarm.desc.update(&mut syarm.rob, &[ Phi(0.5), Phi(1.5), Phi(-1.5), Phi(0.2) ])?;
+    // syarm.desc.update(&mut syarm.rob, &[ Phi::ZERO, Phi(1.5707963), Phi(-1.5707963), Phi::ZERO ])?;
+
+    // println!(" => Created in {}s", inst.elapsed().as_secs_f32());
+    // println!(" => Segments: {:?}", syarm.desc.segments.calculate_end());
 
     Ok(())
 }

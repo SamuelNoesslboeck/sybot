@@ -1,34 +1,41 @@
-{
-  "base": {
-    "sys": "basic",
+[
+  {
+    "name": "base",
+    "sys": "EndSwitch",
     "obj": {
       "pin": "<pin://base/meas>",
-      "set_val": 0.0,
-      "dist": 0.0
+      "meas_speed_f": 0.2,
+      "max_dist": 0.0
     }
   },
-  "arm1": {
-    "sys": "basic", 
+  {
+    "name": "arm1", 
+    "sys": "EndSwitch",
     "obj": {
       "pin": "<pin://arm1/meas>",
+      "meas_speed_f": 0.2,
       "set_val": 0.3856,
-      "dist": -250.0
+      "max_dist": -250.0
     }
   },
-  "arm2": {
-    "sys": "basic", 
+  {
+    "name": "arm2",
+    "sys": "EndSwitch", 
     "obj": {
       "pin": "<pin://arm2/meas>",
+      "meas_speed_f": 0.2,
       "set_val": 0.75,
-      "dist": -250.0
+      "max_dist": -250.0
     }
   },
-  "arm3": {
-    "sys": "basic",
+  {
+    "name": "arm3", 
+    "sys": "EndSwitch",
     "obj": {
       "pin": "<pin://arm3/meas>",
+      "meas_speed_f": 0.2,
       "set_val": -1.84,
-      "dist": -6.3
+      "max_dist": -6.3
     }
   }
-}
+]

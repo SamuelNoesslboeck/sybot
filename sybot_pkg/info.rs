@@ -1,4 +1,3 @@
-use glam::Vec3;
 use serde::{Serialize, Deserialize};
 use stepper_lib::units::*;
 
@@ -13,6 +12,7 @@ pub struct RobotInfo {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct MeasInfo {
+    pub name: String,
     pub sys : String, 
     pub obj : serde_json::Value
 }
