@@ -1,18 +1,17 @@
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
-use serde::de::DeserializeOwned;
 use stepper_lib::meas::EndSwitch;
 use stepper_lib::prelude::SimpleMeas;
 use stepper_lib::{SyncComp, StepperCtrl, Tool};
 use stepper_lib::comp::{Cylinder, CylinderTriangle, GearJoint};
 use stepper_lib::comp::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
 
-use crate::{CompInfo, ToolInfo, MeasInfo};
+use crate::EmbeddedJsonInfo;
 
-type JsonLib = BTreeMap<String, serde_json::Value>;
-type LibFunc<T> = fn(serde_json::Value) -> Result<T, crate::Error>;
-type Lib<T> = BTreeMap<String, LibFunc<T>>;
+pub type JsonLib = BTreeMap<String, serde_json::Value>;
+pub type LibFunc<T> = fn(serde_json::Value) -> Result<T, crate::Error>;
+pub type Lib<T> = BTreeMap<String, LibFunc<T>>;
 
 macro_rules! dyn_lib {
     ( $ftype:ident, [ $( $name:ident ),* ] ) => {
@@ -68,33 +67,15 @@ impl PartLib {
         self.json_lib.get(res)
     }
 
-    pub fn parse_comp<T : SyncComp + DeserializeOwned>(&self, info : &CompInfo) -> Result<T, crate::Error> {
-        Ok(serde_json::from_value::<T>(info.obj.clone())?)
-    } 
-
-    pub fn parse_comp_dyn(&self, info : &CompInfo) -> Result<Box<dyn SyncComp>, crate::Error> {
-        if let Some(c_func) = self.comp_lib.get(&info.type_name) {
-            Ok(c_func(info.obj.clone())?)
-        } else {
-            Err(format!("Component with typename '{}' not found!", info.type_name).into())
-        }
+    pub fn parse_comp_dyn<T : EmbeddedJsonInfo>(&self, info : &T) -> Result<Box<dyn SyncComp>, crate::Error> {
+        info.parse_dyn(&self.comp_lib)
     }
 
-    
-
-    pub fn parse_tool_dyn(&self, info : &ToolInfo) -> Result<Box<dyn Tool>, crate::Error> {
-        if let Some(t_func) = self.tool_lib.get(&info.type_name) {
-            Ok(t_func(info.obj.clone())?)
-        } else {
-            Err(format!("Tool with typename '{}' not found!", info.type_name).into())
-        }
+    pub fn parse_tool_dyn<T : EmbeddedJsonInfo>(&self, info : &T)-> Result<Box<dyn Tool>, crate::Error> {
+        info.parse_dyn(&self.tool_lib)
     }
 
-    pub fn parse_meas_dyn(&self, info : &MeasInfo) -> Result<Box<dyn SimpleMeas>, crate::Error> {
-        if let Some(t_func) = self.meas_lib.get(&info.sys) {
-            Ok(t_func(info.obj.clone())?)
-        } else {
-            Err(format!("Measurement with typename '{}' not found!", info.sys).into())
-        }
+    pub fn parse_meas_dyn<T : EmbeddedJsonInfo>(&self, info : &T) -> Result<Box<dyn SimpleMeas>, crate::Error> {
+        info.parse_dyn(&self.meas_lib)
     }
 }

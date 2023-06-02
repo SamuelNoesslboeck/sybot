@@ -144,11 +144,11 @@ impl<const C : usize> LinSegmentChain<C> {
         let mut segments = vec![];
 
         for i in 0 .. C {
-            path.push(infos[i].name.as_str());
+            path.push(infos[i].info.name.as_str());
 
             let seg = Segment::new(wobj.req_point_path(&path)?, &infos[i]);
 
-            let mut init_name = infos[i].name.clone();
+            let mut init_name = infos[i].info.name.clone();
             init_name.push_str("_init");
 
             wobj.add_point(init_name, seg.point_0.clone());

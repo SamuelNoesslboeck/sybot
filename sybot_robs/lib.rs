@@ -2,7 +2,7 @@ extern crate alloc;
 
 use core::fmt::Debug;
 
-use stepper_lib::{SyncCompGroup, SyncComp, Tool, Setup};
+use stepper_lib::{SyncCompGroup, Tool, Setup};
 use stepper_lib::units::*;
 
 use sybot_pkg::{RobotInfo, AngConf};
@@ -120,10 +120,10 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
         fn ang_confs<'a>(&'a self) -> &'a [AngConf];
 
         /// Returns a reference to the component group of the robot
-        fn comps<'a>(&'a self) -> &'a dyn SyncCompGroup<dyn SyncComp, C>;
+        fn comps<'a>(&'a self) -> &'a dyn SyncCompGroup<C>;
 
         /// Returns a mutable reference to the component group of the robot 
-        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn SyncCompGroup<dyn SyncComp, C>;
+        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn SyncCompGroup<C>;
     // 
 
     // Move data
@@ -186,7 +186,8 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
             self.comps_mut().drive_rel(deltas, speed_f)
         }
 
-        fn move_abs_j_sync(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_abs_j_sync(&mut self, phis : [Phi; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
+            let gammas = self.gammas_from_phis(phis);
             self.comps_mut().drive_abs(gammas, speed_f)
         }
  

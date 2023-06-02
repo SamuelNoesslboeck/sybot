@@ -1,11 +1,11 @@
 use core::f32::consts::PI;
 
 use glam::{Mat3, Vec3};
-use stepper_lib::units::*;
+use stepper_lib::{units::*, SyncComp};
 use sybot_pkg::{Package, SegmentInfo};
 use sybot_rcs::{WorldObj, Point, Position};
 use sybot_rcs::math::{full_atan, calc_triangle};
-use sybot_robs::{AxisConf, SegmentChain, LinSegmentChain, StepperRobot, Segment, BasicRobot, EmptyConf};
+use sybot_robs::{AxisConf, SegmentChain, LinSegmentChain, StepperRobot, Segment, BasicRobot};
 
 use crate::RobotDesc;
 
@@ -88,7 +88,7 @@ impl RobotDesc<4> for SyArmDesc {
     // 
 
     // Events
-        fn update(&mut self, _ : &mut dyn BasicRobot<4>, phis : &[Phi; 4]) -> Result<(), sybot_robs::Error> {
+        fn update(&mut self, _ : &mut dyn BasicRobot<4>, phis : &[Phi; 4]) -> Result<(), crate::Error> {
             self.segments.update(phis)?;
             Ok(())
         }
@@ -135,7 +135,7 @@ impl RobotDesc<4> for SyArmDesc {
 }
 
 pub struct SyArm {
-    pub rob : StepperRobot<4>, 
+    pub rob : StepperRobot<[Box<dyn SyncComp>; 4], 4>, 
     pub desc : SyArmDesc
 }
 
@@ -156,58 +156,4 @@ impl TryFrom<Package> for SyArm {
 
         Ok(Self { rob, desc })
     }
-}
-
-
-pub struct DrakeDesc {
-    pub segments : LinSegmentChain<3>,
-    
-    wobj : WorldObj,
-    conf : EmptyConf,
-}
-
-impl DrakeDesc {
-    pub fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, crate::Error> {
-        Ok(Self {
-            segments: LinSegmentChain::from_wobj(segments, &mut wobj, "tcp")?,
-            wobj,
-            conf: EmptyConf::default()
-        })
-    }
-}
-
-impl RobotDesc<3> for DrakeDesc {
-    // Axis config
-        fn aconf<'a>(&'a self) -> &'a dyn AxisConf {
-            &self.conf
-        }
-
-        fn aconf_mut<'a>(&'a mut self) -> &'a mut dyn AxisConf {
-            &mut self.conf
-        }
-    // 
-
-    // World object
-        fn wobj<'a>(&'a self) -> &'a WorldObj {
-            &self.wobj
-        }
-
-        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj {
-            &mut self.wobj
-        }
-    // 
-
-    // Events 
-        fn update(&mut self, _ : &mut dyn BasicRobot<3>, phis : &[Phi; 3]) -> Result<(), sybot_robs::Error> {
-            self.segments.update(phis)
-        }
-    //
-
-    // Calculate
-        fn convert_pos(&self, rob : &mut dyn BasicRobot<3>, pos : Position) -> Result<[Phi; 3], sybot_robs::Error> {
-            let phis = [ Phi(pos.x()), Phi(pos.y()), Phi(pos.z()) ];
-            rob.valid_phis(&phis)?;
-            Ok(phis)
-        }
-    // 
 }

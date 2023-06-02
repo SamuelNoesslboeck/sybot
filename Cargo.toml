@@ -39,7 +39,7 @@ mlua = { version = "0.8.8", optional = true, features = [ "lua54", "module", "ma
 paho-mqtt = { version = "0.12.0", optional = true }
 serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.48"
-stepper_lib = "0.11.5" # { version = "0.11.3" } # { git = "https://github.com/SamuelNoesslboeck/stepper_lib" }
+stepper_lib = "0.11.6" # { version = "0.11.3" } # { git = "https://github.com/SamuelNoesslboeck/stepper_lib" }
 
 sybot_pkg = { path = "sybot_pkg" }
 sybot_rcs = { path = "sybot_rcs" }

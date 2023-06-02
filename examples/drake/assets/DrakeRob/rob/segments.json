@@ -1,0 +1,26 @@
+[
+  {
+    "info": {
+      "name": "x-axis"
+    },
+    "move": { 
+      "Linear": [ 1.0, 0.0, 0.0 ]
+    }
+  },
+  {
+    "info": {
+      "name": "y-axis"
+    },
+    "move": { 
+      "Linear": [ 0.0, 1.0, 0.0 ]
+    }
+  },
+  {
+    "info": {
+      "name": "z-axis"
+    },
+    "move": { 
+      "Linear": [ 0.0, 0.0, 1.0 ]
+    }
+  }
+]
