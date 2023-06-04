@@ -1,6 +1,9 @@
 extern crate alloc;
 
 // Submodules
+    // #[cfg(feature = "gcode")]
+    pub mod gcode;
+
     #[cfg(feature = "lua")]
     pub mod lua; 
 // 

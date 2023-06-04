@@ -47,7 +47,7 @@ sybot_robs = { path = "sybot_robs" }
 sybot_scr = { path = "sybot_scr" }
 
 [features]
-default = [ "lua" ]
+default = [ ]
 
 # scripting
 lua = [ "sybot_scr/lua", "dep:mlua" ]
