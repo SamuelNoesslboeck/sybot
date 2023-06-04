@@ -1,6 +1,6 @@
 use core::ops::DerefMut;
 
-use stepper_lib::{Setup, Tool};
+use stepper_lib::{Setup, Tool, SyncCompGroup, SyncComp};
 use stepper_lib::meas::SimpleMeas;
 use stepper_lib::units::*;
 use sybot_pkg::{RobotInfo, Package, AngConf};
@@ -40,13 +40,13 @@ impl<const C : usize> InfoRobot<C> for TheoRobot<C> {
 }
 
 // #[derive(Debug)]
-pub struct StepperRobot<const C : usize> {
+pub struct StepperRobot<T : SyncCompGroup<C>, const C : usize> {
     // Basic
     info : RobotInfo,
     vars : Vars<C>,
 
     ang_confs : Vec<AngConf>,
-    comps : [Box<dyn stepper_lib::SyncComp>; C],
+    comps : T,
     meas : Vec<Box<dyn SimpleMeas>>, 
 
     devices : Vec<Device>,
@@ -56,8 +56,8 @@ pub struct StepperRobot<const C : usize> {
     remotes : Vec<Box<dyn PushRemote>>
 }
 
-impl<const C : usize> StepperRobot<C> {
-    pub fn new(info : RobotInfo, ang_confs : Vec<AngConf>, comps : [Box<dyn stepper_lib::SyncComp>; C], 
+impl<T : SyncCompGroup<C>, const C : usize> StepperRobot<T, C> {
+    pub fn new(info : RobotInfo, ang_confs : Vec<AngConf>, comps : T, 
     meas: Vec<Box<dyn SimpleMeas>>, tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
             info,
@@ -74,38 +74,42 @@ impl<const C : usize> StepperRobot<C> {
             remotes: Vec::new()
         }
     }
-}
 
-impl<const C : usize> TryFrom<&Package> for StepperRobot<C> {
-    type Error = crate::Error;
-    
-    fn try_from(pkg: &Package) -> Result<Self, Self::Error> {
-        let comps = pkg.parse_components()?;
-        let tools = pkg.parse_tools()?;
-        let meas = pkg.parse_meas()?;
+    pub fn from_pkg_stat(pkg : &Package, comps : T) -> Result<Self, crate::Error> {
+        let tools = pkg.parse_tools_dyn()?;
+        let meas = pkg.parse_meas_dyn()?;
         let ang_confs = pkg.parse_ang_confs().unwrap();
 
         let mut rob = Self::new(
             pkg.info.clone(), ang_confs, comps, meas, tools
         );
 
-        if let Some(devs) = &pkg.devices {
-            for d in devs {
-                rob.devices.push(
-                    Device::new(d.name.clone(), pkg.libs.parse_tool_dyn(d).unwrap())
-                );
-            }
-        }
+        // if let Some(devs) = &pkg.devices {
+        //     for d in devs {
+        //         rob.devices.push(
+        //             Device::new(d.name.clone(), pkg.libs.parse_tool_dyn(d).unwrap())
+        //         );
+        //     }
+        // }    TODO: Add dynamic devices
 
-        if let Some(link) = pkg.lk.clone() {
-            rob.comps_mut().write_link(link);
+        if let Some(link) = &pkg.lk {
+            rob.comps_mut().write_link(link.clone());
         }
 
         Ok(rob)
     }
 }
 
-impl<const C : usize> Setup for StepperRobot<C> {
+impl<const C : usize> TryFrom<&Package> for StepperRobot<[Box<dyn SyncComp>; C], C> {
+    type Error = crate::Error;
+    
+    fn try_from(pkg: &Package) -> Result<Self, Self::Error> {
+        let comps = pkg.parse_comps_dyn()?;
+        Self::from_pkg_stat(pkg, comps)
+    }
+}
+
+impl<T : SyncCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
     fn setup(&mut self) -> Result<(), stepper_lib::Error> {
         self.comps_mut().setup()?;
 
@@ -121,7 +125,7 @@ impl<const C : usize> Setup for StepperRobot<C> {
     }
 }
 
-impl<const C : usize> InfoRobot<C> for StepperRobot<C> {
+impl<T : SyncCompGroup<C>, const C : usize> InfoRobot<C> for StepperRobot<T, C> {
     fn info<'a>(&'a self) -> &'a RobotInfo {
         &self.info
     }
@@ -135,17 +139,17 @@ impl<const C : usize> InfoRobot<C> for StepperRobot<C> {
     }
 }
 
-impl<const C : usize> BasicRobot<C> for StepperRobot<C> {
+impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C> {
     // Data
         fn ang_confs<'a>(&'a self) -> &'a [sybot_pkg::AngConf] {
             &self.ang_confs
         }
 
-        fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
+        fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<C> {
             &self.comps
         }
 
-        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
+        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<C> {
             &mut self.comps
         }
     //
@@ -153,9 +157,8 @@ impl<const C : usize> BasicRobot<C> for StepperRobot<C> {
     // Movement
         fn move_p_sync(&mut self, desc : &mut dyn RobotDesc<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
             let phis = desc.convert_pos(self, p)?;
-            let gammas = self.gammas_from_phis(phis);
             self.move_abs_j_sync(
-                gammas,
+                phis,
                 speed_f
             )
         }
@@ -213,7 +216,7 @@ impl<const C : usize> BasicRobot<C> for StepperRobot<C> {
     // Meas
         fn full_meas(&mut self) -> Result<(), crate::Error> {
             for i in 0 .. C {
-                self.meas[i].measure(self.comps[i].deref_mut())?;
+                self.meas[i].measure(self.comps.index_mut(i).deref_mut())?;
             }
 
             Ok(())
@@ -237,7 +240,7 @@ impl<const C : usize> BasicRobot<C> for StepperRobot<C> {
     //
 }
 
-impl<const C : usize> DeviceManager for StepperRobot<C> {
+impl<T : SyncCompGroup<C>, const C : usize> DeviceManager for StepperRobot<T, C> {
     fn add_device(&mut self, device: Device) {
         self.devices.push(device);
     }

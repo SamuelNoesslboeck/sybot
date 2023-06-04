@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+glam = "0.24.0"
+stepper_lib = "0.11.5"
 sybot_lib = { path = "../../" }
 
 [workspace]

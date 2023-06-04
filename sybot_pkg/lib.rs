@@ -5,6 +5,7 @@ use std::path::Path;
 
 use regex::Regex;
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use stepper_lib::prelude::SimpleMeas;
 use stepper_lib::{SyncComp, Tool};
 use stepper_lib::data::LinkedData;
@@ -29,11 +30,11 @@ pub struct Package {
     
     pub lk : Option<LinkedData>,
     pub pins : Option<Pins>,
-    pub cinfos : Option<Vec<CompInfo>>,
-    pub meas : Option<Vec<MeasInfo>>, 
+    pub cinfos : Option<Vec<CompJsonInfo>>,
+    pub meas : Option<Vec<AnyJsonInfo>>, 
     
-    pub tools : Option<Vec<ToolInfo>>,
-    pub devices : Option<Vec<ToolInfo>>,
+    pub tools : Option<Vec<AnyJsonInfo>>,
+    pub devices : Option<Vec<AnyJsonInfo>>,
     pub wobj : Option<WorldObj>,
     pub segments : Option<Vec<SegmentInfo>>, 
 
@@ -60,12 +61,23 @@ impl Package {
     }
 
     pub fn load<P : AsRef<Path>>(path : P) -> Result<Self, Error> {
+        if !path.as_ref().exists() {
+            return Err("Invalid path! No pkg found at the given path!".into()); 
+        }
+
         let comp_dir = path.as_ref().join("rob");
         let lib_dir = path.as_ref().join("lib");
         let rcs_dir = path.as_ref().join("rcs");
         let stat_dir = path.as_ref().join("stat");
 
-        let info = serde_json::from_str(&fs::read_to_string(path.as_ref().join("info.json"))?)?;
+        let info_cont = match fs::read_to_string(path.as_ref().join("info.json")) {
+            Ok(info) => info,
+            Err(err) => return Err(format!("Error in reading info.json for pkg!\nError: {:?}", err).into())
+        }; 
+        let info = match serde_json::from_str(&info_cont) {
+            Ok(info) => info,
+            Err(err) => return Err(format!("Error in parsing info.json for pkg!\nError: {:?}", err).into())
+        };
 
         let mut _self = Self::new(info)?;
 
@@ -93,11 +105,17 @@ impl Package {
     }
 
     fn load_file<T : for<'de> Deserialize<'de>, P : AsRef<Path>>(&self, path : P) -> Result<Option<T>, Error> {
-        if let Ok(cont) = fs::read_to_string(path) {
-            let mut j_cont : serde_json::Value = serde_json::from_str(&cont)?;
+        if let Ok(cont) = fs::read_to_string(path.as_ref()) {
+            let mut j_cont : serde_json::Value = match serde_json::from_str(&cont) {
+                Ok(value) => value,
+                Err(err) => return Err(format!("Error parsing JSON for file '{:?}': {:?}", path.as_ref(), err).into())
+            };
 
             self.replace_links(&mut j_cont)?;
-            Ok(Some(serde_json::from_value::<T>(j_cont)?))
+            Ok(Some(match serde_json::from_value::<T>(j_cont) {
+                Ok(value) => value,
+                Err(err) => return Err(format!("Error converting JSON to value for file '{:?}': {:?}", path.as_ref(), err).into())
+            }))
         } else {
             Ok(None)
         }
@@ -147,15 +165,6 @@ impl Package {
                     } 
                 }
             }, 
-            "meas" => {
-                if let Some(meas_map) = &self.meas {
-                    for meas in meas_map {
-                        if meas.name == target {
-                            return Ok(serde_json::to_value(meas)?);
-                        }
-                    }
-                }
-            },
             "lib" => {
                 if let Some(val) = self.libs.get(target) {
                     return Ok(val.clone());
@@ -168,6 +177,10 @@ impl Package {
 
         Err(format!("Link '<{}://{}>' could not be resolved ('{}' not found in '{}')", link, target, target, link).into())
     }
+
+    pub fn parse<T : DeserializeOwned, I : EmbeddedJsonInfo>(&self, info : I) -> Result<T, crate::Error> {
+        Ok(serde_json::from_value::<T>(info.obj().clone())?)
+    } 
 
     pub fn parse_ang_confs(&self) -> Option<Vec<AngConf>> {
         let mut ang_confs = vec![];
@@ -183,7 +196,23 @@ impl Package {
         }
     }
 
-    pub fn parse_components<const C : usize>(&self) -> Result<[Box<dyn SyncComp>; C], crate::Error> {
+    pub fn parse_comps_array<T : for<'de> Deserialize<'de>, const C : usize>(&self) -> Result<([T; C], Vec<GeneralInfo>), crate::Error> {
+        if let Some(cinfos) = &self.cinfos {
+            Ok(parse_array(cinfos.clone())?)
+        } else {
+            Err("No components found".into())
+        }
+    }
+
+    pub fn parse_comps_struct<T : for<'de> Deserialize<'de>>(&self) -> Result<(T, Vec<GeneralInfo>), crate::Error> {
+        if let Some(cinfos) = &self.cinfos {
+            Ok(parse_struct(cinfos.clone())?)
+        } else {
+            Err("No components found".into())
+        }
+    }
+
+    pub fn parse_comps_dyn<const C : usize>(&self) -> Result<[Box<dyn SyncComp>; C], crate::Error> {
         let mut comps = vec![];
 
         if let Some(cinfos) = &self.cinfos {
@@ -202,7 +231,7 @@ impl Package {
         }
     }
 
-    pub fn parse_tools(&self) -> Result<Vec<Box<dyn Tool>>, crate::Error> {
+    pub fn parse_tools_dyn(&self) -> Result<Vec<Box<dyn Tool>>, crate::Error> {
         let mut tools = vec![];
 
         if let Some(tinfos) = &self.tools {
@@ -214,7 +243,7 @@ impl Package {
         Ok(tools)
     }
 
-    pub fn parse_meas(&self) -> Result<Vec<Box<dyn SimpleMeas>>, crate::Error> {
+    pub fn parse_meas_dyn(&self) -> Result<Vec<Box<dyn SimpleMeas>>, crate::Error> {
         let mut meas = vec![];
 
         if let Some(minfos) = &self.meas {
@@ -224,5 +253,33 @@ impl Package {
         }
 
         Ok(meas)
+    }
+
+    pub fn req_wobj(self) -> Result<WorldObj, crate::Error> { 
+        if let Some(wobj) = self.wobj {
+            Ok(wobj)
+        } else {
+            Err("A valid world object must be provided".into())
+        }
+    }
+
+    pub fn req_segments(self) -> Result<Vec<SegmentInfo>, crate::Error> {
+        if let Some(segments) = self.segments {
+            Ok(segments)
+        } else {
+            Err("A valid array of segments must be provided".into())
+        }
+    }
+
+    pub fn req_desc(self) -> Result<(WorldObj, Vec<SegmentInfo>), crate::Error> {
+        if let Some(wobj) = self.wobj {
+            if let Some(segments) = self.segments {
+                Ok((wobj, segments))
+            } else {
+                Err("A valid segments object must be provided".into())
+            }
+        } else {
+            Err("A valid world object must be provided".into())
+        }
     }
 }

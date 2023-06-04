@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use glam::Vec3;
-use rcs::Position;
+use sybot_rcs::Position;
 // use stepper_lib::units::*;
 use sybot_lib::prelude::*;
 
@@ -10,6 +10,8 @@ fn main() -> Result<(), sybot_lib::Error> {
 
     let pkg = Package::load("assets/SyArm_Mk1")?;
     let mut syarm = SyArm::try_from(pkg)?;
+
+    // dbg!(serde_json::to_string_pretty(&sybot_pkg::SegmentMovementInfo::Linear(Vec3::X.to_array()))?);
 
     println!(" => Created in {}s", inst.elapsed().as_secs_f32());
 
