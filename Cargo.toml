@@ -2,7 +2,7 @@
 name = "sybot_lib"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
 version = "0.9.0"
-description = "A simple library to control groups of components and robots"
+description = "Rust library for coordinating components, defining robotic systems and their communication "
 edition = "2021"
 repository = "https://github.com/SamuelNoesslboeck/sybot_lib"
 license-file = "LICENSE"

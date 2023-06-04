@@ -2,6 +2,7 @@ extern crate alloc;
 
 use core::fmt::Debug;
 
+use glam::Vec3;
 use stepper_lib::{SyncCompGroup, Tool, Setup};
 use stepper_lib::units::*;
 
@@ -24,13 +25,29 @@ pub type Error = Box<dyn std::error::Error>;
 // TODO: REWORK VARS
 #[derive(Clone, Debug)]
 pub struct Vars<const C : usize> {
-    pub phis : [Phi; C]
+    pub phis : [Phi; C],
+    pub pos : Option<Vec3>
+}
+
+impl<const C : usize> Vars<C> {
+    pub fn cache_pos(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
+        if let Some(pos) = self.pos {
+            Vec3::new( 
+                x_opt.unwrap_or(pos.x),
+                y_opt.unwrap_or(pos.y),
+                z_opt.unwrap_or(pos.z)
+            )
+        } else {
+            panic!("No position has been cached yet!")
+        }
+    }
 }
 
 impl<const C : usize> Default for Vars<C> {
     fn default() -> Self {
         Self {
-            phis: [Phi::default(); C]
+            phis: [Phi::default(); C],
+            pos: None
         }
     }
 }
