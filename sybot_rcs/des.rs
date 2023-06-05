@@ -1,6 +1,7 @@
 use core::cell::RefCell;
+use std::collections::HashMap;
 
-use alloc::{rc::Rc, collections::BTreeMap};
+use alloc::rc::Rc;
 use glam::{Vec3, Mat3};
 use serde::{Serialize, Deserialize};
 
@@ -57,8 +58,8 @@ impl<'de> Deserialize<'de> for Position {
 #[serde(untagged)]
 enum PointEnum {
     Pos { ori : Option<[[f32; 3]; 3]>, pos : [f32; 3] }, 
-    Wo { pos : Position, sub : BTreeMap<String, PointRef> },
-    WoDir { pos: [f32; 3], sub : BTreeMap<String, PointRef> }
+    Wo { pos : Position, sub : HashMap<String, PointRef> },
+    WoDir { pos: [f32; 3], sub : HashMap<String, PointRef> }
 }
 
 impl From<PointRef> for PointEnum {

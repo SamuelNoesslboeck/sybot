@@ -3,7 +3,7 @@ use core::f32::consts::PI;
 use glam::{Mat3, Vec3};
 use stepper_lib::{units::*, SyncComp};
 use sybot_pkg::{Package, SegmentInfo};
-use sybot_rcs::{WorldObj, Point, Position};
+use sybot_rcs::{WorldObj, Point, Position, PointRef};
 use sybot_rcs::math::{full_atan, calc_triangle};
 use sybot_robs::{AxisConf, SegmentChain, LinSegmentChain, StepperRobot, Segment, BasicRobot};
 
@@ -33,15 +33,20 @@ impl AxisConf for SyArmConf {
 pub struct SyArmDesc {    
     pub segments : LinSegmentChain<4>,
 
+    tcp : PointRef,
     wobj : WorldObj,
     conf : SyArmConf,
 }
 
 impl SyArmDesc {
     fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, crate::Error> {
+        let tcp = PointRef::new(Position::new(Vec3::ZERO));
+        wobj.add_point("tcp", tcp);
+
         Ok(Self {
             segments: LinSegmentChain::from_wobj(segments, &mut wobj, "tcp")?,
 
+            tcp,
             wobj,
             conf: SyArmConf::default()
         })
@@ -85,11 +90,22 @@ impl Descriptor<4> for SyArmDesc {
         fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj {
             &mut self.wobj
         }
+
+        fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
+            
+        }
     // 
 
     // Events
         fn update(&mut self, _ : &mut dyn BasicRobot<4>, phis : &[Phi; 4]) -> Result<(), crate::Error> {
             self.segments.update(phis)?;
+            
+            let tcp_new = self.segments.calculate_end();
+            let mut tcp = self.tcp.borrow_mut();
+
+            *(tcp.pos_mut()) = *tcp.pos();
+            *(tcp.ori_mut()) = *tcp.ori();
+
             Ok(())
         }
     // 

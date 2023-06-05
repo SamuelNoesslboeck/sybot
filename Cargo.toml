@@ -13,10 +13,6 @@ keywords = [ "framework", "robotics", "automation" ]
 name = "sybot_lib"
 path = "src/lib.rs"
 
-# [[bin]]
-# name = "interpreter"
-# path = "bin/interpreter.rs"
-
 # [[example]]
 # name = "mqtt"
 # path = "examples/mqtt.rs"

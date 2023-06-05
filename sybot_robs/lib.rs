@@ -26,33 +26,26 @@ pub type Error = Box<dyn std::error::Error>;
 #[derive(Clone, Debug)]
 pub struct Vars<const C : usize> {
     pub phis : [Phi; C],
-    pub pos : Option<Vec3>
 }
 
 impl<const C : usize> Vars<C> {
-    /// Create a position, optionally filling in the `None` coordinates with values from the given state of the robot
-    /// 
-    /// # Panics
-    /// 
-    /// Panics if no coordinates are cached yet
-    pub fn cache_pos(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
-        if let Some(pos) = self.pos {
-            Vec3::new( 
-                x_opt.unwrap_or(pos.x),
-                y_opt.unwrap_or(pos.y),
-                z_opt.unwrap_or(pos.z)
-            )
-        } else {
-            panic!("No position has been cached yet!")
+    pub fn cache_phis(&self, phis_opt : [Option<Phi>; C]) -> [Phi; C] {
+        let mut phis = self.phis;
+
+        for i in 0 .. C {
+            if let Some(phi) = phis_opt[i] {
+                phis[i] = phi;
+            }
         }
+
+        phis
     }
 }
 
 impl<const C : usize> Default for Vars<C> {
     fn default() -> Self {
         Self {
-            phis: [Phi::default(); C],
-            pos: None
+            phis: [Phi::default(); C]
         }
     }
 }
@@ -109,8 +102,10 @@ pub trait Descriptor<const C : usize> {
         fn wobj<'a>(&'a self) -> &'a WorldObj;
 
         fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
-    // 
 
+        /// Create a Vec3 from optional coordinates 
+        fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3;
+    // 
 }
 
 pub trait InfoRobot<const C : usize> {

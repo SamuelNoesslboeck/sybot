@@ -11,7 +11,7 @@ const TOPIC_PHIS : &str = "pos/phis";
 
 // Helpers
 fn phis_to_bytes(phis : &[Phi]) -> Vec<u8> {
-    let mut bytes = vec![0u8; phis.len() * 4];
+    let mut bytes = vec![0u8; phis.len() * size_of::<f32>()];
     
     for i in 0 .. phis.len() {
         let p_bytes = phis[i].0.to_le_bytes();

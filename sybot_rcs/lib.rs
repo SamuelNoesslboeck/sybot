@@ -1,8 +1,9 @@
 extern crate alloc;
 
 use core::{cell::RefCell, fmt::Debug, ops::{Deref, DerefMut}};
+use std::collections::HashMap;
 
-use alloc::{collections::BTreeMap, rc::Rc};
+use alloc::rc::Rc;
 use glam::{Vec3, Mat3};
 use serde::{Serialize, Deserialize};
 // use serde::de::DeserializeOwned;
@@ -145,6 +146,10 @@ impl DerefMut for PointRef {
 }
 
 impl PointRef {
+    pub fn new<T : Point + 'static>(point : T) -> Self {
+        Self(Rc::new(RefCell::new(point)))
+    }
+
     pub fn pos(&self) -> Vec3 {
         *self.borrow().pos()
     }
@@ -165,7 +170,7 @@ impl PointRef {
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct WorldObj {
     pos : Position,
-    pub sub : BTreeMap<String, PointRef>
+    pub sub : HashMap<String, PointRef>
 }
 
 impl AsRef<Position> for WorldObj {
@@ -226,22 +231,23 @@ impl WorldObj {
     pub fn new(pos : Position) -> Self {
         Self {
             pos,
-            sub: BTreeMap::new()
+            sub: HashMap::new()
         }
     }
 
-    pub fn new_sub(pos : Position, sub : BTreeMap<String, PointRef>) -> Self {
+    pub fn new_sub(pos : Position, sub : HashMap<String, PointRef>) -> Self {
         Self {
             pos, sub
         }
     }
 
-    pub fn add_point(&mut self, name : String, point : PointRef) {
-        if name.contains('/') {
-            panic!("Bad point name! Point names must not contain '/'! (Name: {})", name);
+    pub fn add_point<N : Into<String>>(&mut self, name : N, point : PointRef) {
+        let name_str = name.into();
+        if name_str.contains('/') {
+            panic!("Bad point name! Point names must not contain '/'! (Name: {})", name_str);
         }
         
-        self.sub.insert(name, point);
+        self.sub.insert(name_str, point);
     }
 
     pub fn point<S : Into<String>>(&self, path : S) -> Option<PointRef> {
