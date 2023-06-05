@@ -1,34 +1,34 @@
 use std::collections::HashMap;
 
+use sybot_robs::{BasicRobot, Descriptor};
+
 use crate::Interpreter;
 
 mod gfuncs;
 pub use gfuncs::*;
-use sybot_robs::BasicRobot;
 
-pub type GCodeFunc<T, D, E> = fn (&mut T, &mut D, &GCode, &Args) -> E;
-pub type ToolChangeFunc<T, D, E> = fn (&mut T, &mut D, usize) -> E;
+pub type GCodeFunc<T, D> = fn (&mut T, &mut D, &GCode, &Args) -> GCodeResult;
+pub type ToolChangeFunc<T, D> = fn (&mut T, &mut D, usize) -> GCodeResult;
 
 pub type Letter = gcode::Mnemonic;
 pub type GCode = gcode::GCode;
 pub type Args = [gcode::Word];
+pub type GCodeResult = Result<serde_json::Value, crate::Error>;
 
-pub type NumEntries<T, D, R> = HashMap<u32, GCodeFunc<T, D, R>>;
-pub type LetterEntries<T, D, R> = HashMap<Letter, NumEntries<T, D, R>>;
+pub type NumEntries<T, D> = HashMap<u32, GCodeFunc<T, D>>;
+pub type LetterEntries<T, D> = HashMap<Letter, NumEntries<T, D>>;
 
-pub type NotFoundFunc<R> = fn (GCode) -> R;
+pub type NotFoundFunc = fn (GCode) -> GCodeResult;
 
-pub struct GCodeIntpr<ROB, DESC, RES>
-{
-    pub funcs : LetterEntries<ROB, DESC, RES>,
-    pub tool_change : Option<ToolChangeFunc<ROB, DESC, RES>>,
+pub struct GCodeIntpr<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> {
+    pub funcs : LetterEntries<R, D>,
+    pub tool_change : Option<ToolChangeFunc<R, D>>,
 
-    not_found : NotFoundFunc<RES>
+    not_found : NotFoundFunc
 }
 
-impl<ROB, DESC, RES> GCodeIntpr<ROB, DESC, RES>
-{   
-    pub fn new(tool_change : Option<ToolChangeFunc<ROB, DESC, RES>>, funcs : LetterEntries<ROB, DESC, RES>, not_found : NotFoundFunc<RES>) -> Self {
+impl<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {   
+    pub fn new(tool_change : Option<ToolChangeFunc<R, D>>, funcs : LetterEntries<R, D>, not_found : NotFoundFunc) -> Self {
         return GCodeIntpr {
             funcs,
             tool_change,
@@ -38,8 +38,39 @@ impl<ROB, DESC, RES> GCodeIntpr<ROB, DESC, RES>
     }
 }
 
-impl<ROB, DESC, RES> Interpreter<ROB, DESC, RES> for GCodeIntpr<ROB, DESC, RES> {
-    fn interpret(&self, rob : &mut ROB, gc_str : &str) -> Vec<RES> {
+impl<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {
+    pub fn init() -> Self {
+        let funcs = LetterEntries::from([
+            (Letter::General, NumEntries::from([
+                (0, g0::<R, D, C> as GCodeFunc<R, D>),
+                (4, g4::<R, D, C>),
+                (28, g28::<R, D, C>),
+                // (29, g29::<R, D, C>),
+                (100, g100::<R, D, C>),
+                (1000, g1000::<R, D, C>),
+                (1100, g1100::<R, D, C>)
+            ])), 
+            (Letter::Miscellaneous, NumEntries::from([
+                (3, m3::<R, D, C> as GCodeFunc<R, D>),
+                (4, m4::<R, D, C>),
+                (5, m5::<R, D, C>),
+                (30, m30::<R, D, C>),
+                (119, m119::<R, D, C>),
+                (1006, m1006::<R, D, C>),
+            ])), 
+            (Letter::ProgramNumber, NumEntries::from([
+                (0, o0::<R, D, C> as GCodeFunc<R, D>)
+            ]))
+        ]);
+        
+        GCodeIntpr::new(Some(t), funcs, |_| { 
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")))
+        })
+    }
+}
+
+impl<T : BasicRobot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GCodeResult> for GCodeIntpr<T, D, C> {
+    fn interpret(&self, rob : &mut T, desc : &mut D, gc_str : &str) -> Vec<GCodeResult> {
         let mut res = vec![]; 
 
         let not_found = self.not_found;
@@ -48,7 +79,7 @@ impl<ROB, DESC, RES> Interpreter<ROB, DESC, RES> for GCodeIntpr<ROB, DESC, RES> 
             for gc_line in gcode::parse(gc_str_line) {
                 if gc_line.mnemonic() == Letter::ToolChange {
                     res.push(match self.tool_change {
-                        Some(func) => func(rob, gc_line.major_number() as usize),
+                        Some(func) => func(rob, desc, gc_line.major_number() as usize),
                         None => not_found(gc_line)
                     });
 
@@ -58,7 +89,7 @@ impl<ROB, DESC, RES> Interpreter<ROB, DESC, RES> for GCodeIntpr<ROB, DESC, RES> 
                 let func_res = get_func(&self.funcs, &gc_line);
 
                 res.push(match func_res {
-                    Some(func) => func(rob, &gc_line, gc_line.arguments()),
+                    Some(func) => func(rob, desc, &gc_line, gc_line.arguments()),
                     None => not_found(gc_line)
                 });
             }
@@ -70,7 +101,7 @@ impl<ROB, DESC, RES> Interpreter<ROB, DESC, RES> for GCodeIntpr<ROB, DESC, RES> 
 
 // Parsing
     /// Get the GCode Function stored for the given code
-    pub fn get_func<'a, T, E>(funcs : &'a LetterEntries<T, E>, gc : &'a GCode) -> Option<&'a GCodeFunc<T, E>> {
+    pub fn get_func<'a, T, D>(funcs : &'a LetterEntries<T, D>, gc : &'a GCode) -> Option<&'a GCodeFunc<T, D>> {
         funcs.get(&gc.mnemonic()).and_then(|v| {
             v.get(&gc.major_number())
         })
@@ -127,33 +158,3 @@ impl<ROB, DESC, RES> Interpreter<ROB, DESC, RES> for GCodeIntpr<ROB, DESC, RES> 
         letters
     }
 // 
-
-pub fn init_intpr<R : BasicRobot<C>, const C : usize>() -> GCodeIntpr<R, Result<serde_json::Value, crate::Error>> {
-    let funcs = LetterEntries::from([
-        (Letter::General, NumEntries::from([
-            (0, g0::<R, C> as GCodeFunc<R, Result<serde_json::Value, crate::Error>>),
-            (4, g4::<R, C>),
-            (8, g8::<R, C>),
-            (28, g28::<R, C>),
-            // (29, g29::<R, C>),
-            (100, g100::<R, C>),
-            (1000, g1000::<R, C>),
-            (1100, g1100::<R, C>)
-        ])), 
-        (Letter::Miscellaneous, NumEntries::from([
-            (3, m3::<R, C> as GCodeFunc<R, Result<serde_json::Value, crate::Error>>),
-            (4, m4::<R, C>),
-            (5, m5::<R, C>),
-            (30, m30::<R, C>),
-            (119, m119::<R, C>),
-            (1006, m1006::<R, C>),
-        ])), 
-        (Letter::ProgramNumber, NumEntries::from([
-            (0, o0::<R, C> as GCodeFunc<R, Result<serde_json::Value, crate::Error>>)
-        ]))
-    ]);
-    
-    GCodeIntpr::new(Some(t), funcs, |_| { 
-        Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")))
-    })
-}

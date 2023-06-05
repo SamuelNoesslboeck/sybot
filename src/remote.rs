@@ -1,5 +1,4 @@
-use stepper_lib::units::*;
-use sybot_robs::PushRemote;
+// use stepper_lib::units::*;
 
 // Submodules 
     #[cfg(feature = "http")]
@@ -9,25 +8,25 @@ use sybot_robs::PushRemote;
     pub mod mqtt;
 // 
 
-pub struct ConsoleRemote { 
-    pub phis : Vec<Phi>
-} 
+// pub struct ConsoleRemote { 
+//     pub phis : Vec<Phi>
+// } 
 
-impl PushRemote for ConsoleRemote {
-    fn push_phis(&mut self, phis : &[stepper_lib::units::Phi]) -> Result<(), sybot_robs::Error> {
-        self.phis = phis.to_vec();
-        Ok(())
-    }
+// impl PushRemote for ConsoleRemote {
+//     fn push_phis(&mut self, phis : &[stepper_lib::units::Phi]) -> Result<(), sybot_robs::Error> {
+//         self.phis = phis.to_vec();
+//         Ok(())
+//     }
     
-    fn push_other(&mut self, other : sybot_robs::PushMsg) -> Result<(), sybot_robs::Error> {
-        Ok(())
-    }
+//     fn push_other(&mut self, other : sybot_robs::PushMsg) -> Result<(), sybot_robs::Error> {
+//         Ok(())
+//     }
 
-    fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), sybot_robs::Error> {
-        Ok(())
-    }
-}
+//     fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), sybot_robs::Error> {
+//         Ok(())
+//     }
+// }
 
-pub struct FileRemote { 
-    pub path: String
-}
+// pub struct FileRemote { 
+//     pub path: String
+// }

@@ -1,4 +1,3 @@
-use glam::Vec3;
 use stepper_lib::prelude::*;
 use sybot_lib::prelude::*;
 
@@ -19,7 +18,7 @@ impl DrakeDesc {
     }
 }
 
-impl RobotDesc<3> for DrakeDesc {
+impl Descriptor<3> for DrakeDesc {
     // Axis config
         fn aconf<'a>(&'a self) -> &'a dyn AxisConf {
             &self.conf
@@ -57,12 +56,19 @@ impl RobotDesc<3> for DrakeDesc {
 
 type DrakeRob = StepperRobot<[Cylinder; 3], 3>;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let broker_addr = std::env::var("DRAKE_BROKER_ADDR").expect("DRAKE_BROKER_ADDR must be set");
+
     let pkg = Package::load("assets/DrakeRob")?;
 
     // Parse devices
         // Camera
+        
+
         // Input panel
+        let start = Button::new(pkg.get_pin("input-panel/start").unwrap())?;
+        // let off = InputDevice::new(pkg.get_pin("input-panel/off").unwrap())?;
     // 
     
     // Parse robot
@@ -71,18 +77,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Parse descriptor
     let (wobj, segments) = pkg.req_desc()?;
-    let desc = DrakeDesc::new(wobj, &segments)?;
+    let mut desc = DrakeDesc::new(wobj, &segments)?;
+
+    // Remotes and interpreters
+    let gcode = sybot_lib::gcode::GCodeIntpr::init();
+
+    let mqtt = Box::new(sybot_lib::mqtt::Publisher::new(&broker_addr)?);
+    mqtt.connect()?;
+    rob.add_remote(mqtt);
 
     // Actions
     rob.setup()?;
-    rob.full_meas()?;
+    rob.move_home()?;
+
+    let rob_phis = rob.phis();
+    desc.update(&mut rob, &rob_phis)?;
 
     // Loop
-    let pos = Vec3::X * 100.0;
-    let phis = desc.convert_pos(&mut rob, Position::new(pos))?;
+    start.wait(true).await?;
 
-    rob.move_abs_j_sync(phis, 1.0)?;
-    // 
+    loop {
+        let mut line_buff = String::new();
+        std::io::stdin().read_line(&mut line_buff)?;
 
-    Ok(())
+        for res in gcode.interpret(&mut rob, &mut desc, &line_buff) {
+            println!("{}", res?);
+        }
+    }
 }

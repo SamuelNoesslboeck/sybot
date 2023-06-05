@@ -7,7 +7,7 @@ use sybot_rcs::{WorldObj, Point, Position};
 use sybot_rcs::math::{full_atan, calc_triangle};
 use sybot_robs::{AxisConf, SegmentChain, LinSegmentChain, StepperRobot, Segment, BasicRobot};
 
-use crate::RobotDesc;
+use crate::Descriptor;
 
 #[derive(Default, Debug)]
 pub struct SyArmConf {
@@ -66,7 +66,7 @@ impl SyArmDesc {
     }
 }
 
-impl RobotDesc<4> for SyArmDesc {
+impl Descriptor<4> for SyArmDesc {
     // Axis config
         fn aconf<'a>(&'a self) -> &'a dyn AxisConf {
             &self.conf

@@ -1,14 +1,15 @@
 extern crate alloc;
-
 use std::fs;
 use std::path::Path;
 
+use alloc::collections::BTreeMap;
 use regex::Regex;
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use stepper_lib::prelude::SimpleMeas;
 use stepper_lib::{SyncComp, Tool};
 use stepper_lib::data::LinkedData;
+use sybot_rcs::WorldObj;
 
 // Submodules
     mod info;
@@ -16,12 +17,9 @@ use stepper_lib::data::LinkedData;
 
     mod partlib;
     pub use partlib::*;
-
-    mod pins;
-    pub use pins::*;
-    use sybot_rcs::WorldObj;
 // 
 
+pub type Pins = BTreeMap<String, BTreeMap<String, u8>>;
 pub type Error = Box<dyn std::error::Error>;
 
 #[derive(Debug)]
@@ -159,11 +157,9 @@ impl Package {
 
         match link {
             "pin" => {
-                if let Some(pins) = &self.pins {
-                    if let Some(pin) = get_pin(pins, target.to_owned()) {
-                        return Ok(serde_json::to_value(pin)?);
-                    } 
-                }
+                if let Some(pin) = self.get_pin(target) {
+                    return Ok(serde_json::to_value(pin)?);
+                } 
             }, 
             "lib" => {
                 if let Some(val) = self.libs.get(target) {
@@ -281,5 +277,23 @@ impl Package {
         } else {
             Err("A valid world object must be provided".into())
         }
+    }
+
+    pub fn get_pin(&self, path : &str) -> Option<u8> {
+        let path_s : Vec<&str> = path.split('/').collect();
+    
+        if path_s.len() != 2 {
+            panic!(" => Bad pin-path format! (<group>/<name>) [{:?}]", path_s);
+        }
+        
+        if let Some(pins) = &self.pins {
+            if let Some(group) = pins.get(path_s[0]) {
+                if let Some(pin) = group.get(path_s[1]) {
+                    return Some(*pin)
+                } 
+            }
+        }
+
+        None
     }
 }

@@ -30,6 +30,11 @@ pub struct Vars<const C : usize> {
 }
 
 impl<const C : usize> Vars<C> {
+    /// Create a position, optionally filling in the `None` coordinates with values from the given state of the robot
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if no coordinates are cached yet
     pub fn cache_pos(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
         if let Some(pos) = self.pos {
             Vec3::new( 
@@ -85,7 +90,7 @@ impl AxisConf for EmptyConf {
     }
 }
 
-pub trait RobotDesc<const C : usize> {
+pub trait Descriptor<const C : usize> {
     // Axis conf
         fn aconf<'a>(&'a self) -> &'a dyn AxisConf;
 
@@ -214,7 +219,7 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
         //     )
         // }
 
-        fn move_p_sync(&mut self, desc : &mut dyn RobotDesc<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
+        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
 
     // Loads
@@ -243,12 +248,6 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
         fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn Tool>>;
     // 
 
-    // Device   
-        fn device_manager(&self) -> Option<&dyn DeviceManager>;
-
-        fn device_manager_mut(&mut self) -> Option<&mut dyn DeviceManager>;
-    // 
-
     // Remote
         /// Adds a new remote to the robot
         fn add_remote(&mut self, remote : Box<dyn PushRemote>);
@@ -261,7 +260,7 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
     //
 
     // Meas
-        fn full_meas(&mut self) -> Result<(), crate::Error>;
+        fn move_home(&mut self) -> Result<(), crate::Error>;
     //
 
     // Events
@@ -279,11 +278,11 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
             self.comps_mut().drive_abs_async(gammas, speed_f)
         }
 
-        fn move_l(&mut self, desc : &mut dyn RobotDesc<C>, deltas : [Delta; C]) -> Result<(), crate::Error>;
+        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, deltas : [Delta; C]) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn RobotDesc<C>, gammas : [Gamma; C]) -> Result<(), crate::Error>;
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, gammas : [Gamma; C]) -> Result<(), crate::Error>;
 
-        fn move_p(&mut self, desc: &mut dyn RobotDesc<C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
+        fn move_p(&mut self, desc: &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {
             let phis = desc.convert_pos(self, p)?;
             let gammas = self.gammas_from_phis(phis);

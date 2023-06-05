@@ -4,16 +4,16 @@ use core::time::Duration;
 use paho_mqtt::{Client, ServerResponse, MessageBuilder};
 use stepper_lib::units::*;
 
-use crate::remote::PushRemote;
+use crate::PushRemote;
 
 // Topics
 const TOPIC_PHIS : &str = "pos/phis";
 
 // Helpers
-fn phis_to_bytes<const C : usize>(phis : &[Phi; C]) -> Vec<u8> {
-    let mut bytes = vec![0u8; C * 4];
+fn phis_to_bytes(phis : &[Phi]) -> Vec<u8> {
+    let mut bytes = vec![0u8; phis.len() * 4];
     
-    for i in 0 .. C {
+    for i in 0 .. phis.len() {
         let p_bytes = phis[i].0.to_le_bytes();
 
         for n in 0 .. size_of::<f32>() {
@@ -30,10 +30,7 @@ pub struct Publisher {
 
 impl Publisher {
     pub fn new(host : &str) -> Result<Self, crate::Error> {
-        let mut client = match Client::new(host) {
-            Ok(c) => c, 
-            Err(err) => return Err(crate::Error::new(std::io::ErrorKind::Other, err))
-        };
+        let mut client = Client::new(host)?;
         client.set_timeout(Duration::from_secs(5));
         
         Ok(Self {
@@ -42,24 +39,26 @@ impl Publisher {
     }
 
     pub fn connect(&self) -> Result<ServerResponse, crate::Error> {
-        match self.client.connect(None) {
-            Ok(res) => Ok(res),
-            Err(err) => Err(crate::Error::new(std::io::ErrorKind::Other, err))
-        }
+        Ok(self.client.connect(None)?)
     }
 }
 
-impl<const C : usize> PushRemote<C> for Publisher {
-    fn pub_phis(&mut self, phis : &[Phi; C]) -> Result<(), crate::Error> {
+impl PushRemote for Publisher {
+    fn push_phis(&mut self, phis : &[Phi]) -> Result<(), crate::Error> {
         let msg = MessageBuilder::new()
             .topic(TOPIC_PHIS)
             .payload(phis_to_bytes(phis))
             .qos(0)
             .finalize();
 
-        match self.client.publish(msg) {
-            Ok(res) => Ok(res),
-            Err(err) => Err(crate::Error::new(std::io::ErrorKind::Other, err))
-        }
+        Ok(self.client.publish(msg)?)
+    }
+
+    fn push_other(&mut self, other : sybot_robs::PushMsg) -> Result<(), sybot_robs::Error> {
+        Ok(())
+    }
+
+    fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), sybot_robs::Error> {
+        Ok(())
     }
 }

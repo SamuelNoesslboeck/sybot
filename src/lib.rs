@@ -9,6 +9,9 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     /// Premade descriptors 
     pub mod desc;
     pub use desc::SyArm;
+
+    #[cfg(feature = "gcode")]
+    pub use scr::gcode as gcode;
     
     /// Structures and methods for exposing the robot to the internet with a HTTP server 
     /// 
@@ -45,7 +48,6 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
     pub use sybot_robs as robs;
     pub use robs::*;
 
-    #[cfg(feature = "lua")]
     pub use sybot_scr as scr;
 
     // #[cfg(test)]

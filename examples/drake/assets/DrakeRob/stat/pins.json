@@ -14,10 +14,16 @@
     "dir": 0,
     "meas": 0
   },
+
   "async-axis": {
     "forward": 0,
     "backwards": 0,
     "meas-forw": 0,
     "meas-back": 0
+  },
+
+  "input-panel": {
+    "start": 0,
+    "stop": 0
   }
 }

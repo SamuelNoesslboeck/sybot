@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 glam = "0.24.0"
 stepper_lib = "0.11.5"
-sybot_lib = { path = "../../" }
+sybot_lib = { path = "../../", features = [ "gcode", "mqtt" ]}
+tokio = { version = "1.28.2", features = [ "macros", "rt-multi-thread" ]}
 
 [workspace]

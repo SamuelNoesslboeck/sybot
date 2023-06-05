@@ -10,7 +10,7 @@ name = "sybot_scr"
 path = "lib.rs"
 
 [dependencies]
-gcode = "0.6.1"
+gcode = { version = "0.6.1", optional = true }  
 glam = "0.24.0"
 mlua = { version = "0.8.8", features = [ "lua54", "module", "macros", "serialize" ], optional = true }
 serde = { version = "1.0.104", features = ["derive"] }
@@ -22,4 +22,6 @@ sybot_rcs = { path = "../sybot_rcs" }
 sybot_robs = { path = "../sybot_robs" }
 
 [features]
+default = [ ]
 lua = [ "dep:mlua" ]
+gcode = [ "dep:gcode" ]

@@ -6,7 +6,7 @@ use stepper_lib::units::*;
 use sybot_pkg::{RobotInfo, Package, AngConf};
 use sybot_rcs::Position;
 
-use crate::{InfoRobot, Vars, BasicRobot, PushRemote, RobotDesc, Device, DeviceManager};
+use crate::{InfoRobot, Vars, BasicRobot, PushRemote, Descriptor};
 
 #[derive(Debug)]
 pub struct TheoRobot<const C : usize> {
@@ -49,7 +49,6 @@ pub struct StepperRobot<T : SyncCompGroup<C>, const C : usize> {
     comps : T,
     meas : Vec<Box<dyn SimpleMeas>>, 
 
-    devices : Vec<Device>,
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
 
@@ -67,7 +66,6 @@ impl<T : SyncCompGroup<C>, const C : usize> StepperRobot<T, C> {
             comps,
             meas,
             
-            devices: Vec::new(),
             tools,
             tool_id: None,
 
@@ -117,10 +115,6 @@ impl<T : SyncCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
             meas.setup()?;
         }
 
-        for device in &mut self.devices {
-            device.mount();
-        }
-
         Ok(())
     }
 }
@@ -155,7 +149,7 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
     //
 
     // Movement
-        fn move_p_sync(&mut self, desc : &mut dyn RobotDesc<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
             let phis = desc.convert_pos(self, p)?;
             self.move_abs_j_sync(
                 phis,
@@ -165,6 +159,11 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
     //
 
     fn update(&mut self) -> Result<(), crate::Error> {
+        let phis = self.phis();
+        for rem in &mut self.remotes {
+            rem.push_phis(&phis)?;
+        }
+
         Ok(())
     }
 
@@ -203,18 +202,8 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
         }
     // 
 
-    // Device
-        fn device_manager(&self) -> Option<&dyn DeviceManager> {
-            Some(self)
-        }
-
-        fn device_manager_mut(&mut self) -> Option<&mut dyn DeviceManager> {
-            Some(self)
-        }
-    // 
-
     // Meas
-        fn full_meas(&mut self) -> Result<(), crate::Error> {
+        fn move_home(&mut self) -> Result<(), crate::Error> {
             for i in 0 .. C {
                 self.meas[i].measure(self.comps.index_mut(i).deref_mut())?;
             }
@@ -238,32 +227,6 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
     //
 
     //
-}
-
-impl<T : SyncCompGroup<C>, const C : usize> DeviceManager for StepperRobot<T, C> {
-    fn add_device(&mut self, device: Device) {
-        self.devices.push(device);
-    }
-
-    fn remove_device(&mut self, index : usize) -> Device {
-        self.devices.remove(index)
-    }
-
-    fn get_device(&self, index : usize) -> Option<&Device> {
-        self.devices.get(index)
-    }
-    
-    fn get_device_mut(&mut self, index : usize) -> Option<&mut Device> {
-        self.devices.get_mut(index)
-    }
-
-    fn get_device_name(&self, name: &str) -> Option<&Device> {
-        self.devices.iter().find(|d| d.name == name)
-    }
-
-    fn get_device_name_mut(&mut self, name: &str) -> Option<&mut Device> {
-        self.devices.iter_mut().find(|d| d.name == name)
-    }
 }
 
 // pub struct ComplexCollective<const C : usize> {

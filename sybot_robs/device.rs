@@ -1,42 +1,57 @@
-use core::ops::{Deref, DerefMut};
+use core::future::Future;
+use core::task::Poll;
 
-use stepper_lib::Tool;
+use stepper_lib::{Tool, SyncComp, Setup};
+use stepper_lib::ctrl::pin::{UniPin, UniInPin};
 
-pub struct Device {
-    pub name: String,
-    pub dev : Box<dyn Tool> 
+pub trait Device : Setup {
+    fn tool(&self) -> Option<&dyn Tool> { 
+        None 
+    }
+
+    fn comp(&self) -> Option<&dyn SyncComp> {
+        None
+    }
 }
 
-impl Device {
-    pub fn new(name : String, dev : Box<dyn Tool>) -> Self {
-        Self {
-            name,
-            dev
+pub struct PinWait<'a> { 
+    pin : &'a UniInPin,
+    sig : bool
+}
+
+impl<'a> Future for PinWait<'a> {
+    type Output = Result<(), crate::Error>;
+
+    fn poll(self : std::pin::Pin<&mut Self>, _ : &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+        let this = self.get_mut();
+    
+        if this.pin.is_high() == this.sig {
+            Poll::Ready(Ok(()))
+        } else {
+            Poll::Pending
         }
     }
 }
 
-impl Deref for Device {
-    type Target = Box<dyn Tool>;
+pub struct Button {
+    pin : UniInPin
+}
 
-    fn deref(&self) -> &Self::Target {
-        &self.dev
+impl Button {
+    pub fn new(pin : u8) -> Result<Self, crate::Error> {
+        Ok(Self { 
+            pin: UniPin::new(pin)?.into_input()
+        })
+    }
+
+    pub fn wait(&self, sig : bool) -> PinWait {
+        PinWait { 
+            pin: &self.pin, 
+            sig
+        }
     }
 }
 
-impl DerefMut for Device {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.dev
-    }
-}
+// pub struct CameraDevice {
 
-pub trait DeviceManager {
-    fn add_device(&mut self, device: Device);
-    fn remove_device(&mut self, index : usize) -> Device;
-
-    fn get_device(&self, index : usize) -> Option<&Device>;
-    fn get_device_mut(&mut self, index : usize) -> Option<&mut Device>;
-
-    fn get_device_name(&self, name: &str) -> Option<&Device>;
-    fn get_device_name_mut(&mut self, name: &str) -> Option<&mut Device>;
-}
+// }

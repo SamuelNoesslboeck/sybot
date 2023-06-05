@@ -1,3 +1,35 @@
 [
-
+  {
+    "info": {
+      "name": "es-x-axis"
+    },
+    "type_name": "EndSwitch",
+    "obj": {
+      "pin": "<pin://x-axis/meas>",
+      "meas_speed_f": 0.2,
+      "max_dist": 0.0
+    }
+  },
+  {
+    "info": {
+      "name": "es-y-axis"
+    },
+    "type_name": "EndSwitch",
+    "obj": {
+      "pin": "<pin://y-axis/meas>",
+      "meas_speed_f": 0.2,
+      "max_dist": 0.0
+    }
+  },
+  {
+    "info": {
+      "name": "es-z-axis"
+    },
+    "type_name": "EndSwitch",
+    "obj": {
+      "pin": "<pin://z-axis/meas>",
+      "meas_speed_f": 0.2,
+      "max_dist": 0.0
+    }
+  }
 ]
