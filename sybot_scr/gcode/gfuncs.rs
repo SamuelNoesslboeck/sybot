@@ -10,7 +10,7 @@ use super::*;
     pub fn g0<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, desc : &mut D, c : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
-        let pos = robot.vars().cache_pos(
+        let pos = desc.cache_tcp(
             arg_by_letter(args, 'X'), 
             arg_by_letter(args, 'Y'), 
             arg_by_letter(args, 'Z')
@@ -19,7 +19,7 @@ use super::*;
         let f_speed = arg_by_letter(args, 'S').unwrap_or(1.0);
 
         let deltas = if c.minor_number() == 0 {
-            robot.move_p_sync(desc, Position::new(pos),  f_speed)?
+            robot.move_p_sync(desc, Position::new(pos), f_speed)?
         } else if c.minor_number() == 1 {
             // let c_rob = robot.complex_rob_mut();
 
@@ -31,11 +31,13 @@ use super::*;
             panic!("Bad minor number!");
         };
 
-        robot.update();
+        robot.update()?;
+
+        let phis = robot.phis();
+        desc.update(robot, &phis)?;
         
         Ok(serde_json::json!({ 
-            "points": pos.to_array(), 
-            "phis": pos.to_array(),
+            "phis": Vec::from(phis),
             "deltas": Vec::from(deltas)
         }))
     }

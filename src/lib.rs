@@ -8,7 +8,6 @@ pub use stepper_lib::{Setup, Tool, SyncComp};
 // Module decleration
     /// Premade descriptors 
     pub mod desc;
-    pub use desc::SyArm;
 
     #[cfg(feature = "gcode")]
     pub use scr::gcode as gcode;

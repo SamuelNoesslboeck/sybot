@@ -1,6 +1,8 @@
 [
   {
-    "name": "AxisBearing_Mk1",
+    "info": {
+      "name": "AxisBearing_Mk1"
+    },
     "type_name": "AxialJoint",
     "obj": {
     "servo": {
@@ -12,7 +14,9 @@
     }
   },
   {
-    "name": "AxisTongs_Mk1",
+    "info": {
+      "name": "AxisTongs_Mk1"
+    },
     "type_name": "AxisTongs",
     "obj": {
       "axis": {
@@ -36,7 +40,9 @@
     }
   },
   {
-    "name": "Edding_Tool",
+    "info": {
+      "name": "Edding_Tool"
+    },
     "type_name": "PencilTool",
     "obj": {
       "length": 100.0,
@@ -44,7 +50,9 @@
     }
   }, 
   {
-    "name": "SimpleTongs_Mk2",
+    "info": {
+      "name": "SimpleTongs_Mk2"
+    },
     "type_name": "Tongs",
     "obj": {
       "servo": {

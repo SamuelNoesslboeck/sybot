@@ -93,15 +93,12 @@ pub trait SegmentChain<const C : usize> : core::fmt::Debug {
         let segments = self.segments(); 
         let mut pos_0 = Position::new(self.tcp().borrow().pos().clone());
 
-        println!("=> {}", pos_0.pos());
         for i in 1 ..= C {
             let index = C - i;
             let point = segments[index].point.borrow();
     
             pos_0.transform(*point.ori());
             pos_0.shift(*point.pos());
-
-            println!("{}: {}", index, pos_0.pos());
         }
 
         pos_0

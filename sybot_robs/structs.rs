@@ -1,12 +1,14 @@
 use core::ops::DerefMut;
 
+use glam::Vec3;
 use stepper_lib::{Setup, Tool, SyncCompGroup, SyncComp};
+use stepper_lib::comp::stepper::{StepperComp, StepperCompGroup};
 use stepper_lib::meas::SimpleMeas;
 use stepper_lib::units::*;
 use sybot_pkg::{RobotInfo, Package, AngConf};
 use sybot_rcs::Position;
 
-use crate::{InfoRobot, Vars, BasicRobot, PushRemote, Descriptor};
+use crate::{InfoRobot, Vars, BasicRobot, PushRemote, Descriptor, ComplexRobot};
 
 #[derive(Debug)]
 pub struct TheoRobot<const C : usize> {
@@ -208,6 +210,8 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
                 self.meas[i].measure(self.comps.index_mut(i).deref_mut())?;
             }
 
+            self.update()?;
+
             Ok(())
         }
     // 
@@ -229,185 +233,28 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
     //
 }
 
-// pub struct ComplexCollective<const C : usize> {
+impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<T, C> {
+    fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32) -> Result<(), crate::Error> {
+        let pos_0 = desc.current_tcp().pos();
 
-// }
+        let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
+        let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
+        
+        let mut tstack = Vec::new();
+        let mut dstack = Vec::new();
 
-// pub struct ComplexStepperRobot<const C : usize> {
-//     // Info 
-//         info : RobotInfo,
-//         vars : Vars<C>,
-//     // 
+        for pos in poses {
+            dstack.push(
+                desc.convert_pos(self, pos)?
+            )
+        }
 
-//     // Basic
-//         ang_confs : Vec<AngConf>,
-//         comps : [Box<dyn stepper_lib::SyncComp>; C],
+        builder.generate(&mut tstack, &mut dstack);
 
-//         tools : Vec<Box<dyn Tool>>,
-//         tool_id : Option<usize>,
+        Ok(())
+    }
 
-//         remotes : Vec<Box<dyn PushRemote>>,
-//     //
-// }
-
-// impl<const C : usize> ComplexStepperRobot<C> {
-//     pub fn new(info : RobotInfo, ang_confs : Vec<AngConf>, comps : [Box<dyn stepper_lib::SyncComp>; C], 
-//     tools : Vec<Box<dyn Tool>>, wobj : WorldObj) -> Self {
-//         Self {
-//             info,
-//             vars: Vars::default(),
-
-//             ang_confs,
-//             comps,
-            
-//             tools,
-//             tool_id: None,
-
-//             remotes: vec![],
-
-//             wobj
-//         }
-//     }
-// }
-
-// impl<const C : usize> ComplexStepperRobot<C> {
-//     fn try_from_pkg(pkg: Package, ) -> Result<Self, crate::Error> {
-//         let comps = pkg.parse_components()?;
-//         let tools = pkg.parse_tools()?;
-//         let ang_confs = pkg.parse_ang_confs().unwrap();
-
-//         let wobj = if let Some(wobj) = pkg.wobj {
-//             wobj
-//         } else {
-//             return Err("No coordinate system has been defined in the package! (rcs/init.json)".into());
-//         };
-    
-//         let mut rob = Self::new(
-//             pkg.info, ang_confs, comps, tools, wobj
-//         );
-
-//         if let Some(link) = pkg.lk {
-//             rob.comps_mut().write_link(link);
-//         }
-
-//         Ok(rob)
-//     }
-// }
-
-// impl<const C : usize> Setup for ComplexStepperRobot<C> {
-//     fn setup(&mut self) -> Result<(), stepper_lib::Error> {
-//         self.comps_mut().setup()
-//     }
-// }
-
-// impl<const C : usize> InfoRobot<C> for ComplexStepperRobot<C> {
-//     fn info<'a>(&'a self) -> &'a RobotInfo {
-//         &self.info
-//     }
-
-//     fn vars<'a>(&'a self) -> &'a Vars<C> {
-//         &self.vars
-//     }
-
-//     fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C> {
-//         &mut self.vars
-//     }
-// }
-
-// impl<const C : usize> BasicRobot<C> for ComplexStepperRobot<C> {
-//     // Data
-//         fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
-//             &self.ang_confs
-//         }
-
-//         fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
-//             &self.comps
-//         }
-
-//         fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<dyn stepper_lib::SyncComp, C> {
-//             &mut self.comps
-//         }
-//     // 
-
-//     fn update(&mut self) -> Result<(), crate::Error> {
-//         todo!()
-//     }
-
-//     fn valid_phis(&self, phis : [Phi; C]) -> Result<(), crate::Error> {
-//         let gammas = self.gammas_from_phis(phis);
-//         if self.comps().valid_gammas(&gammas) {
-//             Ok(())
-//         } else {
-//             Err(format!("The given phis are not valid! {:?}", self.comps().valid_gammas_verb(&gammas)).into())
-//         }
-//     }
-
-//     // Tools
-//         fn get_tool(&self) -> Option<&Box<dyn stepper_lib::Tool + std::marker::Send>> {
-//             if let Some(tool_id) = self.tool_id {
-//                 self.tools.get(tool_id)
-//             } else {
-//                 None 
-//             }
-//         }
-
-//         fn get_tool_mut(&mut self) -> Option<&mut Box<dyn stepper_lib::Tool + std::marker::Send>> {
-//             if let Some(tool_id) = self.tool_id {
-//                 self.tools.get_mut(tool_id)
-//             } else {
-//                 None 
-//             }
-//         }
-
-//         fn get_tools(&self) -> &Vec<Box<dyn stepper_lib::Tool + std::marker::Send>> {
-//             &self.tools 
-//         }
-
-//         fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn stepper_lib::Tool + std::marker::Send>> {
-//             if let Some(id) = tool_id {   
-//                 if id < self.tools.len() {
-//                     self.tool_id = tool_id;
-//                     Some(&mut self.tools[id])
-//                 } else {
-//                     None
-//                 }
-//             } else {
-//                 None
-//             }
-//         }
-//     // 
-
-//     // Remote
-//         fn add_remote(&mut self, remote : Box<dyn crate::PushRemote>) {
-//             self.remotes.push(remote)
-//         }
-
-//         fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn crate::PushRemote>> {
-//             &self.remotes
-//         }
-
-//         fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn crate::PushRemote>> {
-//             &mut self.remotes
-//         }
-//     //
-// }
-
-// impl<const C : usize> ComplexRobot<C> for StepperRobot<C> {
-//     // Movement
-//         fn move_l(&mut self, desc : &mut dyn RobotDesc<C>, _ : [Delta; C]) -> Result<(), crate::Error> {
-//             todo!()
-//         }
-
-//         fn move_abs_l(&mut self, desc : &mut dyn RobotDesc<C>, _ : [Gamma; C]) -> Result<(), crate::Error> {
-//             todo!()
-//         }
-
-//         fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error> {
-//             todo!()
-//         }
-
-//         fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error> {
-//             todo!()
-//         }
-//     //
-// }
+    fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32) -> Result<(), crate::Error> {
+        Ok(())
+    }
+}

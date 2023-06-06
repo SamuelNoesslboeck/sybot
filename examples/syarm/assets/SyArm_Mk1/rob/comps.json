@@ -1,6 +1,8 @@
 [
   {
-    "name": "base",
+    "info": {
+      "name": "base"
+    },
     "type_name": "GearJoint",
     "obj": {
       "ctrl": {
@@ -10,7 +12,6 @@
       },
       "ratio": 0.08333
     },
-    "meas": "<meas://base>", 
     "limit": {
       "vel": 5.0,
       "min": -3.14,
@@ -18,7 +19,9 @@
     }
   },
   {
-    "name": "arm1",
+    "info": {
+      "name": "arm1" 
+    }, 
     "type_name": "CylinderTriangle",
     "obj": {
       "cylinder": {
@@ -32,7 +35,6 @@
       "l_a": 134.0,
       "l_b": 203.5
     },
-    "meas": "<meas://arm1>",
     "ang": {
       "offset": 2.282,
       "counter": true
@@ -43,7 +45,9 @@
     }
   },
   {
-    "name": "arm2",
+    "info": {
+      "name": "arm2"
+    },
     "type_name": "CylinderTriangle",
     "obj": {
       "cylinder": {
@@ -57,7 +61,6 @@
       "l_a": 152,
       "l_b": 142.5
     },
-    "meas": "<meas://arm2>",
     "ang": {
       "offset": -2.78
     }, 
@@ -67,7 +70,9 @@
     }
   },
   {
-    "name": "arm3",
+    "info": {
+      "name": "arm3"
+    },
     "type_name": "GearJoint",
     "obj": {
       "ctrl": {
@@ -77,7 +82,6 @@
       },
       "ratio": 0.1
     },
-    "meas": "<meas://arm3>",
     "limit": {
       "max": 0.3,
       "vel": 2.0

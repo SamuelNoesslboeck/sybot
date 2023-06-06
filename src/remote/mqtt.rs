@@ -1,7 +1,7 @@
 use core::mem::size_of;
 use core::time::Duration;
 
-use paho_mqtt::{Client, ServerResponse, MessageBuilder};
+use paho_mqtt::{Client, ServerResponse, MessageBuilder, CreateOptionsBuilder};
 use stepper_lib::units::*;
 
 use crate::PushRemote;
@@ -29,8 +29,13 @@ pub struct Publisher {
 }
 
 impl Publisher {
-    pub fn new(host : &str) -> Result<Self, crate::Error> {
-        let mut client = Client::new(host)?;
+    pub fn new<H : Into<String>, S : Into<String>>(host : H, id : S) -> Result<Self, crate::Error> {
+        let builder = CreateOptionsBuilder::new()
+            .client_id(id)
+            .server_uri(host);
+
+        let mut client = Client::new(builder.finalize())?;
+        
         client.set_timeout(Duration::from_secs(5));
         
         Ok(Self {
@@ -40,6 +45,10 @@ impl Publisher {
 
     pub fn connect(&self) -> Result<ServerResponse, crate::Error> {
         Ok(self.client.connect(None)?)
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.client.is_connected()
     }
 }
 

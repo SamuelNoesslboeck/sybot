@@ -1,23 +1,22 @@
 {
-  "x-axis": {
+  "base": {
     "step": 0,
     "dir": 0,
     "meas": 0
   },
-  "y-axis": {
+  "arm1": {
     "step": 0,
     "dir": 0,
     "meas": 0
   },
-  "z-axis": {
+  "arm2": {
     "step": 0,
     "dir": 0,
     "meas": 0
   },
-  "async-axis": {
-    "forward": 0,
-    "backwards": 0,
-    "meas-forw": 0,
-    "meas-back": 0
+  "arm3": {
+    "step": 0,
+    "dir": 0,
+    "meas": 0
   }
 }

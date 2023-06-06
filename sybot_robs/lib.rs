@@ -7,7 +7,7 @@ use stepper_lib::{SyncCompGroup, Tool, Setup};
 use stepper_lib::units::*;
 
 use sybot_pkg::{RobotInfo, AngConf};
-use sybot_rcs::{WorldObj, Position};
+use sybot_rcs::{WorldObj, Position, PointRef};
 
 pub type Error = Box<dyn std::error::Error>;
 
@@ -51,7 +51,8 @@ impl<const C : usize> Default for Vars<C> {
 }
 
 pub enum PushMsg {
-
+    Measurement,
+    ToolChange
 }
 
 /// A `PushRemote` defines a remote connection that the robot can push values to
@@ -102,6 +103,8 @@ pub trait Descriptor<const C : usize> {
         fn wobj<'a>(&'a self) -> &'a WorldObj;
 
         fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
+
+        fn current_tcp(&self) -> &PointRef;
 
         /// Create a Vec3 from optional coordinates 
         fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3;
@@ -273,9 +276,9 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
             self.comps_mut().drive_abs_async(gammas, speed_f)
         }
 
-        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, deltas : [Delta; C]) -> Result<(), crate::Error>;
+        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, gammas : [Gamma; C]) -> Result<(), crate::Error>;
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32) -> Result<(), crate::Error>;
 
         fn move_p(&mut self, desc: &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {

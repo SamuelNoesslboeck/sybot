@@ -1,6 +1,8 @@
 [
   {
-    "name": "base",
+    "info": {
+      "name": "base"
+    },
     "move": "Rotation",
     "sim": {
       "mass": 0.2,
@@ -8,21 +10,27 @@
     }
   },
   {
-    "name": "arm1",
+    "info": {
+      "name": "arm1"
+    },
     "move": "Rotation",
     "sim": {
       "mass": 0.5
     }
   },
   {
-    "name": "arm2",
+    "info": {
+      "name": "arm2"
+    },
     "move": "Rotation",
     "sim": {
       "mass": 0.5
     }
   },
   {
-    "name": "arm3",
+    "info": {
+      "name": "arm3"
+    },
     "move": "Rotation",
     "sim": {
       "mass": 0.25
