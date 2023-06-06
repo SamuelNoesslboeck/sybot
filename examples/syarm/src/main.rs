@@ -88,6 +88,10 @@ impl Descriptor<4> for SyArmDesc {
             &mut self.wobj
         }
 
+        fn current_tcp(&self) -> &PointRef {
+            &self.tcp
+        }
+
         fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
             let pos = self.tcp.pos();
 
