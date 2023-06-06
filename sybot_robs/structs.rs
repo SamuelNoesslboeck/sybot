@@ -235,21 +235,21 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
 
 impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<T, C> {
     fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32) -> Result<(), crate::Error> {
-        let pos_0 = desc.current_tcp().pos();
+        // let pos_0 = desc.current_tcp().pos();
 
-        let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
-        let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
+        // let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
+        // let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
         
-        let mut tstack = Vec::new();
-        let mut dstack = Vec::new();
+        // let mut tstack = Vec::new();
+        // let mut dstack = Vec::new();
 
-        for pos in poses {
-            dstack.push(
-                desc.convert_pos(self, pos)?
-            )
-        }
+        // for pos in poses {
+        //     dstack.push(
+        //         desc.convert_pos(self, pos)?
+        //     )
+        // }
 
-        builder.generate(&mut tstack, &mut dstack);
+        // builder.generate(&mut tstack, &mut dstack);
 
         Ok(())
     }
