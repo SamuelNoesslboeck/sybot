@@ -1,22 +1,22 @@
 {
   "base": {
-    "step": 0,
-    "dir": 0,
-    "meas": 0
+    "step": 26,
+    "dir": 17,
+    "meas": 16
   },
   "arm1": {
-    "step": 0,
-    "dir": 0,
-    "meas": 0
+    "step": 9,
+    "dir": 5,
+    "meas": 25
   },
   "arm2": {
-    "step": 0,
-    "dir": 0,
-    "meas": 0
+    "step": 11,
+    "dir": 22,
+    "meas": 7
   },
   "arm3": {
-    "step": 0,
-    "dir": 0,
-    "meas": 0
+    "step": 19,
+    "dir": 27,
+    "meas": 8
   }
 }
