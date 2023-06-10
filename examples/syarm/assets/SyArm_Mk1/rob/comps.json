@@ -53,8 +53,8 @@
       "cylinder": {
         "ctrl": {
           "consts": "<lib://stepper/MOT_17HE15_1504S>",
-          "pin_dir": 22,
-          "pin_step": 11
+          "pin_dir": "<pin://arm2/dir>",
+          "pin_step": "<pin://arm2/step>"
         },
         "rte_ratio": 1.273
       },
@@ -77,8 +77,8 @@
     "obj": {
       "ctrl": {
         "consts": "<lib://stepper/MOT_17HE15_1504S>",
-        "pin_dir": 27,
-        "pin_step": 19
+        "pin_dir": "<pin://arm3/dir>",
+        "pin_step": "<pin://arm3/step>"
       },
       "ratio": 0.1
     },

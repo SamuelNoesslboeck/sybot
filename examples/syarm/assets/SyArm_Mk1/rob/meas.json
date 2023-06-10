@@ -3,12 +3,8 @@
     "info": {
       "name": "base" 
     },  
-    "type_name": "EndSwitch",
-    "obj": {
-      "pin": "<pin://base/meas>",
-      "meas_speed_f": 1.0,
-      "max_dist": 50.0
-    }
+    "type_name": "NoMeas",
+    "obj": { }
   },
   {
     "info": {
