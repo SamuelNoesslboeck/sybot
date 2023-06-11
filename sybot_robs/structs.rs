@@ -84,14 +84,6 @@ impl<T : SyncCompGroup<C>, const C : usize> StepperRobot<T, C> {
             pkg.info.clone(), ang_confs, comps, meas, tools
         );
 
-        // if let Some(devs) = &pkg.devices {
-        //     for d in devs {
-        //         rob.devices.push(
-        //             Device::new(d.name.clone(), pkg.libs.parse_tool_dyn(d).unwrap())
-        //         );
-        //     }
-        // }    TODO: Add dynamic devices
-
         if let Some(link) = &pkg.lk {
             rob.comps_mut().write_link(link.clone());
         }
@@ -170,17 +162,21 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
     }
 
     // Tools
-        fn get_tool(&self) -> Option<&Box<dyn Tool>> {
+        fn get_tool(&self) -> Option<&dyn Tool> {
             if let Some(tool_id) = self.tool_id {
-                self.tools.get(tool_id)
+                self.tools.get(tool_id).and_then(|t| Some(t.as_ref()))
             } else {
                 None 
             }
         }
 
-        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool>> {
+        fn get_tool_mut(&mut self) -> Option<&mut dyn Tool> {
             if let Some(tool_id) = self.tool_id {
-                self.tools.get_mut(tool_id)
+                if let Some(t) = self.tools.get_mut(tool_id) {
+                    Some(t.as_mut()) 
+                } else {
+                    None
+                }
             } else {
                 None 
             }
@@ -190,11 +186,11 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
             &self.tools 
         }
 
-        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn Tool>> {
+        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut dyn Tool> {
             if let Some(id) = tool_id {   
                 if id < self.tools.len() {
                     self.tool_id = tool_id;
-                    Some(&mut self.tools[id])
+                    Some(self.tools[id].as_mut())
                 } else {
                     None
                 }
@@ -234,27 +230,42 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
 }
 
 impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<T, C> {
-    fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32) -> Result<(), crate::Error> {
-        // let pos_0 = desc.current_tcp().pos();
+    fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        let pos_0 = desc.current_tcp().pos();
 
-        // let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
-        // let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
+        let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
         
-        // let mut tstack = Vec::new();
-        // let mut dstack = Vec::new();
+        let mut gam_stack = Vec::new();
+        let mut dstack = Vec::new();
 
-        // for pos in poses {
-        //     dstack.push(
-        //         desc.convert_pos(self, pos)?
-        //     )
-        // }
+        for pos in poses {
+            let phis = desc.convert_pos(self, Position::new(pos))?;
 
-        // builder.generate(&mut tstack, &mut dstack);
+            gam_stack.push(
+                self.gammas_from_phis(phis)
+            )
+        }
+
+        for i in 1 .. gam_stack.len() {
+            let mut deltas = [Delta::ZERO; C];
+
+            for n in 0 .. C {
+                deltas[n] = gam_stack[i][n] - gam_stack[i - 1][n];   
+            }
+
+            dstack.push(deltas);
+        }
+
+        let mut tstack = vec![accuracy / speed; dstack.len()];
+
+        let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
+        builder.generate(&mut tstack,  dstack.as_slice());
 
         Ok(())
     }
 
-    fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32) -> Result<(), crate::Error> {
-        Ok(())
+    fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        let pos_0 = desc.current_tcp().pos();
+        self.move_l(desc, pos - pos_0, accuracy, speed)
     }
 }

@@ -124,10 +124,7 @@ use super::*;
     pub fn m3<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
-        // // TODO: Add response
-        // robot.activate_tool();
-        // robot.activate_spindle(true);
-
+        robot.activate_tool()?;
         Ok(serde_json::Value::Null)
     }
 
@@ -141,7 +138,7 @@ use super::*;
     pub fn m5<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
-        // Ok(serde_json::json!(robot.deactivate_tool()))
+        robot.deactivate_tool()?;
         todo!()
     }
 

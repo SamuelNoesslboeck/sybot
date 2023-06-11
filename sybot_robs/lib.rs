@@ -3,7 +3,7 @@ extern crate alloc;
 use core::fmt::Debug;
 
 use glam::Vec3;
-use stepper_lib::{SyncCompGroup, Tool, Setup};
+use stepper_lib::{SyncCompGroup, Tool, Setup, SimpleTool};
 use stepper_lib::units::*;
 
 use sybot_pkg::{RobotInfo, AngConf};
@@ -234,16 +234,36 @@ pub trait BasicRobot<const C : usize> : Setup + InfoRobot<C> {
 
     // Tools
         /// Returns a reference to the tool that is currently being used by the robot
-        fn get_tool(&self) -> Option<&Box<dyn Tool>>;
+        fn get_tool(&self) -> Option<&dyn Tool>;
 
         /// Returns a mutable reference to the tool that is currently being used by the robot
-        fn get_tool_mut(&mut self) -> Option<&mut Box<dyn Tool>>;
+        fn get_tool_mut(&mut self) -> Option<&mut dyn Tool>;
 
         /// Returns a reference to all the tools registered in the robot
         fn get_tools(&self) -> &Vec<Box<dyn Tool>>;
 
         /// Sets the id of the tool to be used and performs an automatic tool swap if necessary
-        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut Box<dyn Tool>>;
+        fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut dyn Tool>;
+
+        // Wrapper functions
+            fn activate_tool(&mut self) -> Result<&dyn SimpleTool, crate::Error> {
+                let tool = self.get_tool_mut().ok_or("No tool has been equipped yet!")?;
+                let simple_tool = tool.simple_tool_mut().ok_or("The tool equipped is no 'SimpleTool' (cannot be activated)")?;
+                
+                simple_tool.activate();
+
+                Ok(simple_tool)
+            } 
+
+            fn deactivate_tool(&mut self) -> Result<&dyn SimpleTool, crate::Error> {
+                let tool = self.get_tool_mut().ok_or("No tool has been equipped yet!")?;
+                let simple_tool = tool.simple_tool_mut().ok_or("The tool equipped is no 'SimpleTool' (cannot be deactivated)")?;
+                
+                simple_tool.deactivate();
+
+                Ok(simple_tool)
+            }
+        // 
     // 
 
     // Remote
@@ -276,9 +296,9 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
             self.comps_mut().drive_abs_async(gammas, speed_f)
         }
 
-        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32) -> Result<(), crate::Error>;
+        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32) -> Result<(), crate::Error>;
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
         fn move_p(&mut self, desc: &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {
