@@ -22,6 +22,6 @@ sybot_rcs = { path = "../sybot_rcs" }
 sybot_robs = { path = "../sybot_robs" }
 
 [features]
-default = [ ]
+default = [ "gcode" ]
 lua = [ "dep:mlua" ]
 gcode = [ "dep:gcode" ]

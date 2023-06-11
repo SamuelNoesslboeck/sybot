@@ -218,7 +218,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(input) => {
                 editor.add_history_entry(&input)?;
                 for res in gcode.interpret(&mut rob, &mut desc, &input) {
-                    println!("{}\n", res?);
+                    println!("{}\n", serde_json::to_string_pretty(&res?).unwrap());
                 }
             },
             Err(_) => return Ok(()),

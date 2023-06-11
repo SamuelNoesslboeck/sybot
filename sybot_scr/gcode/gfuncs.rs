@@ -60,7 +60,7 @@ use super::*;
         (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         match robot.move_home() {
-            Ok(deltas) => Ok(serde_json::Value::Null),
+            Ok(_) => Ok(serde_json::Value::Null),
             Err(meas) => {
                 println!(" -> Problems with measurement! {:?}", meas);      // TODO: Add proper error
                 Ok(serde_json::Value::Null)
@@ -99,14 +99,13 @@ use super::*;
 
     // Debug
     pub fn g1000<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
-        (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
+        (robot : &mut R, desc : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
-        // Ok(serde_json::json!({ 
-        //     "phis": Vec::from(robot.phis()),
-        //     "gammas": Vec::from(robot.gammas()),
-        //     "pos": robot.pos().to_array()
-        // }))
-        todo!()
+        Ok(serde_json::json!({ 
+            "phis": Vec::from(robot.phis()),
+            "gammas": Vec::from(robot.gammas()),
+            "pos": desc.current_tcp().pos().to_array()
+        }))
     }
 
     pub fn g1100<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
@@ -155,13 +154,16 @@ use super::*;
 
     // Additional functions
     pub fn m119<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
-        (robot : &mut R, _ : &mut D, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
+        (_ : &mut R, desc : &mut D, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
-        // let gamma_opt = robot.gamma_tool();
+        let args = args_by_iterate(args, 'A');
+        let mut args_phis = Vec::with_capacity(args.len()); 
 
-        // if let Some(gamma) = gamma_opt {
-        //     return Ok(serde_json::json!(robot.rotate_tool_abs(Gamma(arg_by_letter(args, 'A').unwrap_or(gamma.0)))));
-        // }
+        for arg in args {
+            args_phis.push(Phi(arg));
+        }
+
+        desc.aconf_mut().configure(args_phis)?;
         
         Ok(serde_json::Value::Null)
     }
@@ -190,7 +192,7 @@ use super::*;
 
 // Tool
 pub fn t<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
-    (robot : &mut R, _ : &mut D, index : usize) -> Result<serde_json::Value, crate::Error> 
+    (_ : &mut R, _ : &mut D, _ : usize) -> Result<serde_json::Value, crate::Error> 
 {
     // if let Some(tool) = robot.set_tool_id(index) {
     //     return Ok(tool.get_json())

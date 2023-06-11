@@ -148,6 +148,20 @@ impl<T : BasicRobot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GC
         letters
     }
 
+    pub fn args_by_iterate(args : &Args, base_letter : char) -> Vec<f32> {
+        let mut letters = Vec::new();
+        
+        loop {
+            if let Some(arg) = arg_by_letter(args, (base_letter as u8 + letters.len() as u8) as char) {
+                letters.push(arg);
+            } else {
+                break;
+            }
+        }
+
+        letters
+    }
+
     pub fn args_by_iterate_fixed<const N : usize>(args : &Args, base_letter : char) -> [Option<f32>; N] {
         let mut letters = [None; N];
         
