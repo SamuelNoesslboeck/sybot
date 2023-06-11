@@ -169,7 +169,7 @@ type SyArmRob = StepperRobot<SyArmComps, 4>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let broker_addr = "syhub:1883"; // std::env::var("SYARM_BROKER_ADDR").expect("SYARM_BROKER_ADDR must be set");
+    let broker_addr = std::env::var("SYARM_BROKER_ADDR").expect("SYARM_BROKER_ADDR must be set");
 
     println!("[SyArm ROS system] \nBasic robot operating system for the SyArm robot. (c) Samuel Noesslboeck 2023\n");
     println!("Initialising ... ");
@@ -189,7 +189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gcode = sybot_lib::gcode::GCodeIntpr::init();
 
     let mqtt = Box::new(
-        sybot_lib::mqtt::Publisher::new(broker_addr, "syarm-rob-client")?);
+        sybot_lib::mqtt::Publisher::new(&broker_addr, "syarm-rob-client")?);
 
     if mqtt.connect().is_ok() {
         println!("- Successfully connected to MQTT-broker ({})", broker_addr);
