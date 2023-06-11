@@ -234,7 +234,7 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
 }
 
 impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<T, C> {
-    fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32) -> Result<(), crate::Error> {
+    fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, vel : Omega) -> Result<(), crate::Error> {
         let pos_0 = desc.current_tcp().pos();
 
         let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
@@ -243,18 +243,25 @@ impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<
         let mut tstack = Vec::new();
         let mut dstack = Vec::new();
 
-        for pos in poses {
+        let mut last_phis = desc.convert_pos(self, Position::new(*poses.first().ok_or("Bad path")?))?;
+        for i in 1 .. poses.len() {
+            tstack.push(1.0 / vel);
+            let current_phis = desc.convert_pos(self, Position::new(poses[i]))?;
             dstack.push(
-                desc.convert_pos(self, pos)?
-            )
+                sybot_rcs::math::sub_phis(current_phis, last_phis)
+            );
+            last_phis = current_phis;
         }
 
         builder.generate(&mut tstack, &mut dstack);
 
+        
+
         Ok(())
     }
 
-    fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32) -> Result<(), crate::Error> {
-        Ok(())
+    fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, vel : Omega) -> Result<(), crate::Error> {
+        let pos_0 = desc.current_tcp().pos();
+        self.move_l(desc, pos - pos_0, accuracy, vel)
     }
 }

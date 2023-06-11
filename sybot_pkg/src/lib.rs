@@ -1,3 +1,6 @@
+#![doc = include_str!("../README.md")]
+#![deny(missing_docs)]
+
 extern crate alloc;
 use std::fs;
 use std::path::Path;
@@ -24,23 +27,23 @@ pub type Error = Box<dyn std::error::Error>;
 
 #[derive(Debug)]
 pub struct Package {
-    pub info : RobotInfo,
+    pub info : infos::RobotInfo,
     
     pub lk : Option<LinkedData>,
     pub pins : Option<Pins>,
-    pub cinfos : Option<Vec<CompJsonInfo>>,
+    pub cinfos : Option<Vec<infos::CompJsonInfo>>,
     pub meas : Option<Vec<AnyJsonInfo>>, 
     
     pub tools : Option<Vec<AnyJsonInfo>>,
     pub devices : Option<Vec<AnyJsonInfo>>,
     pub wobj : Option<WorldObj>,
-    pub segments : Option<Vec<SegmentInfo>>, 
+    pub segments : Option<Vec<infos::SegmentInfo>>, 
 
     pub libs : PartLib
 }
 
 impl Package {
-    pub fn new(info : RobotInfo) -> Result<Self, crate::Error> {
+    pub fn new(info : infos::RobotInfo) -> Result<Self, crate::Error> {
         Ok(Self {
             info,
 
@@ -178,7 +181,7 @@ impl Package {
         Ok(serde_json::from_value::<T>(info.obj().clone())?)
     } 
 
-    pub fn parse_ang_confs(&self) -> Option<Vec<AngConf>> {
+    pub fn parse_ang_confs(&self) -> Option<Vec<infos::AngConf>> {
         let mut ang_confs = vec![];
 
         if let Some(cinfos) = &self.cinfos {
@@ -259,7 +262,7 @@ impl Package {
         }
     }
 
-    pub fn req_segments(self) -> Result<Vec<SegmentInfo>, crate::Error> {
+    pub fn req_segments(self) -> Result<Vec<infos::SegmentInfo>, crate::Error> {
         if let Some(segments) = self.segments {
             Ok(segments)
         } else {
@@ -267,7 +270,7 @@ impl Package {
         }
     }
 
-    pub fn req_desc(self) -> Result<(WorldObj, Vec<SegmentInfo>), crate::Error> {
+    pub fn req_desc(self) -> Result<(WorldObj, Vec<infos::SegmentInfo>), crate::Error> {
         if let Some(wobj) = self.wobj {
             if let Some(segments) = self.segments {
                 Ok((wobj, segments))

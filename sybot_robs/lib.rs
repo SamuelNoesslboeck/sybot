@@ -96,7 +96,7 @@ pub trait Descriptor<const C : usize> {
     // 
 
     // Calculation
-        fn convert_pos(&self, rob : &mut dyn BasicRobot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
+        fn convert_pos(&self, rob : &dyn BasicRobot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
     //
 
     // World object
@@ -276,9 +276,9 @@ pub trait ComplexRobot<const C : usize> : Setup + BasicRobot<C> + InfoRobot<C> {
             self.comps_mut().drive_abs_async(gammas, speed_f)
         }
 
-        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32) -> Result<(), crate::Error>;
+        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, vel : Omega) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32) -> Result<(), crate::Error>;
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, vel : Omega) -> Result<(), crate::Error>;
 
         fn move_p(&mut self, desc: &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {

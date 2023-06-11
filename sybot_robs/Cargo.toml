@@ -1,7 +1,7 @@
 [package]
 name = "sybot_robs"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.2.3"
+version = "0.2.4"
 description = "Robot traits and structures for the sybot_lib"
 edition = "2021"
 

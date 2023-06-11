@@ -114,7 +114,7 @@ impl Descriptor<4> for SyArmDesc {
     // 
 
     // Calculate
-        fn convert_pos(&self, rob : &mut dyn BasicRobot<4>, mut pos : Position) 
+        fn convert_pos(&self, rob : &dyn BasicRobot<4>, mut pos : Position) 
         -> Result<[Phi; 4], sybot_lib::Error> {
             let phi_b = sybot_lib::math::full_atan(pos.x(), pos.y());
             let dec_ang = self.aconf().phis()[0].0;

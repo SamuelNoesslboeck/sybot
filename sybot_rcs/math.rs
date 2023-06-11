@@ -1,10 +1,17 @@
 use core::f32::consts::PI;
 
 use glam::Vec3;
+use stepper_lib::units::*;
 
 use crate::Point;
-// use stepper_lib::math::PathBuilder;
-// use stepper_lib::units::*;
+
+pub fn sub_phis<const C : usize>(a : [Phi; C], b : [Phi; C]) -> [Delta; C] {
+    let mut deltas = [Delta::ZERO; C];
+    for i in 0..C {
+        deltas[i] = a[i] - b[i];
+    }
+    deltas
+}
 
 pub fn full_atan(x : f32, y : f32) -> f32 {
     if x > 0.0 {
