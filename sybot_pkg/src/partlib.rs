@@ -1,11 +1,10 @@
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
-use stepper_lib::meas::EndSwitch;
-use stepper_lib::prelude::SimpleMeas;
 use stepper_lib::{SyncComp, StepperCtrl, Tool};
 use stepper_lib::comp::{Cylinder, CylinderTriangle, GearJoint};
 use stepper_lib::comp::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
+use stepper_lib::meas::{EndSwitch, SimpleMeas, NoMeas};
 
 use crate::EmbeddedJsonInfo;
 
@@ -59,7 +58,7 @@ impl PartLib {
         ]), dyn_lib!(Tool, [
             AxialJoint, AxisTongs, PencilTool, Tongs
         ]), dyn_lib!(SimpleMeas, [
-            EndSwitch
+            EndSwitch, NoMeas
         ])))
     }
 

@@ -12,4 +12,7 @@ stepper_lib = { version = "0.11.7", path = "../../../stepper_lib" }
 sybot_lib = { path = "../../", features = [ "gcode", "mqtt" ]}
 tokio = { version = "1.28.2", features = [ "macros", "rt-multi-thread" ]}
 
+[features]
+rasp = [ "sybot_lib/rasp" ]
+
 [workspace]

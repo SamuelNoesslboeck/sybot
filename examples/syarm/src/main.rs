@@ -1,4 +1,5 @@
 use core::f32::consts::PI;
+use std::time::Instant;
 
 use glam::{Mat3, Vec3};
 use rustyline::Editor;
@@ -88,6 +89,10 @@ impl Descriptor<4> for SyArmDesc {
             &mut self.wobj
         }
 
+        fn current_tcp(&self) -> &PointRef {
+            &self.tcp
+        }
+
         fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
             let pos = self.tcp.pos();
 
@@ -153,7 +158,7 @@ impl Descriptor<4> for SyArmDesc {
     // 
 }
 
-#[derive(SyncCompGroup, Deserialize, Serialize)]
+#[derive(SyncCompGroup, Deserialize, Serialize, StepperCompGroup)]
 struct SyArmComps {
     base : GearJoint,
     arm1 : CylinderTriangle,
@@ -165,7 +170,7 @@ type SyArmRob = StepperRobot<SyArmComps, 4>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let broker_addr = "syhub:1883"; // std::env::var("SYARM_BROKER_ADDR").expect("SYARM_BROKER_ADDR must be set");
+    let broker_addr = "syhub:1883".to_owned(); // std::env::var("SYARM_BROKER_ADDR").expect("SYARM_BROKER_ADDR must be set");
 
     println!("[SyArm ROS system] \nBasic robot operating system for the SyArm robot. (c) Samuel Noesslboeck 2023\n");
     println!("Initialising ... ");
@@ -185,7 +190,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gcode = sybot_lib::gcode::GCodeIntpr::init();
 
     let mqtt = Box::new(
-        sybot_lib::mqtt::Publisher::new(broker_addr, "syarm-rob-client")?);
+        sybot_lib::mqtt::Publisher::new(&broker_addr, "syarm-rob-client")?);
 
     if mqtt.connect().is_ok() {
         println!("- Successfully connected to MQTT-broker ({})", broker_addr);
@@ -207,6 +212,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\nGCode interpreter");
 
+    rob.move_p_sync(&mut desc, Position::new(Vec3::new(330.0, 0.0, 400.0)), 1.0)?;
+
+    let rob_phis = rob.phis();
+    desc.update(&mut rob, &rob_phis)?;
+
+    let inst = Instant::now();
+
+    rob.move_l(&mut desc, Vec3::new(0.0, 0.0, 50.0), 5.0, Omega(30.0))?;
+
+    println!("{:?}", inst.elapsed().as_secs_f32());
+
     let mut editor = Editor::<(), _>::new().expect("Failed to make rustyline editor");
 
     loop {
@@ -214,7 +230,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(input) => {
                 editor.add_history_entry(&input)?;
                 for res in gcode.interpret(&mut rob, &mut desc, &input) {
-                    println!("{}\n", res?);
+                    println!("{}\n", serde_json::to_string_pretty(&res?).unwrap());
                 }
             },
             Err(_) => return Ok(()),
