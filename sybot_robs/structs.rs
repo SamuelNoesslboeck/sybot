@@ -2,10 +2,11 @@ use core::ops::DerefMut;
 
 use glam::Vec3;
 use stepper_lib::{Setup, Tool, SyncCompGroup, SyncComp};
-use stepper_lib::comp::stepper::{StepperComp, StepperCompGroup};
+use stepper_lib::comp::stepper::StepperCompGroup;
 use stepper_lib::meas::SimpleMeas;
 use stepper_lib::units::*;
-use sybot_pkg::{RobotInfo, Package, AngConf};
+use sybot_pkg::Package;
+use sybot_pkg::infos::{AngConf, RobotInfo};
 use sybot_rcs::Position;
 
 use crate::{InfoRobot, Vars, BasicRobot, PushRemote, Descriptor, ComplexRobot};
@@ -129,7 +130,7 @@ impl<T : SyncCompGroup<C>, const C : usize> InfoRobot<C> for StepperRobot<T, C> 
 
 impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C> {
     // Data
-        fn ang_confs<'a>(&'a self) -> &'a [sybot_pkg::AngConf] {
+        fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
             &self.ang_confs
         }
 
@@ -240,9 +241,14 @@ impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<
 
         for pos in poses {
             let phis = desc.convert_pos(self, Position::new(pos))?;
+            let mut gammas = self.gammas_from_phis(phis);
+
+            for i in 0 .. C {
+                gammas[i] = self.comps.index(i).abs_super_gamma(gammas[i]);
+            }
 
             gam_stack.push(
-                self.gammas_from_phis(phis)
+                gammas
             )
         }
 
@@ -259,9 +265,31 @@ impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<
         let mut tstack = vec![accuracy / speed; dstack.len()];
 
         let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
-        builder.generate(&mut tstack,  dstack.as_slice());
+        builder.generate(&mut tstack, dstack.as_slice(), [Some(Omega::ZERO); C]);
 
-        
+        let mut nodes = builder.unpack();
+
+        println!("driving");
+
+        let mut corr = [(Delta::ZERO, Time::ZERO); C];
+        let mut t_err = Time::ZERO;
+
+        for i in 1 .. nodes.len() {
+            self.comps.drive_node_to_node(&nodes[i - 1], &nodes[i], &mut corr)?;
+
+            for n in 0 .. C {
+                nodes[i][n].delta = nodes[i][n].delta + corr[n].0;
+                t_err += corr[n].1;
+            }
+        }
+
+        if let Some(last) = nodes.last() {
+            self.comps.drive_nodes(&last, [Omega::ZERO; C], &mut corr)?;
+        }
+
+        dbg!(corr, t_err);
+
+        println!("Done");
 
         Ok(())
     }

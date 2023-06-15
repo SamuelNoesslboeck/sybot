@@ -1,8 +1,8 @@
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
-use stepper_lib::{SyncComp, StepperCtrl, Tool};
-use stepper_lib::comp::{Cylinder, CylinderTriangle, GearJoint};
+use stepper_lib::{SyncComp, Stepper, Tool};
+use stepper_lib::comp::{StepperCylinder, StepperCylTriangle, StepperGearJoint};
 use stepper_lib::comp::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
 use stepper_lib::meas::{EndSwitch, SimpleMeas, NoMeas};
 
@@ -54,7 +54,7 @@ impl PartLib {
             // Servo
             ( "servo/MG996R".to_owned(), serde_json::to_value(stepper_lib::data::servo::ServoConst::MG996R )? )
         ]), dyn_lib!(SyncComp, [ 
-            StepperCtrl, Cylinder, CylinderTriangle, GearJoint
+            Stepper, StepperCylinder, StepperCylTriangle, StepperGearJoint
         ]), dyn_lib!(Tool, [
             AxialJoint, AxisTongs, PencilTool, Tongs
         ]), dyn_lib!(SimpleMeas, [
@@ -66,14 +66,17 @@ impl PartLib {
         self.json_lib.get(res)
     }
 
+    #[allow(deprecated)]
     pub fn parse_comp_dyn<T : EmbeddedJsonInfo>(&self, info : &T) -> Result<Box<dyn SyncComp>, crate::Error> {
         info.parse_dyn(&self.comp_lib)
     }
 
+    #[allow(deprecated)]
     pub fn parse_tool_dyn<T : EmbeddedJsonInfo>(&self, info : &T)-> Result<Box<dyn Tool>, crate::Error> {
         info.parse_dyn(&self.tool_lib)
     }
-
+    
+    #[allow(deprecated)]
     pub fn parse_meas_dyn<T : EmbeddedJsonInfo>(&self, info : &T) -> Result<Box<dyn SimpleMeas>, crate::Error> {
         info.parse_dyn(&self.meas_lib)
     }

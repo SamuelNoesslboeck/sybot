@@ -1,7 +1,7 @@
 [package]
 name = "sybot_pkg"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.3.2"
+version = "0.3.2-alpha"
 description = "Robot package parsing tool for the sybot_lib"
 edition = "2021"
 license = "MIT"

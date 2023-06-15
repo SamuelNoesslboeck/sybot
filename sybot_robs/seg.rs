@@ -3,7 +3,7 @@ use core::ops::Index;
 use glam::{Vec3, Mat3};
 use stepper_lib::units::*;
 
-use sybot_pkg::{SegmentInfo, SegmentMovementInfo};
+use sybot_pkg::infos::{SegmentInfo, SegmentMovementInfo};
 use sybot_rcs::{PointRef, Position, Point, WorldObj};
 
 #[derive(Debug)]

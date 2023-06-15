@@ -170,7 +170,7 @@ type SyArmRob = StepperRobot<SyArmComps, 4>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let broker_addr = "syhub:1883".to_owned(); // std::env::var("SYARM_BROKER_ADDR").expect("SYARM_BROKER_ADDR must be set");
+    // let broker_addr = "syhub:1883".to_owned(); // std::env::var("SYARM_BROKER_ADDR").expect("SYARM_BROKER_ADDR must be set");
 
     println!("[SyArm ROS system] \nBasic robot operating system for the SyArm robot. (c) Samuel Noesslboeck 2023\n");
     println!("Initialising ... ");
@@ -189,15 +189,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Remotes and interpreters
     let gcode = sybot_lib::gcode::GCodeIntpr::init();
 
-    let mqtt = Box::new(
-        sybot_lib::mqtt::Publisher::new(&broker_addr, "syarm-rob-client")?);
+    // let mqtt = Box::new(
+    //    sybot_lib::mqtt::Publisher::new(&broker_addr, "syarm-rob-client")?);
 
-    if mqtt.connect().is_ok() {
-        println!("- Successfully connected to MQTT-broker ({})", broker_addr);
-        rob.add_remote(mqtt);
-    } else {
-        eprintln!("- Failed to connect to broker");
-    }
+    // if mqtt.connect().is_ok() {
+    //     println!("- Successfully connected to MQTT-broker ({})", broker_addr);
+    //     rob.add_remote(mqtt);
+    // } else {
+    //     eprintln!("- Failed to connect to broker");
+    // }
 
     // Actions
     rob.setup()?;
@@ -210,8 +210,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rob_phis = rob.phis();
     desc.update(&mut rob, &rob_phis)?;  
 
-    println!("\nGCode interpreter");
-
     rob.move_p_sync(&mut desc, Position::new(Vec3::new(330.0, 0.0, 400.0)), 1.0)?;
 
     let rob_phis = rob.phis();
@@ -219,9 +217,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let inst = Instant::now();
 
-    rob.move_l(&mut desc, Vec3::new(0.0, 0.0, 50.0), 5.0, Omega(30.0))?;
+    rob.move_l(&mut desc, Vec3::new(0.0, 0.0, 50.0), 0.5, Omega(50.0))?;
 
     println!("{:?}", inst.elapsed().as_secs_f32());
+
+    rob.await_inactive()?;
+
+    let rob_phis = rob.phis();
+    desc.update(&mut rob, &rob_phis)?;
+    println!("{:?}", desc.current_tcp().pos());
+
+    println!("\nGCode interpreter");
 
     let mut editor = Editor::<(), _>::new().expect("Failed to make rustyline editor");
 

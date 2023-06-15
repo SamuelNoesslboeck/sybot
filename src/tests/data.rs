@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Serialize, Deserialize};
 
-use stepper_lib::{StepperCtrl, SyncComp, StepperConst};
+use stepper_lib::{Stepper, SyncComp, StepperConst};
 use stepper_lib::units::*;
 
 mod configs 
@@ -34,12 +34,12 @@ mod configs
             Box::new(
                 stepper_lib::comp::CylinderTriangle::new(
                     stepper_lib::comp::Cylinder::new(
-                        StepperCtrl::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN), 
+                        Stepper::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN), 
                     1.5),
                 100.0, 200.0)),
             Box::new(
                 stepper_lib::comp::GearJoint {
-                    ctrl: StepperCtrl::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN),
+                    ctrl: Stepper::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN),
                     ratio: 1.5
                 })
         ]; 

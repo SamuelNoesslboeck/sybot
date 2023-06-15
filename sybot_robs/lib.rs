@@ -6,7 +6,7 @@ use glam::Vec3;
 use stepper_lib::{SyncCompGroup, Tool, Setup, SimpleTool};
 use stepper_lib::units::*;
 
-use sybot_pkg::{RobotInfo, AngConf};
+use sybot_pkg::infos::{RobotInfo, AngConf};
 use sybot_rcs::{WorldObj, Position, PointRef};
 
 pub type Error = Box<dyn std::error::Error>;

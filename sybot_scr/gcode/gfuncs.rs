@@ -84,7 +84,7 @@ use super::*;
 
     // Extra functions
     pub fn g100<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
-        (robot : &mut R, _ : &mut D, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
+        (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
 
@@ -109,7 +109,7 @@ use super::*;
     }
 
     pub fn g1100<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
-        (robot : &mut R, _ : &mut D, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
+        (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
 
@@ -129,7 +129,7 @@ use super::*;
     }
 
     pub fn m4<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
-        (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
+        (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // Ok(serde_json::json!(robot.activate_spindle(false)))
         todo!()
