@@ -160,10 +160,10 @@ impl Descriptor<4> for SyArmDesc {
 
 #[derive(SyncCompGroup, Deserialize, Serialize, StepperCompGroup)]
 struct SyArmComps {
-    base : GearJoint,
-    arm1 : CylinderTriangle,
-    arm2 : CylinderTriangle,
-    arm3 : GearJoint
+    base : GearJoint<Stepper>,
+    arm1 : CylinderTriangle<Stepper>,
+    arm2 : CylinderTriangle<Stepper>,
+    arm3 : GearJoint<Stepper>
 }
 
 type SyArmRob = StepperRobot<SyArmComps, 4>;
