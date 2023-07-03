@@ -10,7 +10,7 @@ Click to show Cargo.toml
 
 [dependencies]
 # Include the library configured for the raspberry pi and with http enabled
-sybot_lib = { version = "0.8.2", features = [ "rasp", "http" ] }
+sybot = { version = "0.8.2", features = [ "rasp", "http" ] }
 
 # ...
 ```
@@ -25,9 +25,9 @@ use core::cell::RefCell;
 use alloc::rc::Rc;
 use actix_web::{HttpServer, App};
 
-use sybot_lib::{JsonConfig, SyArm, Robot};
-use sybot_lib::intpr::gcode::init_intpr;
-use sybot_lib::http::create_robot_webserver;
+use sybot::{JsonConfig, SyArm, Robot};
+use sybot::intpr::gcode::init_intpr;
+use sybot::http::create_robot_webserver;
 
 #[actix::main]
 async fn main() -> Result<(), std::io::Error> {    
@@ -37,15 +37,15 @@ async fn main() -> Result<(), std::io::Error> {
         // ```json
         // "ctrl": {
         //     "consts": "MOT_17HE15_1504S",    // Motor name, see
-        // // <https://docs.rs/stepper_lib/0.11.1/stepper_lib/data/struct.StepperConst.html#associatedconstant.MOT_17HE15_1504S>
+        // // <https://docs.rs/syact/0.11.1/syact/data/struct.StepperConst.html#associatedconstant.MOT_17HE15_1504S>
         //     "pin_dir": 17,
         //     "pin_step": 26
         // },
         // ```
-        let libs = sybot_lib::partlib::create_std_libs();
+        let libs = sybot::partlib::create_std_libs();
 
         // Create the robot out of the [configuration file]
-        // (https://github.com/SamuelNoesslboeck/sybot_lib/blob/master/res/SyArm_Mk1.conf.json)
+        // (https://github.com/SamuelNoesslboeck/sybot/blob/master/res/SyArm_Mk1.conf.json)
         let mut syarm = SyArm::from_conf(
             JsonConfig::read_from_file(&libs, "res/SyArm_Mk1.conf.json")
         )?;

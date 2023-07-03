@@ -1,6 +1,6 @@
 use glam::Vec3;
-use stepper_lib::prelude::*;
-use sybot_lib::prelude::*;
+use syact::prelude::*;
+use sybot::prelude::*;
 
 pub struct DrakeDesc {
     pub segments : LinSegmentChain<3>,
@@ -11,7 +11,7 @@ pub struct DrakeDesc {
 }
 
 impl DrakeDesc {
-    pub fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, sybot_lib::Error> {
+    pub fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, sybot::Error> {
         let tcp = PointRef::new(Position::new(Vec3::ZERO));
         wobj.add_point("tcp", tcp.clone());
 
@@ -57,7 +57,7 @@ impl Descriptor<3> for DrakeDesc {
     // 
 
     // Events 
-        fn update(&mut self, _ : &mut dyn BasicRobot<3>, phis : &[Phi; 3]) -> Result<(), sybot_lib::Error> {
+        fn update(&mut self, _ : &mut dyn BasicRobot<3>, phis : &[Phi; 3]) -> Result<(), sybot::Error> {
             self.segments.update(phis)?;
 
             let tcp_new = self.segments.calculate_end();
@@ -71,7 +71,7 @@ impl Descriptor<3> for DrakeDesc {
     //
 
     // Calculate
-        fn convert_pos(&self, rob : &mut dyn BasicRobot<3>, pos : Position) -> Result<[Phi; 3], sybot_lib::Error> {
+        fn convert_pos(&self, rob : &mut dyn BasicRobot<3>, pos : Position) -> Result<[Phi; 3], sybot::Error> {
             let phis = [ Phi(pos.x()), Phi(pos.y()), Phi(pos.z()) ];
             rob.valid_phis(&phis)?;
             Ok(phis)
@@ -109,10 +109,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut desc = DrakeDesc::new(wobj, &segments)?;
 
     // Remotes and interpreters
-    let gcode = sybot_lib::gcode::GCodeIntpr::init();
+    let gcode = sybot::gcode::GCodeIntpr::init();
 
     let mqtt = Box::new(
-        sybot_lib::mqtt::Publisher::new(&broker_addr, "drake-rob-client")?);
+        sybot::mqtt::Publisher::new(&broker_addr, "drake-rob-client")?);
     
     if let Err(err) = mqtt.connect() {
         println!("MQTT connection failed: {}", err);

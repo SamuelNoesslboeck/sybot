@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use serde::{Serialize, Deserialize};
 
-use stepper_lib::{Stepper, SyncComp, StepperConst};
-use stepper_lib::units::*;
+use syact::{Stepper, SyncComp, StepperConst};
+use syact::units::*;
 
 mod configs 
 {
-    use stepper_lib::ctrl::pin::ERR_PIN;
+    use syact::ctrl::pin::ERR_PIN;
 
     use super::*;
 
@@ -32,13 +32,13 @@ mod configs
     fn conf_io() {
         let comps : [Box<dyn SyncComp>; 2] = [ 
             Box::new(
-                stepper_lib::comp::CylinderTriangle::new(
-                    stepper_lib::comp::Cylinder::new(
+                syact::comp::CylinderTriangle::new(
+                    syact::comp::Cylinder::new(
                         Stepper::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN), 
                     1.5),
                 100.0, 200.0)),
             Box::new(
-                stepper_lib::comp::GearJoint {
+                syact::comp::GearJoint {
                     ctrl: Stepper::new(StepperConst::MOT_17HE15_1504S, ERR_PIN, ERR_PIN),
                     ratio: 1.5
                 })
@@ -48,12 +48,12 @@ mod configs
             &crate::conf::create_conf_comps(&comps)
         ).unwrap());
 
-        let tools : [Box<dyn stepper_lib::Tool + Send>; 2] = [
+        let tools : [Box<dyn syact::Tool + Send>; 2] = [
             Box::new(
-                stepper_lib::comp::tool::NoTool::new()
+                syact::comp::tool::NoTool::new()
             ),
             Box::new(
-                stepper_lib::comp::tool::PencilTool::new(100.0, Inertia(0.25))
+                syact::comp::tool::PencilTool::new(100.0, Inertia(0.25))
             )
         ]; 
 

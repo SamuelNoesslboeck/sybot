@@ -1,8 +1,8 @@
 use core::future::Future;
 use core::task::Poll;
 
-use stepper_lib::{Tool, SyncComp, Setup};
-use stepper_lib::ctrl::pin::{UniPin, UniInPin};
+use syact::{Tool, SyncComp, Setup};
+use syact::ctrl::pin::{UniPin, UniInPin};
 
 pub trait Device : Setup {
     fn tool(&self) -> Option<&dyn Tool> { 

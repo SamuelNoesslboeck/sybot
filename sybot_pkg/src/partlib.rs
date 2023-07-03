@@ -1,10 +1,10 @@
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
-use stepper_lib::{SyncComp, Stepper, Tool};
-use stepper_lib::comp::{StepperCylinder, StepperCylTriangle, StepperGearJoint};
-use stepper_lib::comp::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
-use stepper_lib::meas::{EndSwitch, SimpleMeas, NoMeas};
+use syact::{SyncComp, Stepper, Tool};
+use syact::comp::{StepperCylinder, StepperCylTriangle, StepperGearJoint};
+use syact::comp::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
+use syact::meas::{EndSwitch, SimpleMeas, NoMeas};
 
 use crate::EmbeddedJsonInfo;
 
@@ -50,9 +50,9 @@ impl PartLib {
     pub fn std() -> Result<Self, crate::Error> {
         Ok(Self::new(BTreeMap::from([
             // Steppers
-            ( "stepper/MOT_17HE15_1504S".to_owned(), serde_json::to_value(stepper_lib::StepperConst::MOT_17HE15_1504S)? ),
+            ( "stepper/MOT_17HE15_1504S".to_owned(), serde_json::to_value(syact::StepperConst::MOT_17HE15_1504S)? ),
             // Servo
-            ( "servo/MG996R".to_owned(), serde_json::to_value(stepper_lib::data::servo::ServoConst::MG996R )? )
+            ( "servo/MG996R".to_owned(), serde_json::to_value(syact::data::servo::ServoConst::MG996R )? )
         ]), dyn_lib!(SyncComp, [ 
             Stepper, StepperCylinder, StepperCylTriangle, StepperGearJoint
         ]), dyn_lib!(Tool, [

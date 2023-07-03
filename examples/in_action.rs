@@ -2,10 +2,10 @@
 
 // use glam::Vec3;
 // use sybot_rcs::Position;
-// // use stepper_lib::units::*;
-// use sybot_lib::prelude::*;
+// // use syact::units::*;
+// use sybot::prelude::*;
 
-fn main() -> Result<(), sybot_lib::Error> {
+fn main() -> Result<(), sybot::Error> {
     // let inst = Instant::now();
 
     // let pkg = Package::load("assets/SyArm_Mk1")?;

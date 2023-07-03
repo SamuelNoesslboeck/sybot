@@ -4,8 +4,8 @@ use std::time::Instant;
 use glam::{Mat3, Vec3};
 use rustyline::Editor;
 use serde::{Deserialize, Serialize};
-use stepper_lib::prelude::*;
-use sybot_lib::prelude::*;
+use syact::prelude::*;
+use sybot::prelude::*;
 
 #[derive(Default, Debug)]
 pub struct SyArmConf {
@@ -17,7 +17,7 @@ impl AxisConf for SyArmConf {
         &self.phis
     }
 
-    fn configure(&mut self, phis : Vec<Phi>) -> Result<(), sybot_lib::Error> {
+    fn configure(&mut self, phis : Vec<Phi>) -> Result<(), sybot::Error> {
         if phis.len() < 1 {
             Err("Not enough angles for configuring the axis configuration! (1 required)".into())
         } else {
@@ -37,7 +37,7 @@ pub struct SyArmDesc {
 }
 
 impl SyArmDesc {
-    fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, sybot_lib::Error> {
+    fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, sybot::Error> {
         let tcp = PointRef::new(Position::new(Vec3::ZERO));
         wobj.add_point("tcp", tcp.clone());
 
@@ -105,7 +105,7 @@ impl Descriptor<4> for SyArmDesc {
     // 
 
     // Events
-        fn update(&mut self, _ : &mut dyn BasicRobot<4>, phis : &[Phi; 4]) -> Result<(), sybot_lib::Error> {
+        fn update(&mut self, _ : &mut dyn BasicRobot<4>, phis : &[Phi; 4]) -> Result<(), sybot::Error> {
             self.segments.update(phis)?;
             
             let tcp_new = self.segments.calculate_end();
@@ -120,8 +120,8 @@ impl Descriptor<4> for SyArmDesc {
 
     // Calculate
         fn convert_pos(&self, rob : &dyn BasicRobot<4>, mut pos : Position) 
-        -> Result<[Phi; 4], sybot_lib::Error> {
-            let phi_b = sybot_lib::math::full_atan(pos.x(), pos.y());
+        -> Result<[Phi; 4], sybot::Error> {
+            let phi_b = sybot::math::full_atan(pos.x(), pos.y());
             let dec_ang = self.aconf().phis()[0].0;
 
             let z_matr = Mat3::from_rotation_z(phi_b);
@@ -139,7 +139,7 @@ impl Descriptor<4> for SyArmDesc {
             let arm3 = self.arm3().pos();
 
             let (alpha_2, _, gamma_2) = 
-                sybot_lib::math::calc_triangle(arm2.length(), arm3.length(), pos.pos().length()); 
+                sybot::math::calc_triangle(arm2.length(), arm3.length(), pos.pos().length()); 
 
             let mut pos_ang = Vec3::X.angle_between(*pos.pos());
 
@@ -187,10 +187,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut desc = SyArmDesc::new(wobj, &segments)?;
 
     // Remotes and interpreters
-    let gcode = sybot_lib::gcode::GCodeIntpr::init();
+    let gcode = sybot::gcode::GCodeIntpr::init();
 
     // let mqtt = Box::new(
-    //    sybot_lib::mqtt::Publisher::new(&broker_addr, "syarm-rob-client")?);
+    //    sybot::mqtt::Publisher::new(&broker_addr, "syarm-rob-client")?);
 
     // if mqtt.connect().is_ok() {
     //     println!("- Successfully connected to MQTT-broker ({})", broker_addr);

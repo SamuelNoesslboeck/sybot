@@ -1,4 +1,4 @@
-// use stepper_lib::units::*;
+// use syact::units::*;
 
 // Submodules 
     #[cfg(feature = "http")]
@@ -13,7 +13,7 @@
 // } 
 
 // impl PushRemote for ConsoleRemote {
-//     fn push_phis(&mut self, phis : &[stepper_lib::units::Phi]) -> Result<(), sybot_robs::Error> {
+//     fn push_phis(&mut self, phis : &[syact::units::Phi]) -> Result<(), sybot_robs::Error> {
 //         self.phis = phis.to_vec();
 //         Ok(())
 //     }
