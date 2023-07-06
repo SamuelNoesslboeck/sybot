@@ -32,7 +32,7 @@ Example configuration file:
   "comps": [
     {
       "name": "Base",
-      "type_name": "stepper_lib::comp::gear_bearing::GearJoint",
+      "type_name": "syact::comp::gear_bearing::GearJoint",
       "obj": {
         "ctrl": {
           "consts": "MOT_17HE15_1504S",

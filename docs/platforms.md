@@ -7,7 +7,7 @@ The current platforms and features enabled are
 
 ```toml
 # platform features
-rasp = [ "stepper_lib/rasp" ]
+rasp = [ "syact/rasp" ]
 ```
 
 If no platform is selected the library automatically goes into simulation mode. In simulation mode, no movements will be executed, but all calculations will be done. Which means that for example GCode scripts can be "debugged" in advance.

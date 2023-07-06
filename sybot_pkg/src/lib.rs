@@ -9,9 +9,9 @@ use alloc::collections::BTreeMap;
 use regex::Regex;
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
-use stepper_lib::prelude::SimpleMeas;
-use stepper_lib::{SyncComp, Tool};
-use stepper_lib::data::LinkedData;
+use syact::prelude::SimpleMeas;
+use syact::{SyncComp, Tool};
+use syact::data::LinkedData;
 use sybot_rcs::WorldObj;
 
 // Submodules

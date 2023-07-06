@@ -1,13 +1,13 @@
 use std::process::exit;
 
-use stepper_lib::units::*;
+use syact::units::*;
 use sybot_rcs::Position;
 use super::*;
 
 // General functions
     /// G0 X{Position} Y{Position} Z{Position} DECO{Angle} \
     /// Rapid positioning
-    pub fn g0<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn g0<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, desc : &mut D, c : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let pos = desc.cache_tcp(
@@ -42,9 +42,32 @@ use super::*;
         }))
     }
 
+    pub fn g1<R : Robot<C>, D : Descriptor<C>, const C : usize>
+        (robot : &mut R, desc : &mut D, c : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
+    {
+        let pos = desc.cache_tcp(
+            arg_by_letter(args, 'X'), 
+            arg_by_letter(args, 'Y'), 
+            arg_by_letter(args, 'Z')
+        );
+
+        let f_speed = arg_by_letter(args, 'S').unwrap_or(1.0);
+
+        
+
+        robot.update()?;
+
+        let phis = robot.phis();
+        desc.update(robot, &phis)?;
+        
+        Ok(serde_json::json!({ 
+            "phis": Vec::from(phis),
+            "deltas": Vec::from(deltas)
+        }))
+    }
     /// G4 X{Seconds} P{Milliseconds}
     /// Dwell (sleeping)
-    pub fn g4<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn g4<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let seconds = 
@@ -56,7 +79,7 @@ use super::*;
 
     /// G28 \
     /// Return to home position
-    pub fn g28<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn g28<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         match robot.move_home() {
@@ -83,7 +106,7 @@ use super::*;
     // }
 
     // Extra functions
-    pub fn g100<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn g100<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
@@ -98,7 +121,7 @@ use super::*;
     }
 
     // Debug
-    pub fn g1000<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn g1000<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, desc : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::json!({ 
@@ -108,7 +131,7 @@ use super::*;
         }))
     }
 
-    pub fn g1100<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn g1100<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
@@ -121,28 +144,28 @@ use super::*;
 //
 
 // Misc Functions
-    pub fn m3<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn m3<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         robot.activate_tool()?;
         Ok(serde_json::Value::Null)
     }
 
-    pub fn m4<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn m4<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // Ok(serde_json::json!(robot.activate_spindle(false)))
         todo!()
     }
 
-    pub fn m5<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn m5<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         robot.deactivate_tool()?;
         todo!()
     }
 
-    pub fn m30<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn m30<R : Robot<C>, D : Descriptor<C>, const C : usize>
     (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         println!("Program finished!");
@@ -150,7 +173,7 @@ use super::*;
     }
 
     // Additional functions
-    pub fn m119<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn m119<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (_ : &mut R, desc : &mut D, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let args = args_by_iterate(args, 'A');
@@ -166,7 +189,7 @@ use super::*;
     }
 
     // Debug functions
-    pub fn m1006<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn m1006<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::to_value(robot.get_tool().unwrap().get_json()).unwrap())
@@ -179,7 +202,7 @@ use super::*;
 // 
 
 // Programm functions
-    pub fn o0<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+    pub fn o0<R : Robot<C>, D : Descriptor<C>, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         println!("test");
@@ -188,7 +211,7 @@ use super::*;
 //
 
 // Tool
-pub fn t<R : BasicRobot<C>, D : Descriptor<C>, const C : usize>
+pub fn t<R : Robot<C>, D : Descriptor<C>, const C : usize>
     (_ : &mut R, _ : &mut D, _ : usize) -> Result<serde_json::Value, crate::Error> 
 {
     // if let Some(tool) = robot.set_tool_id(index) {

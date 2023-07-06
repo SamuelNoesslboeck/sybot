@@ -1,4 +1,4 @@
-require("sybot_lib")
+require("sybot")
 
 -- Load the robot
 load_rob("res/SyArm_Mk1.conf.json")

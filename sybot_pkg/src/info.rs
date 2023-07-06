@@ -117,7 +117,7 @@ pub fn parse_struct<I : EmbeddedJsonInfo, T: DeserializeOwned>(j_infos : Vec<I>)
 /// Data types for parsing a package
 pub mod infos {
     use serde::{Serialize, Deserialize};
-    use stepper_lib::units::*;
+    use syact::units::*;
 
     use super::{EmbeddedJsonInfo, GeneralInfo};
 

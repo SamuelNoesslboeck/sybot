@@ -1,49 +1,19 @@
 use core::ops::DerefMut;
 
 use glam::Vec3;
-use stepper_lib::{Setup, Tool, SyncCompGroup, SyncComp};
-use stepper_lib::comp::stepper::StepperCompGroup;
-use stepper_lib::meas::SimpleMeas;
-use stepper_lib::units::*;
+use syact::prelude::StepperComp;
+use syact::{Setup, Tool, SyncCompGroup, SyncComp};
+use syact::comp::stepper::StepperCompGroup;
+use syact::meas::SimpleMeas;
+use syact::units::*;
 use sybot_pkg::Package;
 use sybot_pkg::infos::{AngConf, RobotInfo};
 use sybot_rcs::Position;
 
-use crate::{InfoRobot, Vars, BasicRobot, PushRemote, Descriptor, ComplexRobot};
-
-#[derive(Debug)]
-pub struct TheoRobot<const C : usize> {
-    info : RobotInfo,
-    vars : Vars<C>
-}
-
-impl<const C : usize> TryFrom<Package> for TheoRobot<C> {
-    type Error = crate::Error;
-
-    fn try_from(pkg: Package) -> Result<Self, Self::Error> {
-        Ok(Self {
-            info: pkg.info,
-            vars: Vars::default()
-        })
-    }
-}
-
-impl<const C : usize> InfoRobot<C> for TheoRobot<C> {
-    fn info<'a>(&'a self) -> &'a RobotInfo {
-        &self.info
-    }
-
-    fn vars<'a>(&'a self) -> &'a Vars<C> {
-        &self.vars
-    }
-
-    fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C> {
-        &mut self.vars
-    }
-}
+use crate::{Vars, Robot, PushRemote, Descriptor};
 
 // #[derive(Debug)]
-pub struct StepperRobot<T : SyncCompGroup<C>, const C : usize> {
+pub struct StepperRobot<T : StepperCompGroup<C>, const C : usize> {
     // Basic
     info : RobotInfo,
     vars : Vars<C>,
@@ -58,7 +28,7 @@ pub struct StepperRobot<T : SyncCompGroup<C>, const C : usize> {
     remotes : Vec<Box<dyn PushRemote>>
 }
 
-impl<T : SyncCompGroup<C>, const C : usize> StepperRobot<T, C> {
+impl<T : StepperCompGroup<C>, const C : usize> StepperRobot<T, C> {
     pub fn new(info : RobotInfo, ang_confs : Vec<AngConf>, comps : T, 
     meas: Vec<Box<dyn SimpleMeas>>, tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
@@ -93,17 +63,8 @@ impl<T : SyncCompGroup<C>, const C : usize> StepperRobot<T, C> {
     }
 }
 
-impl<const C : usize> TryFrom<&Package> for StepperRobot<[Box<dyn SyncComp>; C], C> {
-    type Error = crate::Error;
-    
-    fn try_from(pkg: &Package) -> Result<Self, Self::Error> {
-        let comps = pkg.parse_comps_dyn()?;
-        Self::from_pkg_stat(pkg, comps)
-    }
-}
-
-impl<T : SyncCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
-    fn setup(&mut self) -> Result<(), stepper_lib::Error> {
+impl<T : StepperCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
+    fn setup(&mut self) -> Result<(), syact::Error> {
         self.comps_mut().setup()?;
 
         for meas in &mut self.meas {
@@ -114,32 +75,30 @@ impl<T : SyncCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
     }
 }
 
-impl<T : SyncCompGroup<C>, const C : usize> InfoRobot<C> for StepperRobot<T, C> {
-    fn info<'a>(&'a self) -> &'a RobotInfo {
-        &self.info
-    }
-
-    fn vars<'a>(&'a self) -> &'a Vars<C> {
-        &self.vars
-    }
-
-    fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C> {
-        &mut self.vars
-    }
-}
-
-impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C> {
+impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
     // Data
         fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
             &self.ang_confs
         }
 
-        fn comps<'a>(&'a self) -> &'a dyn stepper_lib::SyncCompGroup<C> {
+        fn comps<'a>(&'a self) -> &'a dyn syact::SyncCompGroup<C> {
             &self.comps
         }
 
-        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn stepper_lib::SyncCompGroup<C> {
+        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn syact::SyncCompGroup<C> {
             &mut self.comps
+        }
+
+        fn info<'a>(&'a self) -> &'a RobotInfo {
+            &self.info
+        }
+    
+        fn vars<'a>(&'a self) -> &'a Vars<C> {
+            &self.vars
+        }
+    
+        fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C> {
+            &mut self.vars
         }
     //
 
@@ -152,6 +111,76 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
             )
         }
     //
+
+    // Complex movement
+        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+            let pos_0 = desc.current_tcp().pos();
+
+            let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
+            
+            let mut gam_stack = Vec::new();
+            let mut dstack = Vec::new();
+
+            for pos in poses {
+                let phis = desc.convert_pos(self, Position::new(pos))?;
+                let mut gammas = self.gammas_from_phis(phis);
+
+                for i in 0 .. C {
+                    gammas[i] = self.comps.index(i).abs_super_gamma(gammas[i]);
+                }
+
+                gam_stack.push(
+                    gammas
+                )
+            }
+
+            for i in 1 .. gam_stack.len() {
+                let mut deltas = [Delta::ZERO; C];
+
+                for n in 0 .. C {
+                    deltas[n] = gam_stack[i][n] - gam_stack[i - 1][n];   
+                }
+
+                dstack.push(deltas);
+            }
+
+            let mut tstack = vec![accuracy / speed; dstack.len()];
+
+            let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
+            builder.generate(&mut tstack, dstack.as_slice(), [Some(Omega::ZERO); C]);
+
+            let mut nodes = builder.unpack();
+
+            println!("driving");
+
+            let mut corr = [(Delta::ZERO, Time::ZERO); C];
+            let mut t_err = Time::ZERO;
+
+            for i in 1 .. nodes.len() {
+                self.comps.drive_node_to_node(&nodes[i - 1], &nodes[i], &mut corr)?;
+
+                for n in 0 .. C {
+                    nodes[i][n].delta = nodes[i][n].delta + corr[n].0;
+                    t_err += corr[n].1;
+                }
+            }
+
+            if let Some(last) = nodes.last() {
+                self.comps.drive_nodes(&last, [Omega::ZERO; C], &mut corr)?;
+            }
+
+            dbg!(corr, t_err);
+
+            println!("Done");
+
+            Ok(())
+        }
+
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+            let pos_0 = desc.current_tcp().pos();
+            self.move_l(desc, pos - pos_0, accuracy, speed)
+        }
+    // 
 
     fn update(&mut self) -> Result<(), crate::Error> {
         let phis = self.phis();
@@ -226,76 +255,4 @@ impl<T : SyncCompGroup<C>, const C : usize> BasicRobot<C> for StepperRobot<T, C>
             &mut self.remotes
         }
     //
-
-    //
-}
-
-impl<T : StepperCompGroup<C>, const C : usize> ComplexRobot<C> for StepperRobot<T, C> {
-    fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
-        let pos_0 = desc.current_tcp().pos();
-
-        let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
-        
-        let mut gam_stack = Vec::new();
-        let mut dstack = Vec::new();
-
-        for pos in poses {
-            let phis = desc.convert_pos(self, Position::new(pos))?;
-            let mut gammas = self.gammas_from_phis(phis);
-
-            for i in 0 .. C {
-                gammas[i] = self.comps.index(i).abs_super_gamma(gammas[i]);
-            }
-
-            gam_stack.push(
-                gammas
-            )
-        }
-
-        for i in 1 .. gam_stack.len() {
-            let mut deltas = [Delta::ZERO; C];
-
-            for n in 0 .. C {
-                deltas[n] = gam_stack[i][n] - gam_stack[i - 1][n];   
-            }
-
-            dstack.push(deltas);
-        }
-
-        let mut tstack = vec![accuracy / speed; dstack.len()];
-
-        let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
-        builder.generate(&mut tstack, dstack.as_slice(), [Some(Omega::ZERO); C]);
-
-        let mut nodes = builder.unpack();
-
-        println!("driving");
-
-        let mut corr = [(Delta::ZERO, Time::ZERO); C];
-        let mut t_err = Time::ZERO;
-
-        for i in 1 .. nodes.len() {
-            self.comps.drive_node_to_node(&nodes[i - 1], &nodes[i], &mut corr)?;
-
-            for n in 0 .. C {
-                nodes[i][n].delta = nodes[i][n].delta + corr[n].0;
-                t_err += corr[n].1;
-            }
-        }
-
-        if let Some(last) = nodes.last() {
-            self.comps.drive_nodes(&last, [Omega::ZERO; C], &mut corr)?;
-        }
-
-        dbg!(corr, t_err);
-
-        println!("Done");
-
-        Ok(())
-    }
-
-    fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
-        let pos_0 = desc.current_tcp().pos();
-        self.move_l(desc, pos - pos_0, accuracy, speed)
-    }
 }

@@ -2,7 +2,7 @@
 name = "sybot_robs"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
 version = "0.2.4"
-description = "Robot traits and structures for the sybot_lib"
+description = "Robot traits and structures for the sybot"
 edition = "2021"
 
 [lib]
@@ -15,7 +15,7 @@ path = "bin/parse.rs"
 
 [dependencies]
 glam = "0.24.0"
-stepper_lib = { version = "0.11.7", path = "../../stepper_lib" }
+syact = { version = "0.12.0", path = "../../syact" }
 
 sybot_pkg = { path = "../sybot_pkg" }
 sybot_rcs = { path = "../sybot_rcs" }

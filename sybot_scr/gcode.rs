@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use sybot_robs::{BasicRobot, Descriptor};
+use sybot_robs::{Robot, Descriptor, ComplexRobot};
 
 use crate::Interpreter;
 
 mod gfuncs;
 pub use gfuncs::*;
 
-pub type GCodeFunc<T, D> = fn (&mut T, &mut D, &GCode, &Args) -> GCodeResult;
-pub type ToolChangeFunc<T, D> = fn (&mut T, &mut D, usize) -> GCodeResult;
+pub type GCodeFunc<R, D, S> = fn (&mut R, &mut D, &mut S, &GCode, &Args) -> GCodeResult;
+pub type ToolChangeFunc<R, D, S> = fn (&mut R, &mut D, &mut S, usize) -> GCodeResult;
 
 pub type Letter = gcode::Mnemonic;
 pub type GCode = gcode::GCode;
@@ -20,14 +20,18 @@ pub type LetterEntries<T, D> = HashMap<Letter, NumEntries<T, D>>;
 
 pub type NotFoundFunc = fn (GCode) -> GCodeResult;
 
-pub struct GCodeIntpr<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> {
+pub trait GCodeBasis<R, D, S> {
+    fn add_functions(&mut self, &);
+}
+
+pub struct GCodeIntpr<R : Robot<C>, D : Descriptor<C>, const C : usize> {
     pub funcs : LetterEntries<R, D>,
     pub tool_change : Option<ToolChangeFunc<R, D>>,
 
     not_found : NotFoundFunc
 }
 
-impl<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {   
+impl<R : Robot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {   
     pub fn new(tool_change : Option<ToolChangeFunc<R, D>>, funcs : LetterEntries<R, D>, not_found : NotFoundFunc) -> Self {
         return GCodeIntpr {
             funcs,
@@ -38,7 +42,7 @@ impl<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> 
     }
 }
 
-impl<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {
+impl<R : Robot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {
     pub fn init() -> Self {
         let funcs = LetterEntries::from([
             (Letter::General, NumEntries::from([
@@ -69,7 +73,7 @@ impl<R : BasicRobot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> 
     }
 }
 
-impl<T : BasicRobot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GCodeResult> for GCodeIntpr<T, D, C> {
+impl<T : Robot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GCodeResult> for GCodeIntpr<T, D, C> {
     fn interpret(&self, rob : &mut T, desc : &mut D, gc_str : &str) -> Vec<GCodeResult> {
         let mut res = vec![]; 
 

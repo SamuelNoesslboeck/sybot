@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 use std::thread::sleep;
 
-use stepper_lib::units::*;
+use syact::units::*;
 
 use crate::{ActRobot, Robot};
 

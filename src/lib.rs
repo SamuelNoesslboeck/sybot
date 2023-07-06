@@ -1,9 +1,9 @@
 #![doc = include_str!("../README.md")]
-#![crate_name = "sybot_lib"]
+#![crate_name = "sybot"]
 
 extern crate alloc;
 
-pub use stepper_lib::{Setup, Tool, SyncComp};
+pub use syact::{Setup, Tool, SyncComp};
 
 // Module decleration
     /// Premade descriptors 
@@ -63,7 +63,7 @@ use mlua::{Lua, Result, Table};
 
 #[cfg(feature = "lua")]
 #[mlua::lua_module]
-fn sybot_lib(lua : &Lua) -> Result<Table> {
+fn sybot(lua : &Lua) -> Result<Table> {
     use core::cell::RefCell;
 
     use alloc::rc::Rc;
