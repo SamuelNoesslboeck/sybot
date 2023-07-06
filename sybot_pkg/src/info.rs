@@ -114,6 +114,7 @@ pub fn parse_struct<I : EmbeddedJsonInfo, T: DeserializeOwned>(j_infos : Vec<I>)
     Ok((serde_json::from_value::<T>(serde_json::Value::Object(objs))?, infos))
 }
 
+/// Data types for parsing a package
 pub mod infos {
     use serde::{Serialize, Deserialize};
     use stepper_lib::units::*;
@@ -168,32 +169,44 @@ pub mod infos {
     }
     
     // Sub-Structs
+        /// Information about limits of a robot
         #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
         pub struct LimitInfo {
+            /// Maximum angle of the component
             pub max : Option<Gamma>,
+            /// Minium angle of the component
             pub min : Option<Gamma>,
+            /// Maximum velocity of the component
             pub vel : Omega
         }
-    
+        
+        /// Simulation information (e.g. mass, inertias, friction)
         #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
         pub struct SimInfo {
+            /// Mass in kg 
             #[serde(default)]
             pub mass : Inertia,
+            /// Friction in N / Nm
             #[serde(default)]
             pub fric : Force,
+            /// Inertia in kg / kgm^2 
             #[serde(default)]
             pub inert : Inertia
         }
-    
+        
+        /// Angle config (phi to gamma conversion)
         #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
         pub struct AngConf {
+            /// Offset of the value
             #[serde(default)]
             pub offset : Delta,
+            /// Wheiter or not the angle is a counterpart (negative addition)
             #[serde(default)]
             pub counter : bool
         }
     
         impl AngConf {
+            /// Convert the given gamma angle to a phi angle
             pub fn phi_from_gamma(&self, gamma : Gamma) -> Phi {
                 (if self.counter { 
                     -gamma
@@ -201,7 +214,8 @@ pub mod infos {
                     gamma
                 } + self.offset).force_to_phi()
             }
-    
+            
+            /// Convert the given phi angle to a gamma angle
             pub fn gamma_from_phi(&self, phi : Phi) -> Gamma {
                 if self.counter { 
                     -phi.force_to_gamma() + self.offset
@@ -213,18 +227,25 @@ pub mod infos {
     //
     
     // Segments
+        /// Parsing helper for segment movement
         #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
         pub enum SegmentMovementInfo {
+            /// Rotation around the Z axis
             Rotation,
+            /// Linear movement in the direction of the vector
             Linear([f32; 3])
         }
     // 
     
+    /// Information about a segment
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct SegmentInfo {
+        /// General information about the segment
         pub info : GeneralInfo,
+        /// Simulationinformation
         #[serde(default)]
         pub sim : SimInfo,
+        /// Movement of the segment
         #[serde(alias = "move")]
         pub movement : SegmentMovementInfo
     }    

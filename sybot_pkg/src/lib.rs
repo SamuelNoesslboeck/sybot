@@ -22,7 +22,9 @@ use sybot_rcs::WorldObj;
     pub use partlib::*;
 // 
 
+/// Pins of the robot
 pub type Pins = BTreeMap<String, BTreeMap<String, u8>>;
+/// General error type
 pub type Error = Box<dyn std::error::Error>;
 
 #[derive(Debug)]
