@@ -1,38 +1,38 @@
 use std::collections::HashMap;
 
-use sybot_robs::{Robot, Descriptor, ComplexRobot};
+use sybot_robs::{Robot, Descriptor};
 
 use crate::Interpreter;
 
 mod gfuncs;
 pub use gfuncs::*;
 
-pub type GCodeFunc<R, D, S> = fn (&mut R, &mut D, &mut S, &GCode, &Args) -> GCodeResult;
-pub type ToolChangeFunc<R, D, S> = fn (&mut R, &mut D, &mut S, usize) -> GCodeResult;
-
 pub type Letter = gcode::Mnemonic;
 pub type GCode = gcode::GCode;
 pub type Args = [gcode::Word];
 pub type GCodeResult = Result<serde_json::Value, crate::Error>;
 
-pub type NumEntries<T, D> = HashMap<u32, GCodeFunc<T, D>>;
-pub type LetterEntries<T, D> = HashMap<Letter, NumEntries<T, D>>;
+pub type GCodeFunc<R, D, S> = fn (&mut R, &mut D, &mut S, &GCode, &Args) -> GCodeResult;
+pub type ToolChangeFunc<R, D, S> = fn (&mut R, &mut D, &mut S, usize) -> GCodeResult;
+
+pub type NumEntries<R, D, S> = HashMap<u32, GCodeFunc<R, D, S>>;
+pub type Entries<R, D, S> = HashMap<Letter, NumEntries<R, D, S>>;
 
 pub type NotFoundFunc = fn (GCode) -> GCodeResult;
 
 pub trait GCodeBasis<R, D, S> {
-    fn add_functions(&mut self, &);
+    fn add_functions(&mut self, funcs : &mut Entries<R, D, S>);
 }
 
-pub struct GCodeIntpr<R : Robot<C>, D : Descriptor<C>, const C : usize> {
-    pub funcs : LetterEntries<R, D>,
-    pub tool_change : Option<ToolChangeFunc<R, D>>,
+pub struct GCodeIntpr<R : Robot<C>, D : Descriptor<C>, S, const C : usize> {
+    pub funcs : Entries<R, D, S>,
+    pub tool_change : Option<ToolChangeFunc<R, D, S>>,
 
     not_found : NotFoundFunc
 }
 
-impl<R : Robot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {   
-    pub fn new(tool_change : Option<ToolChangeFunc<R, D>>, funcs : LetterEntries<R, D>, not_found : NotFoundFunc) -> Self {
+impl<R : Robot<C>, D : Descriptor<C>, S, const C : usize> GCodeIntpr<R, D, S, C> {   
+    pub fn new(tool_change : Option<ToolChangeFunc<R, D, S>>, funcs : Entries<R, D, S>, not_found : NotFoundFunc) -> Self {
         return GCodeIntpr {
             funcs,
             tool_change,
@@ -42,28 +42,28 @@ impl<R : Robot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {
     }
 }
 
-impl<R : Robot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {
+impl<R : Robot<C>, D : Descriptor<C>, S, const C : usize> GCodeIntpr<R, D, S, C> {
     pub fn init() -> Self {
-        let funcs = LetterEntries::from([
+        let funcs = Entries::from([
             (Letter::General, NumEntries::from([
-                (0, g0::<R, D, C> as GCodeFunc<R, D>),
-                (4, g4::<R, D, C>),
-                (28, g28::<R, D, C>),
+                (0, g0::<R, D, S, C> as GCodeFunc<R, D, S>),
+                (4, g4::<R, D, S, C>),
+                (28, g28::<R, D, S, C>),
                 // (29, g29::<R, D, C>),
-                (100, g100::<R, D, C>),
-                (1000, g1000::<R, D, C>),
-                (1100, g1100::<R, D, C>)
+                (100, g100::<R, D, S, C>),
+                (1000, g1000::<R, D, S, C>),
+                (1100, g1100::<R, D, S, C>)
             ])), 
             (Letter::Miscellaneous, NumEntries::from([
-                (3, m3::<R, D, C> as GCodeFunc<R, D>),
-                (4, m4::<R, D, C>),
-                (5, m5::<R, D, C>),
-                (30, m30::<R, D, C>),
-                (119, m119::<R, D, C>),
-                (1006, m1006::<R, D, C>),
+                (3, m3::<R, D, S, C> as GCodeFunc<R, D, S>),
+                (4, m4::<R, D, S, C>),
+                (5, m5::<R, D, S, C>),
+                (30, m30::<R, D, S, C>),
+                (119, m119::<R, D, S, C>),
+                (1006, m1006::<R, D, S, C>),
             ])), 
             (Letter::ProgramNumber, NumEntries::from([
-                (0, o0::<R, D, C> as GCodeFunc<R, D>)
+                (0, o0::<R, D, S, C> as GCodeFunc<R, D, S>)
             ]))
         ]);
         
@@ -73,8 +73,8 @@ impl<R : Robot<C>, D : Descriptor<C>, const C : usize> GCodeIntpr<R, D, C> {
     }
 }
 
-impl<T : Robot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GCodeResult> for GCodeIntpr<T, D, C> {
-    fn interpret(&self, rob : &mut T, desc : &mut D, gc_str : &str) -> Vec<GCodeResult> {
+impl<R : Robot<C>, D : Descriptor<C>, S, const C : usize> Interpreter<R, D, S, GCodeResult, C> for GCodeIntpr<R, D, S, C> {
+    fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, gc_str : &str) -> Vec<GCodeResult> {
         let mut res = vec![]; 
 
         let not_found = self.not_found;
@@ -83,7 +83,7 @@ impl<T : Robot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GCodeRe
             for gc_line in gcode::parse(gc_str_line) {
                 if gc_line.mnemonic() == Letter::ToolChange {
                     res.push(match self.tool_change {
-                        Some(func) => func(rob, desc, gc_line.major_number() as usize),
+                        Some(func) => func(rob, desc, stat, gc_line.major_number() as usize),
                         None => not_found(gc_line)
                     });
 
@@ -93,7 +93,7 @@ impl<T : Robot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GCodeRe
                 let func_res = get_func(&self.funcs, &gc_line);
 
                 res.push(match func_res {
-                    Some(func) => func(rob, desc, &gc_line, gc_line.arguments()),
+                    Some(func) => func(rob, desc, stat, &gc_line, gc_line.arguments()),
                     None => not_found(gc_line)
                 });
             }
@@ -105,7 +105,7 @@ impl<T : Robot<C>, D : Descriptor<C>, const C : usize> Interpreter<T, D, GCodeRe
 
 // Parsing
     /// Get the GCode Function stored for the given code
-    pub fn get_func<'a, T, D>(funcs : &'a LetterEntries<T, D>, gc : &'a GCode) -> Option<&'a GCodeFunc<T, D>> {
+    pub fn get_func<'a, R, D, S>(funcs : &'a Entries<R, D, S>, gc : &'a GCode) -> Option<&'a GCodeFunc<R, D, S>> {
         funcs.get(&gc.mnemonic()).and_then(|v| {
             v.get(&gc.major_number())
         })

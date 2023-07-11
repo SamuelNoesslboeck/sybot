@@ -18,11 +18,39 @@ pub type Error = Box<dyn std::error::Error>;
     mod seg;
     pub use seg::*;
 
-    mod structs;
-    pub use structs::*;
+    mod stepper;
+    pub use stepper::*;
 // 
 
-// TODO: REWORK VARS
+#[derive(Clone, Debug)]
+pub struct Mode {
+    pub name : String,
+    pub desc : String,
+
+    pub speed_f : f32
+}
+
+impl Mode {
+    pub fn new<N : Into<String>, D : Into<String>>(name : N, desc : D, speed_f : f32) -> Self {
+        Self { name : name.into(), desc: desc.into(), speed_f }
+    }
+}
+
+pub fn default_modes() -> [Mode; 2] { 
+    [
+        Mode {
+            name: String::from("Setup"), 
+            desc: String::from("Mode with decreased speeds used for setting up"),
+            speed_f : 0.5
+        },
+        Mode {
+            name: String::from("Auto"), 
+            desc: String::from("Mode used for running automated programms with full speed"),
+            speed_f : 1.0
+        }
+    ]
+}
+
 #[derive(Clone, Debug)]
 pub struct Vars<const C : usize> {
     pub phis : [Phi; C],
@@ -276,6 +304,12 @@ pub trait Robot<const C : usize> : Setup {
                 Ok(simple_tool)
             }
         // 
+    // 
+
+    // Modes
+        fn mode(&self) -> &Mode;
+
+        fn set_mode(&mut self, index : usize) -> Result<&Mode, crate::Error>;
     // 
 
     // Remote

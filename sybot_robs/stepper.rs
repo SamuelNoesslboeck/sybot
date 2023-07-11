@@ -1,8 +1,7 @@
 use core::ops::DerefMut;
 
 use glam::Vec3;
-use syact::prelude::StepperComp;
-use syact::{Setup, Tool, SyncCompGroup, SyncComp};
+use syact::{Setup, Tool};
 use syact::comp::stepper::StepperCompGroup;
 use syact::meas::SimpleMeas;
 use syact::units::*;
@@ -10,11 +9,9 @@ use sybot_pkg::Package;
 use sybot_pkg::infos::{AngConf, RobotInfo};
 use sybot_rcs::Position;
 
-use crate::{Vars, Robot, PushRemote, Descriptor};
+use crate::{Vars, Robot, PushRemote, Descriptor, Mode, default_modes};
 
-// #[derive(Debug)]
 pub struct StepperRobot<T : StepperCompGroup<C>, const C : usize> {
-    // Basic
     info : RobotInfo,
     vars : Vars<C>,
 
@@ -24,6 +21,9 @@ pub struct StepperRobot<T : StepperCompGroup<C>, const C : usize> {
 
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
+
+    modes : Vec<Mode>,
+    mode_id : usize,
 
     remotes : Vec<Box<dyn PushRemote>>
 }
@@ -41,6 +41,9 @@ impl<T : StepperCompGroup<C>, const C : usize> StepperRobot<T, C> {
             
             tools,
             tool_id: None,
+
+            modes: Vec::from(default_modes()),
+            mode_id: 0,
 
             remotes: Vec::new()
         }
@@ -227,6 +230,21 @@ impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
             } else {
                 None
             }
+        }
+    // 
+
+    // Mode
+        fn mode(&self) -> &Mode {
+            &self.modes[self.mode_id]
+        }
+
+        fn set_mode(&mut self, index : usize) -> Result<&Mode, crate::Error> {
+            if index >= self.modes.len() {
+                return Err("Mode index out of range!".into());
+            }
+
+            self.mode_id = index;
+            Ok(&self.modes[self.mode_id])
         }
     // 
 

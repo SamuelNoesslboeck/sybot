@@ -6,6 +6,9 @@
 
     #[cfg(feature = "mqtt")]
     pub mod mqtt;
+
+    #[cfg(feature = "msg")]
+    pub mod msg;
 // 
 
 // pub struct ConsoleRemote { 
