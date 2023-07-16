@@ -18,6 +18,9 @@ use sybot_rcs::WorldObj;
     mod info;
     pub use info::*;
 
+    mod pkg;
+    pub use pkg::*;
+
     mod partlib;
     pub use partlib::*;
 // 
@@ -36,7 +39,6 @@ pub struct Package {
     pub cinfos : Option<Vec<infos::CompJsonInfo>>,
     
     pub tools : Option<Vec<AnyJsonInfo>>,
-    pub devices : Option<Vec<AnyJsonInfo>>,
     pub wobj : Option<WorldObj>,
     pub segments : Option<Vec<infos::SegmentInfo>>, 
 
@@ -53,7 +55,6 @@ impl Package {
             cinfos: None,
 
             tools: None,
-            devices: None,
             wobj: None,
             segments: None,
 
@@ -69,7 +70,6 @@ impl Package {
         let comp_dir = path.as_ref().join("rob");
         let lib_dir = path.as_ref().join("lib");
         let rcs_dir = path.as_ref().join("rcs");
-        let stat_dir = path.as_ref().join("stat");
 
         let info_cont = match fs::read_to_string(path.as_ref().join("info.json")) {
             Ok(info) => info,
@@ -82,14 +82,8 @@ impl Package {
 
         let mut _self = Self::new(info)?;
 
-        if stat_dir.exists() {
-            _self.pins = _self.load_file(stat_dir.join("pins.json"))?;
-            _self.devices = _self.load_file(stat_dir.join("devices.json"))?;
-        }
-
         if comp_dir.exists() {
             _self.lk = _self.load_file(comp_dir.join("lk.json"))?;
-            _self.meas = _self.load_file(comp_dir.join("meas.json"))?;
             _self.cinfos = _self.load_file(comp_dir.join("comps.json"))?;
             _self.segments = _self.load_file(comp_dir.join("segments.json"))?;
         }
