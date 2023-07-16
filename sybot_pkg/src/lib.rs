@@ -34,7 +34,6 @@ pub struct Package {
     pub lk : Option<LinkedData>,
     pub pins : Option<Pins>,
     pub cinfos : Option<Vec<infos::CompJsonInfo>>,
-    pub meas : Option<Vec<AnyJsonInfo>>, 
     
     pub tools : Option<Vec<AnyJsonInfo>>,
     pub devices : Option<Vec<AnyJsonInfo>>,
@@ -52,7 +51,6 @@ impl Package {
             lk: None,
             pins: None,
             cinfos: None,
-            meas: None,
 
             tools: None,
             devices: None,

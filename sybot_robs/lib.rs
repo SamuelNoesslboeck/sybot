@@ -120,6 +120,8 @@ pub trait Descriptor<const C : usize> {
     //
 
     // Events
+        fn auto_meas(&mut self) -> Result<(), crate::Error>;
+
         fn update(&mut self, rob : &mut dyn Robot<C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
 

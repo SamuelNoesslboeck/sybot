@@ -1,22 +1,25 @@
 {
   "base": {
-    "step": 26,
-    "dir": 17,
-    "meas": 16
+    "step": 23,
+    "dir": 22
   },
   "arm1": {
-    "step": 9,
-    "dir": 5,
+    "step": 18,
+    "dir": 27,
     "meas": 25
   },
   "arm2": {
-    "step": 11,
-    "dir": 22,
-    "meas": 7
+    "step": 15,
+    "dir": 17,
+    "meas": 5
   },
   "arm3": {
-    "step": 19,
-    "dir": 27,
-    "meas": 8
+    "step": 14,
+    "dir": 4,
+    "meas": 11
+  },
+  "tool": {
+    "pwm1": 10,
+    "pwm2": 9
   }
 }

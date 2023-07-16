@@ -119,7 +119,7 @@ pub mod infos {
     use serde::{Serialize, Deserialize};
     use syact::units::*;
 
-    use super::{EmbeddedJsonInfo, GeneralInfo};
+    use super::{EmbeddedJsonInfo, GeneralInfo, AnyJsonInfo};
 
     /// Extended json information for components
     #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -134,7 +134,9 @@ pub mod infos {
         pub ang : AngConf,
         /// Information about maximum speeds and distances
         #[serde(default)]
-        pub limit : LimitInfo
+        pub limit : LimitInfo,
+        /// Information about measurement structures connected 
+        pub meas : Vec<AnyJsonInfo>
     }
 
     impl EmbeddedJsonInfo for CompJsonInfo {
