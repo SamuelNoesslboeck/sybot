@@ -82,11 +82,13 @@ impl Package {
         let mut _self = Self::new(info)?;
 
         if rob_dir.exists() {
+            // Load first
+            _self.pins = _self.load_file(rob_dir.join("pins.json"))?;
+
             _self.lk = _self.load_file(rob_dir.join("lk.json"))?;
             _self.meas = _self.load_file(rob_dir.join("meas.json"))?;
             _self.cinfos = _self.load_file(rob_dir.join("comps.json"))?;
             _self.segments = _self.load_file(rob_dir.join("segments.json"))?;
-            _self.pins = _self.load_file(rob_dir.join("pins.json"))?;
         }
 
         if lib_dir.exists() {
