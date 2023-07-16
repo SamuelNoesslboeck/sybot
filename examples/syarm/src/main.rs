@@ -7,166 +7,176 @@ use serde::{Deserialize, Serialize};
 use syact::prelude::*;
 use sybot::prelude::*;
 
-#[derive(Default, Debug)]
-pub struct SyArmConf {
-    pub phis : [Phi; 1]
-}
-
-impl AxisConf for SyArmConf {
-    fn phis<'a>(&'a self) -> &'a [Phi] {
-        &self.phis
+// Robot
+    #[derive(SyncCompGroup, Deserialize, Serialize, StepperCompGroup)]
+    struct SyArmComps {
+        base : GearJoint<Stepper>,
+        arm1 : CylinderTriangle<Stepper>,
+        arm2 : CylinderTriangle<Stepper>,
+        arm3 : GearJoint<Stepper>
     }
 
-    fn configure(&mut self, phis : Vec<Phi>) -> Result<(), sybot::Error> {
-        if phis.len() < 1 {
-            Err("Not enough angles for configuring the axis configuration! (1 required)".into())
-        } else {
-            self.phis[0] = phis[0];
-            Ok(())
-        }
-    }
-}
+    type SyArmRob = StepperRobot<SyArmComps, 4>;
+// 
 
-#[derive(Debug)]
-pub struct SyArmDesc {    
-    pub segments : LinSegmentChain<4>,
-
-    tcp : PointRef,
-    wobj : WorldObj,
-    conf : SyArmConf,
-}
-
-impl SyArmDesc {
-    fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, sybot::Error> {
-        let tcp = PointRef::new(Position::new(Vec3::ZERO));
-        wobj.add_point("tcp", tcp.clone());
-
-        Ok(Self {
-            segments: LinSegmentChain::from_wobj(segments, &mut wobj, "tcp")?,
-
-            tcp,
-            wobj,
-            conf: SyArmConf::default()
-        })
-    }
-}
-
-impl SyArmDesc {
-    pub fn base<'a>(&'a self) -> &'a Segment {
-        &self.segments[0]
+// Descriptor
+    #[derive(Default, Debug)]
+    pub struct SyArmConf {
+        pub phis : [Phi; 1]
     }
 
-    pub fn arm1<'a>(&'a self) -> &'a Segment {
-        &self.segments[1]
+    impl AxisConf for SyArmConf {
+        fn phis<'a>(&'a self) -> &'a [Phi] {
+            &self.phis
+        }
+
+        fn configure(&mut self, phis : Vec<Phi>) -> Result<(), sybot::Error> {
+            if phis.len() < 1 {
+                Err("Not enough angles for configuring the axis configuration! (1 required)".into())
+            } else {
+                self.phis[0] = phis[0];
+                Ok(())
+            }
+        }
     }
 
-    pub fn arm2<'a>(&'a self) -> &'a Segment {
-        &self.segments[2]
+    #[derive(Debug)]
+    pub struct SyArmDesc {    
+        pub segments : LinSegmentChain<4>,
+
+        tcp : PointRef,
+        wobj : WorldObj,
+        conf : SyArmConf,
     }
 
-    pub fn arm3<'a>(&'a self) -> &'a Segment {
-        &self.segments[3]
+    impl SyArmDesc {
+        fn new(mut wobj : WorldObj, segments : &Vec<SegmentInfo>) -> Result<Self, sybot::Error> {
+            let tcp = PointRef::new(Position::new(Vec3::ZERO));
+            wobj.add_point("tcp", tcp.clone());
+
+            Ok(Self {
+                segments: LinSegmentChain::from_wobj(segments, &mut wobj, "tcp")?,
+
+                tcp,
+                wobj,
+                conf: SyArmConf::default()
+            })
+        }
     }
-}
 
-impl Descriptor<4> for SyArmDesc {
-    // Axis config
-        fn aconf<'a>(&'a self) -> &'a dyn AxisConf {
-            &self.conf
+    impl SyArmDesc {
+        pub fn base<'a>(&'a self) -> &'a Segment {
+            &self.segments[0]
         }
 
-        fn aconf_mut<'a>(&'a mut self) -> &'a mut dyn AxisConf {
-            &mut self.conf
-        }
-    //
-
-    // World object
-        fn wobj<'a>(&'a self) -> &'a WorldObj {
-            &self.wobj
+        pub fn arm1<'a>(&'a self) -> &'a Segment {
+            &self.segments[1]
         }
 
-        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj {
-            &mut self.wobj
+        pub fn arm2<'a>(&'a self) -> &'a Segment {
+            &self.segments[2]
         }
 
-        fn current_tcp(&self) -> &PointRef {
-            &self.tcp
+        pub fn arm3<'a>(&'a self) -> &'a Segment {
+            &self.segments[3]
         }
+    }
 
-        fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
-            let pos = self.tcp.pos();
-
-            Vec3::new(
-                x_opt.unwrap_or(pos.x), 
-                y_opt.unwrap_or(pos.y), 
-                z_opt.unwrap_or(pos.z)
-            )
-        }
-    // 
-
-    // Events
-        fn update(&mut self, _ : &mut dyn BasicRobot<4>, phis : &[Phi; 4]) -> Result<(), sybot::Error> {
-            self.segments.update(phis)?;
-            
-            let tcp_new = self.segments.calculate_end();
-            let mut tcp = self.tcp.borrow_mut();
-
-            *(tcp.pos_mut()) = *tcp_new.pos();
-            *(tcp.ori_mut()) = *tcp_new.ori();
-
-            Ok(())
-        }
-    // 
-
-    // Calculate
-        fn convert_pos(&self, rob : &dyn BasicRobot<4>, mut pos : Position) 
-        -> Result<[Phi; 4], sybot::Error> {
-            let phi_b = sybot::math::full_atan(pos.x(), pos.y());
-            let dec_ang = self.aconf().phis()[0].0;
-
-            let z_matr = Mat3::from_rotation_z(phi_b);
-            let mut tcp_vec = self.segments.tcp().pos();
-            tcp_vec = z_matr * tcp_vec;
-            tcp_vec = Mat3::from_rotation_y(-dec_ang) * tcp_vec;
-
-            pos.shift(-tcp_vec);
-            pos.shift(-*self.wobj.pos());
-            pos.shift(-self.segments[0].pos()); 
-            pos.transform(Mat3::from_rotation_z(-phi_b)); 
-            pos.shift(-self.segments[1].pos());
- 
-            let arm2 = self.arm2().pos();
-            let arm3 = self.arm3().pos();
-
-            let (alpha_2, _, gamma_2) = 
-                sybot::math::calc_triangle(arm2.length(), arm3.length(), pos.pos().length()); 
-
-            let mut pos_ang = Vec3::X.angle_between(*pos.pos());
-
-            if pos.z() < 0.0 {
-                pos_ang = -pos_ang;
+    impl Descriptor<4> for SyArmDesc {
+        // Axis config
+            fn aconf<'a>(&'a self) -> &'a dyn AxisConf {
+                &self.conf
             }
 
-            let phi_1 = alpha_2 + pos_ang;
-            let phi_2 = gamma_2 - PI;
-            let phis = [ Phi(phi_b), Phi(phi_1), Phi(phi_2), Phi(dec_ang - phi_1 - phi_2) ];
+            fn aconf_mut<'a>(&'a mut self) -> &'a mut dyn AxisConf {
+                &mut self.conf
+            }
+        //
 
-            rob.valid_phis(&phis)?;
+        // World object
+            fn wobj<'a>(&'a self) -> &'a WorldObj {
+                &self.wobj
+            }
 
-            Ok(phis) 
-        }
-    // 
-}
+            fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj {
+                &mut self.wobj
+            }
 
-#[derive(SyncCompGroup, Deserialize, Serialize, StepperCompGroup)]
-struct SyArmComps {
-    base : GearJoint<Stepper>,
-    arm1 : CylinderTriangle<Stepper>,
-    arm2 : CylinderTriangle<Stepper>,
-    arm3 : GearJoint<Stepper>
-}
+            fn current_tcp(&self) -> &PointRef {
+                &self.tcp
+            }
 
-type SyArmRob = StepperRobot<SyArmComps, 4>;
+            fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3 {
+                let pos = self.tcp.pos();
+
+                Vec3::new(
+                    x_opt.unwrap_or(pos.x), 
+                    y_opt.unwrap_or(pos.y), 
+                    z_opt.unwrap_or(pos.z)
+                )
+            }
+        // 
+
+        // Events
+            fn update(&mut self, _ : &mut dyn Robot<4>, phis : &[Phi; 4]) -> Result<(), sybot::Error> {
+                self.segments.update(phis)?;
+                
+                let tcp_new = self.segments.calculate_end();
+                let mut tcp = self.tcp.borrow_mut();
+
+                *(tcp.pos_mut()) = *tcp_new.pos();
+                *(tcp.ori_mut()) = *tcp_new.ori();
+
+                Ok(())
+            }
+        // 
+
+        // Calculate
+            fn convert_pos(&self, rob : &dyn Robot<4>, mut pos : Position) 
+            -> Result<[Phi; 4], sybot::Error> {
+                let phi_b = sybot::math::full_atan(pos.x(), pos.y());
+                let dec_ang = self.aconf().phis()[0].0;
+
+                let z_matr = Mat3::from_rotation_z(phi_b);
+                let mut tcp_vec = self.segments.tcp().pos();
+                tcp_vec = z_matr * tcp_vec;
+                tcp_vec = Mat3::from_rotation_y(-dec_ang) * tcp_vec;
+
+                pos.shift(-tcp_vec);
+                pos.shift(-*self.wobj.pos());
+                pos.shift(-self.segments[0].pos()); 
+                pos.transform(Mat3::from_rotation_z(-phi_b)); 
+                pos.shift(-self.segments[1].pos());
+    
+                let arm2 = self.arm2().pos();
+                let arm3 = self.arm3().pos();
+
+                let (alpha_2, _, gamma_2) = 
+                    sybot::math::calc_triangle(arm2.length(), arm3.length(), pos.pos().length()); 
+
+                let mut pos_ang = Vec3::X.angle_between(*pos.pos());
+
+                if pos.z() < 0.0 {
+                    pos_ang = -pos_ang;
+                }
+
+                let phi_1 = alpha_2 + pos_ang;
+                let phi_2 = gamma_2 - PI;
+                let phis = [ Phi(phi_b), Phi(phi_1), Phi(phi_2), Phi(dec_ang - phi_1 - phi_2) ];
+
+                rob.valid_phis(&phis)?;
+
+                Ok(phis) 
+            }
+        // 
+    }
+// 
+
+// Station
+    struct SyArmStation { 
+
+    }
+// 
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -175,7 +185,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[SyArm ROS system] \nBasic robot operating system for the SyArm robot. (c) Samuel Noesslboeck 2023\n");
     println!("Initialising ... ");
 
-    let pkg = Package::load("assets/SyArm_Mk1")?;
+    let pkg = Package::load(".")?;
     println!("- Loaded package: '{}'", pkg.info.name);
     
     // Parse robot
@@ -185,6 +195,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse descriptor
     let (wobj, segments) = pkg.req_desc()?;
     let mut desc = SyArmDesc::new(wobj, &segments)?;
+
+    let mut stat = SyArmStation { };
 
     // Remotes and interpreters
     let gcode = sybot::gcode::GCodeIntpr::init();
@@ -199,13 +211,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     eprintln!("- Failed to connect to broker");
     // }
 
-    // Actions
-    rob.setup()?;
-    println!("- Setup complete");
+    // Setup
+        rob.setup()?;
+        println!("- Setup complete");
 
-    print!("- Setting home position... ");
-    rob.move_home()?;
-    println!("done!");
+        print!("- Setting home position... ");
+        rob.move_home()?;
+        println!("done!");
+    //
 
     let rob_phis = rob.phis();
     desc.update(&mut rob, &rob_phis)?;  
@@ -235,7 +248,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match editor.readline("> ") {
             Ok(input) => {
                 editor.add_history_entry(&input)?;
-                for res in gcode.interpret(&mut rob, &mut desc, &input) {
+                for res in gcode.interpret(&mut rob, &mut desc, &mut stat, &input) {
                     println!("{}\n", serde_json::to_string_pretty(&res?).unwrap());
                 }
             },

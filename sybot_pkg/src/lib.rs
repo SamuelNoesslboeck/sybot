@@ -70,7 +70,6 @@ impl Package {
         let comp_dir = path.as_ref().join("rob");
         let lib_dir = path.as_ref().join("lib");
         let rcs_dir = path.as_ref().join("rcs");
-
         let info_cont = match fs::read_to_string(path.as_ref().join("info.json")) {
             Ok(info) => info,
             Err(err) => return Err(format!("Error in reading info.json for pkg!\nError: {:?}", err).into())
