@@ -66,7 +66,7 @@ impl Package {
             return Err("Invalid path! No pkg found at the given path!".into()); 
         }
 
-        let comp_dir = path.as_ref().join("rob");
+        let rob_dir = path.as_ref().join("rob");
         let lib_dir = path.as_ref().join("lib");
         let rcs_dir = path.as_ref().join("rcs");
         
@@ -81,11 +81,12 @@ impl Package {
 
         let mut _self = Self::new(info)?;
 
-        if comp_dir.exists() {
-            _self.lk = _self.load_file(comp_dir.join("lk.json"))?;
-            _self.meas = _self.load_file(comp_dir.join("meas.json"))?;
-            _self.cinfos = _self.load_file(comp_dir.join("comps.json"))?;
-            _self.segments = _self.load_file(comp_dir.join("segments.json"))?;
+        if rob_dir.exists() {
+            _self.lk = _self.load_file(rob_dir.join("lk.json"))?;
+            _self.meas = _self.load_file(rob_dir.join("meas.json"))?;
+            _self.cinfos = _self.load_file(rob_dir.join("comps.json"))?;
+            _self.segments = _self.load_file(rob_dir.join("segments.json"))?;
+            _self.pins = _self.load_file(rob_dir.join("pins.json"))?;
         }
 
         if lib_dir.exists() {
