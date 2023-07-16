@@ -185,7 +185,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[SyArm ROS system] \nBasic robot operating system for the SyArm robot. (c) Samuel Noesslboeck 2023\n");
     println!("Initialising ... ");
 
-    let pkg = Package::load("assets/SyArm_Mk1")?;
+    let pkg = Package::load(".")?;
     println!("- Loaded package: '{}'", pkg.info.name);
     
     // Parse robot
