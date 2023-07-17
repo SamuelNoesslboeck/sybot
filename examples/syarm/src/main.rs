@@ -4,6 +4,7 @@ use std::time::Instant;
 use glam::{Mat3, Vec3};
 use rustyline::Editor;
 use serde::{Deserialize, Serialize};
+
 use syact::prelude::*;
 use sybot::prelude::*;
 
@@ -62,9 +63,7 @@ use sybot::prelude::*;
                 conf: SyArmConf::default()
             })
         }
-    }
 
-    impl SyArmDesc {
         pub fn base<'a>(&'a self) -> &'a Segment {
             &self.segments[0]
         }
@@ -79,6 +78,17 @@ use sybot::prelude::*;
 
         pub fn arm3<'a>(&'a self) -> &'a Segment {
             &self.segments[3]
+        }
+    }
+
+    impl TryFrom<DescPackage> for SyArmDesc {
+        type Error = sybot::Error;
+
+        fn try_from(value: DescPackage) -> Result<Self, Self::Error> {
+            Self::new(
+                value.rcs.ok_or("A valid RCS must be provided for the robot!")?, 
+                value.segments.as_ref().ok_or("A vaild set of segments must be provided for the robot!")?
+            )
         }
     }
 
@@ -176,6 +186,14 @@ use sybot::prelude::*;
     struct SyArmStation { 
 
     }
+
+    impl TryFrom<StationPackage> for SyArmStation {
+        type Error = sybot::Error;
+
+        fn try_from(_: StationPackage) -> Result<Self, Self::Error> {
+            Ok(Self { })
+        }
+    }
 // 
 
 #[tokio::main]
@@ -187,16 +205,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let pkg = Package::load(".")?;
     println!("- Loaded package: '{}'", pkg.info.name);
+
+    let ( info, mut rob, mut desc, mut stat ) = pkg.unpack::<SyArmRob, SyArmDesc, SyArmStation>()?;
+
+    dbg!(info);
     
-    // Parse robot
-    let ( comps, _ ) = pkg.parse_comps_struct()?;
-    let mut rob = SyArmRob::from_pkg_stat(&pkg, comps)?;
-
-    // Parse descriptor
-    let (wobj, segments) = pkg.req_desc()?;
-    let mut desc = SyArmDesc::new(wobj, &segments)?;
-
-    let mut stat = SyArmStation { };
+    
 
     // Remotes and interpreters
     let gcode = sybot::gcode::GCodeIntpr::init();
@@ -216,7 +230,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("- Setup complete");
 
         print!("- Setting home position... ");
-        rob.move_home()?;
+        rob.auto_meas()?;
         println!("done!");
     //
 

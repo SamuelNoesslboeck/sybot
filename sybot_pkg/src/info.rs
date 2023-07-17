@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use syact::units::*;
 
-use super::{EmbeddedJsonInfo, GeneralInfo, AnyJsonInfo};
+use crate::{EmbeddedJsonInfo, GeneralInfo};
 
 /// Extended json information for components
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,9 +16,7 @@ pub struct CompJsonInfo {
     pub ang : AngConf,
     /// Information about maximum speeds and distances
     #[serde(default)]
-    pub limit : LimitInfo,
-    /// Information about measurement structures connected 
-    pub meas : Vec<AnyJsonInfo>
+    pub limit : LimitInfo
 }
 
 impl EmbeddedJsonInfo for CompJsonInfo {

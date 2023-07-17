@@ -107,11 +107,7 @@ impl Package {
             }
         }
 
-        pub fn unpack<R : TryFrom<RobotPackage>, D : TryFrom<DescPackage>, S : TryFrom<StationPackage>>(self) -> Result<(RobotInfo, R, D, S), crate::Error>
-        where 
-            R::Error : std::error::Error + 'static,
-            D::Error : std::error::Error + 'static,
-            S::Error : std::error::Error + 'static 
+        pub fn unpack<R : TryFrom<RobotPackage, Error = crate::Error>, D : TryFrom<DescPackage, Error = crate::Error>, S : TryFrom<StationPackage, Error = crate::Error>>(self) -> Result<(RobotInfo, R, D, S), crate::Error>
         {
             Ok((
                 self.info,
@@ -129,7 +125,7 @@ impl Package {
             }
 
             let rob_dir = path.as_ref().join("rob");
-            let desc = path.as_ref().join("desc");
+            let desc_dir = path.as_ref().join("desc");
 
             let info_cont = match fs::read_to_string(path.as_ref().join("info.json")) {
                 Ok(info) => info,
@@ -146,6 +142,7 @@ impl Package {
 
             if rob_dir.exists() {
                 _self.rob.data = _self.load_file(&_self.libs, rob_dir.join("data.json"))?;
+                _self.rob.meas = _self.load_file(&_self.libs, rob_dir.join("meas.json"))?;
                 _self.rob.comps = _self.load_file(&_self.libs, rob_dir.join("comps.json"))?;
                 _self.rob.tools = _self.load_file(&_self.libs, rob_dir.join("tools.json"))?;
             }
@@ -154,9 +151,9 @@ impl Package {
             //     _self.tools = _self.load_file(lib_dir.join("tools.json"))?;
             // } 
 
-            if desc.exists() {
-                _self.desc.rcs = _self.load_file(&_self.libs, desc.join("rcs.json"))?;
-                _self.desc.segments = _self.load_file(&_self.libs, rob_dir.join("segments.json"))?;
+            if desc_dir.exists() {
+                _self.desc.rcs = _self.load_file(&_self.libs, desc_dir.join("rcs.json"))?;
+                _self.desc.segments = _self.load_file(&_self.libs, desc_dir.join("segments.json"))?;
             }
 
             // TODO: Station

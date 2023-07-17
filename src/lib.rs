@@ -55,7 +55,7 @@ pub use syact::{Setup, Tool, SyncComp};
 
 // Types
 /// Universal error type used in the crate
-pub type Error = Box<dyn std::error::Error>;
+pub type Error = sybot_robs::Error;
 
 // Lua
 #[cfg(feature = "lua")]

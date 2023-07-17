@@ -51,7 +51,7 @@ impl<T : StepperCompGroup<C> + for<'de> Deserialize<'de>, const C : usize> TryFr
     type Error = crate::Error;
 
     #[allow(deprecated)]
-    fn try_from(pkg : RobotPackage) -> Result<Self, Self::Error> {
+    fn try_from(pkg : RobotPackage) -> Result<Self, Self::Error> {      // TODO: Remove this mess
         let tools = pkg.parse_tools_dyn()?;
         let meas = pkg.parse_meas_dyn()?;
         let ang_confs = pkg.parse_ang_confs().unwrap();
