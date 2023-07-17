@@ -6,7 +6,7 @@ use glam::Vec3;
 use syact::{SyncCompGroup, Tool, Setup, SimpleTool};
 use syact::units::*;
 
-use sybot_pkg::info::{RobotInfo, AngConf};
+use sybot_pkg::info::AngConf;
 use sybot_rcs::{WorldObj, Position, PointRef};
 
 pub type Error = Box<dyn std::error::Error>;
