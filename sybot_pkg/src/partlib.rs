@@ -81,3 +81,9 @@ impl PartLib {
         info.parse_dyn(&self.meas_lib)
     }
 }
+
+impl Default for PartLib {
+    fn default() -> Self {
+        Self::std().unwrap()        // TODO: Rework
+    }
+}

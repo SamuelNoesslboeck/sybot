@@ -1,23 +1,21 @@
-use core::ops::DerefMut;
-
 use glam::Vec3;
+use serde::Deserialize;
 use syact::{Setup, Tool};
 use syact::comp::stepper::StepperCompGroup;
 use syact::meas::SimpleMeas;
 use syact::units::*;
-use sybot_pkg::Package;
-use sybot_pkg::infos::{AngConf, RobotInfo};
+use sybot_pkg::{RobotPackage, parse_struct};
+use sybot_pkg::info::AngConf;
 use sybot_rcs::Position;
 
 use crate::{Vars, Robot, PushRemote, Descriptor, Mode, default_modes};
 
 pub struct StepperRobot<T : StepperCompGroup<C>, const C : usize> {
-    info : RobotInfo,
     vars : Vars<C>,
 
     ang_confs : Vec<AngConf>,
     comps : T,
-    meas : Vec<Box<dyn SimpleMeas>>, 
+    meas : [Vec<Box<dyn SimpleMeas>>; C], 
 
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
@@ -29,10 +27,9 @@ pub struct StepperRobot<T : StepperCompGroup<C>, const C : usize> {
 }
 
 impl<T : StepperCompGroup<C>, const C : usize> StepperRobot<T, C> {
-    pub fn new(info : RobotInfo, ang_confs : Vec<AngConf>, comps : T, 
-    meas: Vec<Box<dyn SimpleMeas>>, tools : Vec<Box<dyn Tool>>) -> Self {
+    pub fn new(ang_confs : Vec<AngConf>, comps : T, 
+    meas: [Vec<Box<dyn SimpleMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
-            info,
             vars: Vars::default(),
 
             ang_confs,
@@ -48,18 +45,24 @@ impl<T : StepperCompGroup<C>, const C : usize> StepperRobot<T, C> {
             remotes: Vec::new()
         }
     }
+}
 
-    pub fn from_pkg_stat(pkg : &Package, comps : T) -> Result<Self, crate::Error> {
+impl<T : StepperCompGroup<C> + for<'de> Deserialize<'de>, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> {
+    type Error = crate::Error;
+
+    #[allow(deprecated)]
+    fn try_from(pkg : RobotPackage) -> Result<Self, Self::Error> {
         let tools = pkg.parse_tools_dyn()?;
         let meas = pkg.parse_meas_dyn()?;
         let ang_confs = pkg.parse_ang_confs().unwrap();
+        let comps : T = parse_struct(pkg.comps.unwrap())?.0;
 
         let mut rob = Self::new(
-            pkg.info.clone(), ang_confs, comps, meas, tools
+            ang_confs, comps, meas.try_into().ok().unwrap(), tools
         );
 
-        if let Some(link) = &pkg.lk {
-            rob.comps_mut().write_link(link.clone());
+        if let Some(link) = &pkg.data {
+            rob.comps_mut().write_data(link.clone());
         }
 
         Ok(rob)
@@ -70,8 +73,10 @@ impl<T : StepperCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
     fn setup(&mut self) -> Result<(), syact::Error> {
         self.comps_mut().setup()?;
 
-        for meas in &mut self.meas {
-            meas.setup()?;
+        for meas_vec in &mut self.meas {
+            for meas in meas_vec {
+                meas.setup()?;
+            }
         }
 
         Ok(())
@@ -90,10 +95,6 @@ impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
 
         fn comps_mut<'a>(&'a mut self) -> &'a mut dyn syact::SyncCompGroup<C> {
             &mut self.comps
-        }
-
-        fn info<'a>(&'a self) -> &'a RobotInfo {
-            &self.info
         }
     
         fn vars<'a>(&'a self) -> &'a Vars<C> {
@@ -185,14 +186,28 @@ impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
         }
     // 
 
-    fn update(&mut self) -> Result<(), crate::Error> {
-        let phis = self.phis();
-        for rem in &mut self.remotes {
-            rem.push_phis(&phis)?;
-        }
+    // Auto-Meas
+        fn auto_meas(&mut self) -> Result<(), crate::Error> {
+            for i in 0 .. C {
+                if let Some(main) = self.meas[i].first_mut() {
+                    main.measure(self.comps.index_mut(i))?;
+                }
+            }
 
-        Ok(())
-    }
+            Ok(())
+        }
+    // 
+
+    // Events
+        fn update(&mut self) -> Result<(), crate::Error> {
+            let phis = self.phis();
+            for rem in &mut self.remotes {
+                rem.push_phis(&phis)?;
+            }
+
+            Ok(())
+        }
+    // 
 
     // Tools
         fn get_tool(&self) -> Option<&dyn Tool> {
@@ -245,18 +260,6 @@ impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
 
             self.mode_id = index;
             Ok(&self.modes[self.mode_id])
-        }
-    // 
-
-    // Meas
-        fn move_home(&mut self) -> Result<(), crate::Error> {
-            for i in 0 .. C {
-                self.meas[i].measure(self.comps.index_mut(i).deref_mut())?;
-            }
-
-            self.update()?;
-
-            Ok(())
         }
     // 
 
