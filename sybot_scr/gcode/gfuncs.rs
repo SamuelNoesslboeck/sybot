@@ -82,7 +82,7 @@ use super::*;
     pub fn g28<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
-        match robot.move_home() {
+        match robot.auto_meas() {
             Ok(_) => Ok(serde_json::Value::Null),
             Err(meas) => {
                 println!(" -> Problems with measurement! {:?}", meas);      // TODO: Add proper error

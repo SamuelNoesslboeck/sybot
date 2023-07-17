@@ -1,3 +1,4 @@
+#[allow(ambiguous_glob_reexports)]
 pub use crate::*;
 
 pub use crate::pkg::Package;

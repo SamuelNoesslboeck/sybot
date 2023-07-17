@@ -6,7 +6,7 @@ use glam::Vec3;
 use syact::{SyncCompGroup, Tool, Setup, SimpleTool};
 use syact::units::*;
 
-use sybot_pkg::infos::{RobotInfo, AngConf};
+use sybot_pkg::info::{RobotInfo, AngConf};
 use sybot_rcs::{WorldObj, Position, PointRef};
 
 pub type Error = Box<dyn std::error::Error>;
@@ -141,8 +141,6 @@ pub trait Descriptor<const C : usize> {
 
 pub trait Robot<const C : usize> : Setup {
     // Data
-        fn info<'a>(&'a self) -> &'a RobotInfo;
-
         /// Returns a reference to the robots variables
         fn vars<'a>(&'a self) -> &'a Vars<C>;
 
@@ -260,6 +258,10 @@ pub trait Robot<const C : usize> : Setup {
         }
     // 
 
+    // Meas
+        fn auto_meas(&mut self) -> Result<(), crate::Error>;
+    // 
+
     // Loads
         #[inline]
         fn apply_forces(&mut self, forces : &[Force; C]) {
@@ -321,10 +323,6 @@ pub trait Robot<const C : usize> : Setup {
 
         /// Returns a mutable reference to all remotes of the robot
         fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote>>;
-    //
-
-    // Meas
-        fn move_home(&mut self) -> Result<(), crate::Error>;
     //
 
     // Events
