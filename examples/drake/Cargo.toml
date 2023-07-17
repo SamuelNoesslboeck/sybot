@@ -1,0 +1,16 @@
+[package]
+name = "drake"
+author = "Samuel Nösslböck <samuel.noesslboek@gmail.com>"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glam = "0.24.0"
+syact = { version = "0.12.0", path = "../../../syact" }
+sybot = { path = "../../", features = [ "gcode", "mqtt" ]}
+tokio = { version = "1.28.2", features = [ "macros", "rt-multi-thread" ]}
+
+[features]
+rasp = [ "sybot/rasp" ]
+
+[workspace]

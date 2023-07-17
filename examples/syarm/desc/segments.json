@@ -1,0 +1,39 @@
+[
+  {
+    "info": {
+      "name": "base"
+    },
+    "move": "Rotation",
+    "sim": {
+      "mass": 0.2,
+      "fric": 2.0
+    }
+  },
+  {
+    "info": {
+      "name": "arm1"
+    },
+    "move": "Rotation",
+    "sim": {
+      "mass": 0.5
+    }
+  },
+  {
+    "info": {
+      "name": "arm2"
+    },
+    "move": "Rotation",
+    "sim": {
+      "mass": 0.5
+    }
+  },
+  {
+    "info": {
+      "name": "arm3"
+    },
+    "move": "Rotation",
+    "sim": {
+      "mass": 0.25
+    }
+  }
+]

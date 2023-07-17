@@ -1,0 +1,59 @@
+[
+  {
+    "info": {
+      "name": "x-axis"
+    },
+    "type_name": "Cylinder",
+    "obj": {
+      "ctrl": {
+        "consts": "<lib://stepper/MOT_17HE15_1504S>",
+        "pin_dir": "<pin://x-axis/dir>",
+        "pin_step": "<pin://x-axis/step>"
+      },
+      "rte_ratio": 1.273
+    },
+    "limit": {
+      "vel": 40.0,
+      "min": 0.0,
+      "max": 200.0
+    }
+  },
+  {
+    "info": {
+      "name": "y-axis"
+    },
+    "type_name": "Cylinder",
+    "obj": {
+      "ctrl": {
+        "consts": "<lib://stepper/MOT_17HE15_1504S>",
+        "pin_dir": "<pin://y-axis/dir>",
+        "pin_step": "<pin://y-axis/step>"
+      },
+      "rte_ratio": 1.273
+    },
+    "limit": {
+      "vel": 40.0,
+      "min": 0.0,
+      "max": 300.0
+    }
+  },
+  {
+    "info": {
+      "name": "z-axis"
+    },
+    "type_name": "Cylinder",
+    "obj": {
+      "ctrl": {
+        "consts": "<lib://stepper/MOT_17HE15_1504S>",
+        "pin_dir": "<pin://z-axis/dir>",
+        "pin_step": "<pin://z-axis/step>"
+      },
+      "rte_ratio": 1.273
+    },
+    "limit": {
+      "vel": 40.0,
+      "min": 0.0,
+      "max": 150.0
+    }
+  }
+]

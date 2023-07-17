@@ -1,15 +1,18 @@
 {
 	"folders": [
 		{
-			"name": "stepper_lib",
-			"path": "../stepper_lib"
+			"name": "syact",
+			"path": "../syact"
 		},
 		{
-			"name": "sybot_lib",
+			"name": "sybot",
 			"path": "."
 		}
 	],
 	"settings": {
-		"rust-analyzer.showUnlinkedFileNotification": false
+		"rust-analyzer.showUnlinkedFileNotification": false,
+		"rust-analyzer.diagnostics.disabled": [
+			"unresolved-proc-macro"
+		]
 	}
 }
