@@ -1,16 +1,17 @@
 use glam::Vec3;
 use serde::Deserialize;
-use syact::{Setup, Tool};
-use syact::comp::stepper::StepperCompGroup;
+use syact::{Setup, Tool, SyncCompGroup};
+use syact::comp::stepper::{StepperComp, StepperCompGroup};
 use syact::meas::SimpleMeas;
 use syact::units::*;
-use sybot_pkg::{RobotPackage, parse_struct};
-use sybot_pkg::info::AngConf;
-use sybot_rcs::Position;
+
+use crate::pkg::{RobotPackage, parse_struct};
+use crate::pkg::info::AngConf;
+use crate::rcs::Position;
 
 use crate::{Vars, Robot, PushRemote, Descriptor, Mode, default_modes};
 
-pub struct StepperRobot<T : StepperCompGroup<C>, const C : usize> {
+pub struct StepperRobot<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> {
     vars : Vars<C>,
 
     ang_confs : Vec<AngConf>,
@@ -26,7 +27,7 @@ pub struct StepperRobot<T : StepperCompGroup<C>, const C : usize> {
     remotes : Vec<Box<dyn PushRemote>>
 }
 
-impl<T : StepperCompGroup<C>, const C : usize> StepperRobot<T, C> {
+impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> StepperRobot<T, C> {
     pub fn new(ang_confs : Vec<AngConf>, comps : T, 
     meas: [Vec<Box<dyn SimpleMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
@@ -47,7 +48,7 @@ impl<T : StepperCompGroup<C>, const C : usize> StepperRobot<T, C> {
     }
 }
 
-impl<T : StepperCompGroup<C> + for<'de> Deserialize<'de>, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> {
+impl<T : StepperCompGroup<dyn StepperComp, C> + for<'de> Deserialize<'de>, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> {
     type Error = crate::Error;
 
     #[allow(deprecated)]
@@ -69,7 +70,7 @@ impl<T : StepperCompGroup<C> + for<'de> Deserialize<'de>, const C : usize> TryFr
     }
 }
 
-impl<T : StepperCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
+impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for StepperRobot<T, C> {
     fn setup(&mut self) -> Result<(), syact::Error> {
         self.comps_mut().setup()?;
 
@@ -83,17 +84,17 @@ impl<T : StepperCompGroup<C>, const C : usize> Setup for StepperRobot<T, C> {
     }
 }
 
-impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
+impl<T : StepperCompGroup<(dyn StepperComp + 'static), C> + SyncCompGroup<(dyn syact::SyncComp + 'static), C>, const C : usize> Robot<T, C> for StepperRobot<T, C> {
     // Data
         fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
             &self.ang_confs
         }
 
-        fn comps<'a>(&'a self) -> &'a dyn syact::SyncCompGroup<C> {
+        fn comps<'a>(&'a self) -> &'a T {
             &self.comps
         }
 
-        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn syact::SyncCompGroup<C> {
+        fn comps_mut<'a>(&'a mut self) -> &'a mut T {
             &mut self.comps
         }
     
@@ -107,7 +108,7 @@ impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
     //
 
     // Movement
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
             let phis = desc.convert_pos(self, p)?;
             self.move_abs_j_sync(
                 phis,
@@ -117,10 +118,10 @@ impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
     //
 
     // Complex movement
-        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
             let pos_0 = desc.current_tcp().pos();
 
-            let poses = sybot_rcs::math::split_linear(pos_0, distance, accuracy);
+            let poses = crate::rcs::math::split_linear(pos_0, distance, accuracy);
             
             let mut gam_stack = Vec::new();
             let mut dstack = Vec::new();
@@ -180,7 +181,7 @@ impl<T : StepperCompGroup<C>, const C : usize> Robot<C> for StepperRobot<T, C> {
             Ok(())
         }
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
             let pos_0 = desc.current_tcp().pos();
             self.move_l(desc, pos - pos_0, accuracy, speed)
         }

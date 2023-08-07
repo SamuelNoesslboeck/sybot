@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use syact::units::*;
 
-use crate::{EmbeddedJsonInfo, GeneralInfo};
+use crate::pkg::{EmbeddedJsonInfo, GeneralInfo};
 
 /// Extended json information for components
 #[derive(Debug, Clone, Serialize, Deserialize)]

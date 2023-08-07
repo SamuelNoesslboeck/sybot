@@ -1,7 +1,7 @@
 // use std::time::Instant;
 
 // use glam::Vec3;
-// use sybot_rcs::Position;
+// use crate::rcs::Position;
 // // use syact::units::*;
 // use sybot::prelude::*;
 
@@ -11,7 +11,7 @@ fn main() -> Result<(), sybot::Error> {
     // let pkg = Package::load("assets/SyArm_Mk1")?;
     // let mut syarm = SyArm::try_from(pkg)?;
 
-    // // dbg!(serde_json::to_string_pretty(&sybot_pkg::SegmentMovementInfo::Linear(Vec3::X.to_array()))?);
+    // // dbg!(serde_json::to_string_pretty(&crate::pkg::SegmentMovementInfo::Linear(Vec3::X.to_array()))?);
 
     // println!(" => Created in {}s", inst.elapsed().as_secs_f32());
 

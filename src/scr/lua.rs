@@ -6,8 +6,8 @@ use glam::Vec3;
 use mlua::{Lua, Result, Table, UserData, LuaSerdeExt};
 use serde::{Serialize, Deserialize};
 use syact::units::*;
-use sybot_rcs::Position;
-use sybot_robs::{BasicRobot, RobotDesc};
+use crate::rcs::Position;
+use crate::robs::{BasicRobot, RobotDesc};
 
 #[derive(Clone)]
 pub struct RobStorage<const C : usize> {

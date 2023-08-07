@@ -5,7 +5,7 @@ use alloc::rc::Rc;
 use glam::{Vec3, Mat3};
 use serde::{Serialize, Deserialize};
 
-use crate::{Position, WorldObj, PointRef, Point};
+use crate::rcs::{Position, WorldObj, PointRef, Point};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct PositionDes {

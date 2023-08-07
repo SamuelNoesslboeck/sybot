@@ -6,6 +6,8 @@ extern crate alloc;
 pub use syact::{Setup, Tool, SyncComp};
 
 // Module decleration
+    pub mod ctrl;
+    
     /// Premade descriptors 
     pub mod desc;
 
@@ -25,7 +27,7 @@ pub use syact::{Setup, Tool, SyncComp};
     // pub use intpr::Interpreter;
 
     /// Structs and functions for calculating paths, loads and more
-    pub use sybot_rcs::math as math;
+    pub use rcs::math;
 
     pub mod prelude; 
 
@@ -39,15 +41,15 @@ pub use syact::{Setup, Tool, SyncComp};
 
     mod remote;
 
-    pub use sybot_pkg as pkg;
+    pub mod pkg;
     pub use pkg::Package;
 
-    pub use sybot_rcs as rcs;
+    pub mod rcs;
 
-    pub use sybot_robs as robs;
+    pub mod robs;
     pub use robs::*;
 
-    pub use sybot_scr as scr;
+    pub mod scr;
 
     // #[cfg(test)]
     // mod tests;       TODO: Fix tests
@@ -55,7 +57,7 @@ pub use syact::{Setup, Tool, SyncComp};
 
 // Types
 /// Universal error type used in the crate
-pub type Error = sybot_robs::Error;
+pub type Error = Box<dyn std::error::Error>;
 
 // Lua
 #[cfg(feature = "lua")]

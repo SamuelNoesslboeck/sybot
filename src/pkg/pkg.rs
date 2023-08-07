@@ -5,10 +5,10 @@ use regex::Regex;
 use serde::Deserialize;
 use syact::prelude::SimpleMeas;
 use syact::{CompData, Tool};
-use sybot_rcs::WorldObj;
 
-use crate::{AnyJsonInfo, Pins, PartLib, get_pin};
-use crate::info::{RobotInfo, CompJsonInfo, SegmentInfo, AngConf};
+use crate::pkg::{AnyJsonInfo, Pins, PartLib, get_pin};
+use crate::pkg::info::{RobotInfo, CompJsonInfo, SegmentInfo, AngConf};
+use crate::rcs::WorldObj;
 
 #[derive(Debug, Default)]
 pub struct RobotPackage {

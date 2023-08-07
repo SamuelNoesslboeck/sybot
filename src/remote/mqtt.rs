@@ -63,11 +63,11 @@ impl PushRemote for Publisher {
         Ok(self.client.publish(msg)?)
     }
 
-    fn push_other(&mut self, _other : sybot_robs::PushMsg) -> Result<(), sybot_robs::Error> {
+    fn push_other(&mut self, _other : crate::robs::PushMsg) -> Result<(), crate::Error> {
         Ok(())
     }
 
-    fn push_any(&mut self, _msg_type : &str, _msg : &[u8]) -> Result<(), sybot_robs::Error> {
+    fn push_any(&mut self, _msg_type : &str, _msg : &[u8]) -> Result<(), crate::Error> {
         Ok(())
     }
 }

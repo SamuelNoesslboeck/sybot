@@ -3,13 +3,11 @@ extern crate alloc;
 use core::fmt::Debug;
 
 use glam::Vec3;
-use syact::{SyncCompGroup, Tool, Setup, SimpleTool};
+use syact::{SyncCompGroup, Tool, Setup, SimpleTool, SyncComp};
 use syact::units::*;
 
-use sybot_pkg::info::AngConf;
-use sybot_rcs::{WorldObj, Position, PointRef};
-
-pub type Error = Box<dyn std::error::Error>;
+use crate::pkg::info::AngConf;
+use crate::rcs::{WorldObj, Position, PointRef};
 
 // Submodules
     mod device;
@@ -86,11 +84,11 @@ pub enum PushMsg {
 /// A `PushRemote` defines a remote connection that the robot can push values to
 pub trait PushRemote {
     /// Publish a set of phis to the remote connection
-    fn push_phis(&mut self, phis : &[Phi]) -> Result<(), Error>;
+    fn push_phis(&mut self, phis : &[Phi]) -> Result<(), crate::Error>;
 
-    fn push_other(&mut self, other : PushMsg) -> Result<(), Error>;
+    fn push_other(&mut self, other : PushMsg) -> Result<(), crate::Error>;
 
-    fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), Error>;
+    fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), crate::Error>;
 }
 
 pub trait AxisConf {
@@ -112,7 +110,7 @@ impl AxisConf for EmptyConf {
     }
 }
 
-pub trait Descriptor<const C : usize> {
+pub trait Descriptor<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> {
     // Axis conf
         fn aconf<'a>(&'a self) -> &'a dyn AxisConf;
 
@@ -120,11 +118,11 @@ pub trait Descriptor<const C : usize> {
     //
 
     // Events
-        fn update(&mut self, rob : &mut dyn Robot<C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
+        fn update(&mut self, rob : &mut dyn Robot<T, C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
 
     // Calculation
-        fn convert_pos(&self, rob : &dyn Robot<C>, pos : Position) -> Result<[Phi; C], crate::Error>;
+        fn convert_pos(&self, rob : &dyn Robot<T, C>, pos : Position) -> Result<[Phi; C], crate::Error>;
     //
 
     // World object
@@ -139,7 +137,7 @@ pub trait Descriptor<const C : usize> {
     // 
 }
 
-pub trait Robot<const C : usize> : Setup {
+pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
     // Data
         /// Returns a reference to the robots variables
         fn vars<'a>(&'a self) -> &'a Vars<C>;
@@ -150,10 +148,10 @@ pub trait Robot<const C : usize> : Setup {
         fn ang_confs<'a>(&'a self) -> &'a [AngConf];
 
         /// Returns a reference to the component group of the robot
-        fn comps<'a>(&'a self) -> &'a dyn SyncCompGroup<C>;
+        fn comps<'a>(&'a self) -> &'a T;
 
         /// Returns a mutable reference to the component group of the robot 
-        fn comps_mut<'a>(&'a mut self) -> &'a mut dyn SyncCompGroup<C>;
+        fn comps_mut<'a>(&'a mut self) -> &'a mut T;
     // 
 
     // Move data
@@ -213,21 +211,15 @@ pub trait Robot<const C : usize> : Setup {
         }
 
         fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
-            self.comps_mut().drive_rel(deltas, speed_f)
+            self.comps_mut().drive_rel(deltas, [speed_f; C])
         }
 
         fn move_abs_j_sync(&mut self, phis : [Phi; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
             let gammas = self.gammas_from_phis(phis);
             self.comps_mut().drive_abs(gammas, speed_f)
         }
- 
-        // fn move_p_sync(&mut self, desc : &mut dyn RobotDesc<C>, p : Vec3, speed_f : f32) -> Result<(), crate::Error> {
-        //     self.move_j_abs_sync(
 
-        //     )
-        // }
-
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
+        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
     
     // Complex movement
@@ -239,11 +231,11 @@ pub trait Robot<const C : usize> : Setup {
             self.comps_mut().drive_abs_async(gammas, speed_f)
         }
 
-        fn move_l(&mut self, desc : &mut dyn Descriptor<C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_p(&mut self, desc: &mut dyn Descriptor<C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
+        fn move_p(&mut self, desc: &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {
             let phis = desc.convert_pos(self, p)?;
             let gammas = self.gammas_from_phis(phis);
