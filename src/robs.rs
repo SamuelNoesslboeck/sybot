@@ -216,20 +216,16 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
 
         fn move_abs_j_sync(&mut self, phis : [Phi; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
             let gammas = self.gammas_from_phis(phis);
-            self.comps_mut().drive_abs(gammas, speed_f)
+            self.comps_mut().drive_abs(gammas, [speed_f; C])
         }
 
         fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
     
     // Complex movement
-        fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error> {
-            self.comps_mut().drive_rel_async(deltas, speed_f)
-        }
+        fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error>;
 
-        fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error> {
-            self.comps_mut().drive_abs_async(gammas, speed_f)
-        }
+        fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error>;
 
         fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
