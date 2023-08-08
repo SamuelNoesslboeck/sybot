@@ -1,13 +1,15 @@
 use std::process::exit;
 
+use syact::{SyncCompGroup, SyncComp};
 use syact::units::*;
+
 use crate::rcs::Position;
-use super::*;
+use crate::scr::gcode::*;
 
 // General functions
     /// G0 X{Position} Y{Position} Z{Position} DECO{Angle} \
     /// Rapid positioning
-    pub fn g0<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn g0<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (robot : &mut R, desc : &mut D, _ : &mut S, code : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let pos = desc.cache_tcp(
@@ -42,7 +44,7 @@ use super::*;
         }))
     }
 
-    pub fn g1<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn g1<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (robot : &mut R, desc : &mut D, _ : &mut S, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let _pos = desc.cache_tcp(
@@ -67,7 +69,7 @@ use super::*;
     }
     /// G4 X{Seconds} P{Milliseconds}
     /// Dwell (sleeping)
-    pub fn g4<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn g4<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let seconds = 
@@ -79,7 +81,7 @@ use super::*;
 
     /// G28 \
     /// Return to home position
-    pub fn g28<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn g28<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         match robot.auto_meas() {
@@ -106,7 +108,7 @@ use super::*;
     // }
 
     // Extra functions
-    pub fn g100<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn g100<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
@@ -121,7 +123,7 @@ use super::*;
     }
 
     // Debug
-    pub fn g1000<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn g1000<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (robot : &mut R, desc : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::json!({ 
@@ -131,7 +133,7 @@ use super::*;
         }))
     }
 
-    pub fn g1100<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn g1100<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // let phis = robot.safe_phis(args_by_iterate_fixed::<C>(args, 'A'))?;
@@ -144,28 +146,28 @@ use super::*;
 //
 
 // Misc Functions
-    pub fn m3<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn m3<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         robot.activate_tool()?;
         Ok(serde_json::Value::Null)
     }
 
-    pub fn m4<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn m4<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         // Ok(serde_json::json!(robot.activate_spindle(false)))
         todo!()
     }
 
-    pub fn m5<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn m5<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         robot.deactivate_tool()?;
         todo!()
     }
 
-    pub fn m30<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn m30<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
     (_ : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         println!("Program finished!");
@@ -173,7 +175,7 @@ use super::*;
     }
 
     // Additional functions
-    pub fn m119<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn m119<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (_ : &mut R, desc : &mut D, _ : &mut S, _ : &GCode, args : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         let args = args_by_iterate(args, 'A');
@@ -189,7 +191,7 @@ use super::*;
     }
 
     // Debug functions
-    pub fn m1006<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn m1006<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (robot : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         Ok(serde_json::to_value(robot.get_tool().unwrap().get_json()).unwrap())
@@ -202,7 +204,7 @@ use super::*;
 // 
 
 // Programm functions
-    pub fn o0<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+    pub fn o0<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
         (_ : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
         println!("test");
@@ -211,7 +213,7 @@ use super::*;
 //
 
 // Tool
-pub fn t<R : Robot<C>, D : Descriptor<C>, S, const C : usize>
+pub fn t<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
     (_ : &mut R, _ : &mut D, _ : &mut S, _ : usize) -> Result<serde_json::Value, crate::Error> 
 {
     // if let Some(tool) = robot.set_tool_id(index) {
