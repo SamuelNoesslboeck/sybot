@@ -16,16 +16,16 @@
 // } 
 
 // impl PushRemote for ConsoleRemote {
-//     fn push_phis(&mut self, phis : &[syact::units::Phi]) -> Result<(), sybot_robs::Error> {
+//     fn push_phis(&mut self, phis : &[syact::units::Phi]) -> Result<(), crate::robs::Error> {
 //         self.phis = phis.to_vec();
 //         Ok(())
 //     }
     
-//     fn push_other(&mut self, other : sybot_robs::PushMsg) -> Result<(), sybot_robs::Error> {
+//     fn push_other(&mut self, other : crate::robs::PushMsg) -> Result<(), crate::robs::Error> {
 //         Ok(())
 //     }
 
-//     fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), sybot_robs::Error> {
+//     fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), crate::robs::Error> {
 //         Ok(())
 //     }
 // }

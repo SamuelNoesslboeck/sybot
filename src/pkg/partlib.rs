@@ -3,10 +3,10 @@ use core::fmt::Debug;
 use alloc::collections::BTreeMap;
 use syact::{SyncComp, Stepper, Tool};
 use syact::comp::{StepperCylinder, StepperCylTriangle, StepperGearJoint};
-use syact::comp::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
-use syact::meas::{EndSwitch, SimpleMeas, NoMeas};
+use syact::tool::{AxialJoint, AxisTongs, PencilTool, Tongs};
+use syact::meas::{EndSwitch, SimpleMeas};
 
-use crate::EmbeddedJsonInfo;
+use crate::pkg::EmbeddedJsonInfo;
 
 pub type JsonLib = BTreeMap<String, serde_json::Value>;
 pub type LibFunc<T> = fn(serde_json::Value) -> Result<T, crate::Error>;
@@ -58,7 +58,7 @@ impl PartLib {
         ]), dyn_lib!(Tool, [
             AxialJoint, AxisTongs, PencilTool, Tongs
         ]), dyn_lib!(SimpleMeas, [
-            EndSwitch, NoMeas
+            EndSwitch
         ])))
     }
 

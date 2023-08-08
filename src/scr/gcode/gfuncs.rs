@@ -1,7 +1,7 @@
 use std::process::exit;
 
 use syact::units::*;
-use sybot_rcs::Position;
+use crate::rcs::Position;
 use super::*;
 
 // General functions

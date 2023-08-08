@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sybot_robs::{Robot, Descriptor};
+use crate::robs::{Robot, Descriptor};
 
 use crate::Interpreter;
 

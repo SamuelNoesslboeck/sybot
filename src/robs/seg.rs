@@ -3,8 +3,8 @@ use core::ops::Index;
 use glam::{Vec3, Mat3};
 use syact::units::*;
 
-use sybot_pkg::info::{SegmentInfo, SegmentMovementInfo};
-use sybot_rcs::{PointRef, Position, Point, WorldObj};
+use crate::pkg::info::{SegmentInfo, SegmentMovementInfo};
+use crate::rcs::{PointRef, Position, Point, WorldObj};
 
 #[derive(Debug)]
 pub enum SegmentMovement {

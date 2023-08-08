@@ -3,7 +3,7 @@ use core::f32::consts::PI;
 use glam::Vec3;
 use syact::units::*;
 
-use crate::Point;
+use crate::rcs::Point;
 
 pub fn sub_phis<const C : usize>(a : [Phi; C], b : [Phi; C]) -> [Delta; C] {
     let mut deltas = [Delta::ZERO; C];
