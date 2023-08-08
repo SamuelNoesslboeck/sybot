@@ -1,8 +1,3 @@
-#![doc = include_str!("../README.md")]
-// #![deny(missing_docs)]
-
-extern crate alloc;
-
 use alloc::collections::BTreeMap;
 use serde::{Serialize, Deserialize};
 use serde::de::DeserializeOwned;

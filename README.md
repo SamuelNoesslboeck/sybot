@@ -39,7 +39,7 @@ sybot = { version = "0.8.2, features = [ "rasp" ] }
 </details>
 <p></p>
 
-```rust
+```rust ,ignore
 use sybot::{Robot, JsonConfig, ActRobot, Setup};
 use sybot::robot::SyArm;
 use sybot::intpr::Interpreter;
