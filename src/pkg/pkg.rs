@@ -107,7 +107,11 @@ impl Package {
             }
         }
 
-        pub fn unpack<R : TryFrom<RobotPackage, Error = crate::Error>, D : TryFrom<DescPackage, Error = crate::Error>, S : TryFrom<StationPackage, Error = crate::Error>>(self) -> Result<(RobotInfo, R, D, S), crate::Error>
+        pub fn unpack<R, D, S>(self) -> Result<(RobotInfo, R, D, S), crate::Error>
+        where
+            R : TryFrom<RobotPackage, Error = crate::Error>,
+            D : TryFrom<DescPackage, Error = crate::Error>,
+            S : TryFrom<StationPackage, Error = crate::Error>
         {
             Ok((
                 self.info,

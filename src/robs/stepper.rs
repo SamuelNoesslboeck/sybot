@@ -1,6 +1,6 @@
 use glam::Vec3;
-use serde::Deserialize;
-use syact::{Setup, Tool, SyncCompGroup};
+use serde::de::DeserializeOwned;
+use syact::{Setup, Tool, SyncCompGroup, SyncComp};
 use syact::comp::stepper::{StepperComp, StepperCompGroup};
 use syact::meas::SimpleMeas;
 use syact::units::*;
@@ -11,7 +11,11 @@ use crate::rcs::Position;
 
 use crate::{Vars, Robot, PushRemote, Descriptor, Mode, default_modes};
 
-pub struct StepperRobot<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> {
+pub struct StepperRobot<T, const C : usize> 
+where 
+    T : StepperCompGroup<dyn StepperComp, C>,
+    T: SyncCompGroup<dyn SyncComp, C>
+{
     vars : Vars<C>,
 
     ang_confs : Vec<AngConf>,
@@ -27,7 +31,11 @@ pub struct StepperRobot<T : StepperCompGroup<dyn StepperComp, C>, const C : usiz
     remotes : Vec<Box<dyn PushRemote>>
 }
 
-impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> StepperRobot<T, C> {
+impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> StepperRobot<T, C>
+where 
+    T : StepperCompGroup<dyn StepperComp, C>,
+    T: SyncCompGroup<dyn SyncComp, C>
+{
     pub fn new(ang_confs : Vec<AngConf>, comps : T, 
     meas: [Vec<Box<dyn SimpleMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
@@ -48,7 +56,12 @@ impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> StepperRobot<T, 
     }
 }
 
-impl<T : StepperCompGroup<dyn StepperComp, C> + for<'de> Deserialize<'de>, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> {
+impl<T, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> 
+where 
+    T: StepperCompGroup<dyn StepperComp, C>,
+    T: SyncCompGroup<dyn SyncComp, C>,
+    T: DeserializeOwned
+{
     type Error = crate::Error;
 
     #[allow(deprecated)]
@@ -63,14 +76,18 @@ impl<T : StepperCompGroup<dyn StepperComp, C> + for<'de> Deserialize<'de>, const
         );
 
         if let Some(link) = &pkg.data {
-            rob.comps_mut().write_data(link.clone());
+            <T as SyncCompGroup<dyn SyncComp, C>>::write_data(rob.comps_mut(), link.clone());
         }
 
         Ok(rob)
     }
 }
 
-impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for StepperRobot<T, C> {
+impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for StepperRobot<T, C> 
+where 
+    T : StepperCompGroup<dyn StepperComp, C>,
+    T: SyncCompGroup<dyn SyncComp, C>
+{
     fn setup(&mut self) -> Result<(), syact::Error> {
         self.comps_mut().setup()?;
 
@@ -84,24 +101,33 @@ impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for Steppe
     }
 }
 
-impl<T : StepperCompGroup<(dyn StepperComp + 'static), C> + SyncCompGroup<(dyn syact::SyncComp + 'static), C>, const C : usize> Robot<T, C> for StepperRobot<T, C> {
+impl<T, const C : usize> Robot<T, C> for StepperRobot<T, C> 
+where 
+    T : StepperCompGroup<dyn StepperComp, C>,
+    T : SyncCompGroup<dyn SyncComp, C>
+{
     // Data
+        #[inline]
         fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
             &self.ang_confs
         }
 
+        #[inline]
         fn comps<'a>(&'a self) -> &'a T {
             &self.comps
         }
 
+        #[inline]
         fn comps_mut<'a>(&'a mut self) -> &'a mut T {
             &mut self.comps
         }
-    
+        
+        #[inline]
         fn vars<'a>(&'a self) -> &'a Vars<C> {
             &self.vars
         }
-    
+        
+        #[inline]
         fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C> {
             &mut self.vars
         }
@@ -118,65 +144,88 @@ impl<T : StepperCompGroup<(dyn StepperComp + 'static), C> + SyncCompGroup<(dyn s
     //
 
     // Complex movement
+        #[allow(unused)]
+        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : f32) -> Result<(), crate::Error> {
+            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
+            <T as SyncCompGroup<dyn SyncComp, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+        }
+
+        #[allow(unused)]
+        fn move_abs_j(&mut self, gammas : [Gamma; C], gen_speed_f : f32) -> Result<(), crate::Error> {
+            // TODO: Implement gammas to deltas function
+            let mut deltas = [Delta::ZERO; C];
+            let comp_gammas = <T as SyncCompGroup<dyn SyncComp, C>>::gammas(self.comps());
+
+            for i in 0 .. C {
+                deltas[i] = gammas[i] - comp_gammas[i];
+            }
+
+            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
+            <T as SyncCompGroup<dyn SyncComp, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+        }
+
+        #[allow(unused)]
         fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
-            let pos_0 = desc.current_tcp().pos();
+            todo!();
 
-            let poses = crate::rcs::math::split_linear(pos_0, distance, accuracy);
+            // let pos_0 = desc.current_tcp().pos();
+
+            // let poses = crate::rcs::math::split_linear(pos_0, distance, accuracy);
             
-            let mut gam_stack = Vec::new();
-            let mut dstack = Vec::new();
+            // let mut gam_stack = Vec::new();
+            // let mut dstack = Vec::new();
 
-            for pos in poses {
-                let phis = desc.convert_pos(self, Position::new(pos))?;
-                let mut gammas = self.gammas_from_phis(phis);
+            // for pos in poses {
+            //     let phis = desc.convert_pos(self, Position::new(pos))?;
+            //     let mut gammas = self.gammas_from_phis(phis);
 
-                for i in 0 .. C {
-                    gammas[i] = self.comps.index(i).abs_super_gamma(gammas[i]);
-                }
+            //     // for i in 0 .. C {
+            //     //     gammas[i] = self.comps.index(i).abs_super_gamma(gammas[i]);
+            //     // }
 
-                gam_stack.push(
-                    gammas
-                )
-            }
+            //     gam_stack.push(
+            //         gammas
+            //     )
+            // }
 
-            for i in 1 .. gam_stack.len() {
-                let mut deltas = [Delta::ZERO; C];
+            // for i in 1 .. gam_stack.len() {
+            //     let mut deltas = [Delta::ZERO; C];
 
-                for n in 0 .. C {
-                    deltas[n] = gam_stack[i][n] - gam_stack[i - 1][n];   
-                }
+            //     for n in 0 .. C {
+            //         deltas[n] = gam_stack[i][n] - gam_stack[i - 1][n];   
+            //     }
 
-                dstack.push(deltas);
-            }
+            //     dstack.push(deltas);
+            // }
 
-            let mut tstack = vec![accuracy / speed; dstack.len()];
+            // let mut tstack = vec![accuracy / speed; dstack.len()];
 
-            let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
-            builder.generate(&mut tstack, dstack.as_slice(), [Some(Omega::ZERO); C]);
+            // let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
+            // builder.generate(&mut tstack, dstack.as_slice(), [Some(Omega::ZERO); C]);
 
-            let mut nodes = builder.unpack();
+            // let mut nodes = builder.unpack();
 
-            println!("driving");
+            // println!("driving");
 
-            let mut corr = [(Delta::ZERO, Time::ZERO); C];
-            let mut t_err = Time::ZERO;
+            // let mut corr = [(Delta::ZERO, Time::ZERO); C];
+            // let mut t_err = Time::ZERO;
 
-            for i in 1 .. nodes.len() {
-                self.comps.drive_node_to_node(&nodes[i - 1], &nodes[i], &mut corr)?;
+            // for i in 1 .. nodes.len() {
+            //     self.comps.drive_node_to_node(&nodes[i - 1], &nodes[i], &mut corr)?;
 
-                for n in 0 .. C {
-                    nodes[i][n].delta = nodes[i][n].delta + corr[n].0;
-                    t_err += corr[n].1;
-                }
-            }
+            //     for n in 0 .. C {
+            //         nodes[i][n].delta = nodes[i][n].delta + corr[n].0;
+            //         t_err += corr[n].1;
+            //     }
+            // }
 
-            if let Some(last) = nodes.last() {
-                self.comps.drive_nodes(&last, [Omega::ZERO; C], &mut corr)?;
-            }
+            // if let Some(last) = nodes.last() {
+            //     self.comps.drive_nodes(&last, [Omega::ZERO; C], &mut corr)?;
+            // }
 
-            dbg!(corr, t_err);
+            // dbg!(corr, t_err);
 
-            println!("Done");
+            // println!("Done");
 
             Ok(())
         }
@@ -189,11 +238,13 @@ impl<T : StepperCompGroup<(dyn StepperComp + 'static), C> + SyncCompGroup<(dyn s
 
     // Auto-Meas
         fn auto_meas(&mut self) -> Result<(), crate::Error> {
-            for i in 0 .. C {
-                if let Some(main) = self.meas[i].first_mut() {
-                    main.measure(self.comps.index_mut(i))?;
-                }
-            }
+            // for i in 0 .. C {
+            //     if let Some(main) = self.meas[i].first_mut() {
+            //         main.measure(self.comps.index_mut(i))?;
+            //     }
+            // }
+
+            // TODO: REWORK MEAS MECHANIC
 
             Ok(())
         }

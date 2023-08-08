@@ -7,9 +7,6 @@ pub use syact::{Setup, Tool, SyncComp};
 
 // Module decleration
     pub mod ctrl;
-    
-    /// Premade descriptors 
-    pub mod desc;
 
     #[cfg(feature = "gcode")]
     pub use scr::gcode as gcode;
