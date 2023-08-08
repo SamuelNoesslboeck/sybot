@@ -2,8 +2,6 @@ use syact::SyncCompGroup;
 
 use crate::robs::{Robot, Descriptor};
 
-extern crate alloc;
-
 // Submodules
     #[cfg(feature = "gcode")]
     pub mod gcode;
@@ -11,8 +9,6 @@ extern crate alloc;
     #[cfg(feature = "lua")]
     pub mod lua; 
 // 
-
-pub type Error = Box<dyn std::error::Error>;
 
 /// Interpreters convert a string prompt into actions for the robot
 pub trait Interpreter<T : SyncCompGroup<(dyn syact::SyncComp + 'static), C>, R : Robot<T, C>, D : Descriptor<T, C>, S, O, const C : usize> {

@@ -9,12 +9,12 @@ use syact::prelude::*;
 use sybot::prelude::*;
 
 // Robot
-    #[derive(SyncCompGroup, Deserialize, Serialize, StepperCompGroup)]
+    #[derive(StepperCompGroup, Deserialize, Serialize)]
     struct SyArmComps {
-        base : GearJoint<Stepper>,
+        base : Gear<Stepper>,
         arm1 : CylinderTriangle<Stepper>,
         arm2 : CylinderTriangle<Stepper>,
-        arm3 : GearJoint<Stepper>
+        arm3 : Gear<Stepper>
     }
 
     type SyArmRob = StepperRobot<SyArmComps, 4>;
@@ -92,7 +92,7 @@ use sybot::prelude::*;
         }
     }
 
-    impl Descriptor<4> for SyArmDesc {
+    impl Descriptor<SyArmComps, 4> for SyArmDesc {
         // Axis config
             fn aconf<'a>(&'a self) -> &'a dyn AxisConf {
                 &self.conf
@@ -128,7 +128,7 @@ use sybot::prelude::*;
         // 
 
         // Events
-            fn update(&mut self, _ : &mut dyn Robot<4>, phis : &[Phi; 4]) -> Result<(), sybot::Error> {
+            fn update(&mut self, _ : &mut dyn Robot<SyArmComps, 4>, phis : &[Phi; 4]) -> Result<(), sybot::Error> {
                 self.segments.update(phis)?;
                 
                 let tcp_new = self.segments.calculate_end();
@@ -142,7 +142,7 @@ use sybot::prelude::*;
         // 
 
         // Calculate
-            fn convert_pos(&self, rob : &dyn Robot<4>, mut pos : Position) 
+            fn convert_pos(&self, rob : &dyn Robot<SyArmComps, 4>, mut pos : Position) 
             -> Result<[Phi; 4], sybot::Error> {
                 let phi_b = sybot::math::full_atan(pos.x(), pos.y());
                 let dec_ang = self.aconf().phis()[0].0;

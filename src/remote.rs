@@ -11,25 +11,17 @@
     pub mod msg;
 // 
 
-// pub struct ConsoleRemote { 
-//     pub phis : Vec<Phi>
-// } 
+pub enum PushMsg {
+    Measurement,
+    ToolChange
+}
 
-// impl PushRemote for ConsoleRemote {
-//     fn push_phis(&mut self, phis : &[syact::units::Phi]) -> Result<(), crate::robs::Error> {
-//         self.phis = phis.to_vec();
-//         Ok(())
-//     }
-    
-//     fn push_other(&mut self, other : crate::robs::PushMsg) -> Result<(), crate::robs::Error> {
-//         Ok(())
-//     }
+/// A `PushRemote` defines a remote connection that the robot can push values to
+pub trait PushRemote {
+    /// Publish a set of phis to the remote connection
+    fn push_phis(&mut self, phis : &[Phi]) -> Result<(), crate::Error>;
 
-//     fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), crate::robs::Error> {
-//         Ok(())
-//     }
-// }
+    fn push_other(&mut self, other : PushMsg) -> Result<(), crate::Error>;
 
-// pub struct FileRemote { 
-//     pub path: String
-// }
+    fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), crate::Error>;
+}
