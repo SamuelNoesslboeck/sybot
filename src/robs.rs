@@ -96,7 +96,7 @@ impl AxisConf for EmptyConf {
     }
 }
 
-pub trait Descriptor<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> {
+pub trait Descriptor<const C : usize> {
     // Axis conf
         fn aconf<'a>(&'a self) -> &'a dyn AxisConf;
 
@@ -104,11 +104,11 @@ pub trait Descriptor<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> {
     //
 
     // Events
-        fn update(&mut self, rob : &mut dyn Robot<T, C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
+        fn update<R : Robot<C, Comp = S, CompGroup = G>, S : SyncComp + ?Sized + 'static, G : SyncCompGroup<S, C>>(&mut self, rob : &mut R, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
 
     // Calculation
-        fn convert_pos(&self, rob : &dyn Robot<T, C>, pos : Position) -> Result<[Phi; C], crate::Error>;
+        fn convert_pos<R : Robot<C, Comp = S, CompGroup = G>, S : SyncComp + ?Sized, G>(&mut self, rob : &mut R, pos : Position) -> Result<[Phi; C], crate::Error>;
     //
 
     // World object
@@ -123,7 +123,10 @@ pub trait Descriptor<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> {
     // 
 }
 
-pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
+pub trait Robot<const C : usize> : Setup {
+    type Comp : SyncComp + ?Sized + 'static;
+    type CompGroup : SyncCompGroup<Self::Comp, C>;
+
     // Data
         /// Returns a reference to the robots variables
         fn vars<'a>(&'a self) -> &'a Vars<C>;
@@ -134,10 +137,10 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         fn ang_confs<'a>(&'a self) -> &'a [AngConf];
 
         /// Returns a reference to the component group of the robot
-        fn comps<'a>(&'a self) -> &'a T;
+        fn comps<'a>(&'a self) -> &'a Self::CompGroup;
 
         /// Returns a mutable reference to the component group of the robot 
-        fn comps_mut<'a>(&'a mut self) -> &'a mut T;
+        fn comps_mut<'a>(&'a mut self) -> &'a mut Self::CompGroup;
     // 
 
     // Move data
@@ -205,7 +208,7 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
             self.comps_mut().drive_abs(gammas, [speed_f; C])
         }
 
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
     
     // Complex movement
@@ -213,11 +216,11 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
 
         fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error>;
 
-        fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_p(&mut self, desc: &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
+        fn move_p<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {
             let phis = desc.convert_pos(self, p)?;
             let gammas = self.gammas_from_phis(phis);
@@ -230,10 +233,6 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         fn await_inactive(&mut self) -> Result<[Delta; C], crate::Error> {
             self.comps_mut().await_inactive()
         }
-    // 
-
-    // Meas
-        fn auto_meas(&mut self) -> Result<(), crate::Error>;
     // 
 
     // Loads

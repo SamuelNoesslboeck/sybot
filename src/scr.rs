@@ -1,5 +1,3 @@
-use syact::SyncCompGroup;
-
 use crate::robs::{Robot, Descriptor};
 
 // Submodules
@@ -11,7 +9,7 @@ use crate::robs::{Robot, Descriptor};
 // 
 
 /// Interpreters convert a string prompt into actions for the robot
-pub trait Interpreter<T : SyncCompGroup<(dyn syact::SyncComp + 'static), C>, R : Robot<T, C>, D : Descriptor<T, C>, S, O, const C : usize> {
+pub trait Interpreter<R : Robot<C>, D : Descriptor<C>, S, O, const C : usize> {
     /// Interpret a code string for a given robot
     fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, code : &str) -> Vec<O>; 
 

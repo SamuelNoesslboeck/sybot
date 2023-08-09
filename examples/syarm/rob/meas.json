@@ -8,9 +8,11 @@
       "type_name": "EndSwitch",
       "obj": {
         "pin": "<pin://arm1/meas>",
-        "meas_speed_f": 1.0,
-        "set_val": 0.3856,
-        "max_dist": -250.0
+        "data": {
+          "meas_speed_f": 1.0,
+          "set_gamma": 0.3856,
+          "max_dist": -250.0
+        }
       }
     }
   ],
@@ -22,9 +24,11 @@
       "type_name": "EndSwitch", 
       "obj": {
         "pin": "<pin://arm2/meas>",
-        "meas_speed_f": 1.0,
-        "set_val": 0.75,
-        "max_dist": -250.0
+        "data": {
+          "meas_speed_f": 1.0,
+          "set_gamma": 0.75,
+          "max_dist": -250.0
+        }
       }
     }
   ], 
@@ -36,9 +40,11 @@
       "type_name": "EndSwitch",
       "obj": {
         "pin": "<pin://arm3/meas>",
-        "meas_speed_f": 1.0,
-        "set_val": -1.84,
-        "max_dist": -6.3
+        "data": {
+          "meas_speed_f": 1.0,
+          "set_gamma": -1.84,
+          "max_dist": -6.3
+        }
       }
     }
   ]

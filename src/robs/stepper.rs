@@ -1,6 +1,6 @@
 use glam::Vec3;
 use serde::de::DeserializeOwned;
-use syact::{Setup, Tool, SyncCompGroup, SyncComp};
+use syact::{Setup, Tool, SyncCompGroup};
 use syact::comp::stepper::{StepperComp, StepperCompGroup};
 use syact::meas::SimpleMeas;
 use syact::units::*;
@@ -9,17 +9,17 @@ use crate::pkg::{RobotPackage, parse_struct};
 use crate::pkg::info::AngConf;
 use crate::rcs::Position;
 
-use crate::{Vars, Robot, PushRemote, Descriptor, Mode, default_modes};
+use crate::remote::PushRemote;
+use crate::{Vars, Robot, Descriptor, Mode, default_modes};
 
 pub struct StepperRobot<T, const C : usize> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>
+    T : StepperCompGroup<dyn StepperComp, C>
 {
-    vars : Vars<C>,
+    _vars : Vars<C>,
 
-    ang_confs : Vec<AngConf>,
-    comps : T,
+    _ang_confs : Vec<AngConf>,
+    _comps : T,
     meas : [Vec<Box<dyn SimpleMeas>>; C], 
 
     tools : Vec<Box<dyn Tool>>,
@@ -33,16 +33,15 @@ where
 
 impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> StepperRobot<T, C>
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>
+    T : StepperCompGroup<dyn StepperComp, C>
 {
     pub fn new(ang_confs : Vec<AngConf>, comps : T, 
     meas: [Vec<Box<dyn SimpleMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
-            vars: Vars::default(),
+            _vars: Vars::default(),
 
-            ang_confs,
-            comps,
+            _ang_confs: ang_confs,
+            _comps: comps,
             meas,
             
             tools,
@@ -59,7 +58,6 @@ where
 impl<T, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> 
 where 
     T: StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>,
     T: DeserializeOwned
 {
     type Error = crate::Error;
@@ -76,7 +74,7 @@ where
         );
 
         if let Some(link) = &pkg.data {
-            <T as SyncCompGroup<dyn SyncComp, C>>::write_data(rob.comps_mut(), link.clone());
+            <T as SyncCompGroup<dyn StepperComp, C>>::write_data(rob.comps_mut(), link.clone());
         }
 
         Ok(rob)
@@ -85,8 +83,7 @@ where
 
 impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for StepperRobot<T, C> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>
+    T : StepperCompGroup<dyn StepperComp, C>
 {
     fn setup(&mut self) -> Result<(), syact::Error> {
         self.comps_mut().setup()?;
@@ -101,40 +98,42 @@ where
     }
 }
 
-impl<T, const C : usize> Robot<T, C> for StepperRobot<T, C> 
+impl<T, const C : usize> Robot<C> for StepperRobot<T, C> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T : SyncCompGroup<dyn SyncComp, C>
+    T : StepperCompGroup<dyn StepperComp, C>
 {
+    type Comp = dyn StepperComp;
+    type CompGroup = T;    
+
     // Data
         #[inline]
         fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
-            &self.ang_confs
+            &self._ang_confs
         }
 
         #[inline]
         fn comps<'a>(&'a self) -> &'a T {
-            &self.comps
+            &self._comps
         }
 
         #[inline]
         fn comps_mut<'a>(&'a mut self) -> &'a mut T {
-            &mut self.comps
+            &mut self._comps
         }
         
         #[inline]
         fn vars<'a>(&'a self) -> &'a Vars<C> {
-            &self.vars
+            &self._vars
         }
         
         #[inline]
         fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C> {
-            &mut self.vars
+            &mut self._vars
         }
     //
 
     // Movement
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
             let phis = desc.convert_pos(self, p)?;
             self.move_abs_j_sync(
                 phis,
@@ -147,25 +146,25 @@ where
         #[allow(unused)]
         fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : f32) -> Result<(), crate::Error> {
             let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            <T as SyncCompGroup<dyn SyncComp, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+            self.comps_mut().drive_rel_async(deltas, speed_f)
         }
 
         #[allow(unused)]
         fn move_abs_j(&mut self, gammas : [Gamma; C], gen_speed_f : f32) -> Result<(), crate::Error> {
             // TODO: Implement gammas to deltas function
             let mut deltas = [Delta::ZERO; C];
-            let comp_gammas = <T as SyncCompGroup<dyn SyncComp, C>>::gammas(self.comps());
+            let comp_gammas = self.comps().gammas();
 
             for i in 0 .. C {
                 deltas[i] = gammas[i] - comp_gammas[i];
             }
 
             let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            <T as SyncCompGroup<dyn SyncComp, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+            self.comps_mut().drive_rel_async(deltas, speed_f)
         }
 
         #[allow(unused)]
-        fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
             todo!();
 
             // let pos_0 = desc.current_tcp().pos();
@@ -230,23 +229,9 @@ where
             Ok(())
         }
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
             let pos_0 = desc.current_tcp().pos();
             self.move_l(desc, pos - pos_0, accuracy, speed)
-        }
-    // 
-
-    // Auto-Meas
-        fn auto_meas(&mut self) -> Result<(), crate::Error> {
-            // for i in 0 .. C {
-            //     if let Some(main) = self.meas[i].first_mut() {
-            //         main.measure(self.comps.index_mut(i))?;
-            //     }
-            // }
-
-            // TODO: REWORK MEAS MECHANIC
-
-            Ok(())
         }
     // 
 
@@ -316,15 +301,15 @@ where
     // 
 
     // Remote
-        fn add_remote(&mut self, remote : Box<dyn crate::PushRemote>) {
+        fn add_remote(&mut self, remote : Box<dyn PushRemote>) {
             self.remotes.push(remote)
         }
 
-        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn crate::PushRemote>> {
+        fn remotes<'a>(&'a self) -> &'a Vec<Box<dyn PushRemote>> {
             &self.remotes
         }
 
-        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn crate::PushRemote>> {
+        fn remotes_mut<'a>(&'a mut self) -> &'a mut Vec<Box<dyn PushRemote>> {
             &mut self.remotes
         }
     //

@@ -1,5 +1,4 @@
 use core::f32::consts::PI;
-use std::time::Instant;
 
 use glam::{Mat3, Vec3};
 use rustyline::Editor;
@@ -92,7 +91,7 @@ use sybot::prelude::*;
         }
     }
 
-    impl Descriptor<SyArmComps, 4> for SyArmDesc {
+    impl Descriptor<4> for SyArmDesc {
         // Axis config
             fn aconf<'a>(&'a self) -> &'a dyn AxisConf {
                 &self.conf
@@ -128,7 +127,7 @@ use sybot::prelude::*;
         // 
 
         // Events
-            fn update(&mut self, _ : &mut dyn Robot<SyArmComps, 4>, phis : &[Phi; 4]) -> Result<(), sybot::Error> {
+            fn update<R : Robot<4, Comp = S, CompGroup = G>, S : SyncComp + ?Sized + 'static, G : SyncCompGroup<S, 4>>(&mut self, _ : &mut R, phis : &[Phi; 4]) -> Result<(), sybot::Error> {
                 self.segments.update(phis)?;
                 
                 let tcp_new = self.segments.calculate_end();
@@ -142,8 +141,7 @@ use sybot::prelude::*;
         // 
 
         // Calculate
-            fn convert_pos(&self, rob : &dyn Robot<SyArmComps, 4>, mut pos : Position) 
-            -> Result<[Phi; 4], sybot::Error> {
+            fn convert_pos<R : Robot<4, Comp = S, CompGroup = G>, S : SyncComp + ?Sized, G>(&mut self, rob : &mut R, mut pos : Position) -> Result<[Phi; 4], sybot::Error> {
                 let phi_b = sybot::math::full_atan(pos.x(), pos.y());
                 let dec_ang = self.aconf().phis()[0].0;
 
@@ -206,7 +204,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pkg = Package::load(".")?;
     println!("- Loaded package: '{}'", pkg.info.name);
 
-    let ( info, mut rob, mut desc, mut stat ) = pkg.unpack::<SyArmRob, SyArmDesc, SyArmStation>()?;
+    let ( info, mut rob, mut desc, mut stat ) = pkg.unpack::<SyArmRob, SyArmDesc, SyArmStation>().unwrap();
 
     dbg!(info);
     
@@ -230,29 +228,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("- Setup complete");
 
         print!("- Setting home position... ");
-        rob.auto_meas()?;
+        // rob.auto_meas()?;
         println!("done!");
     //
-
-    let rob_phis = rob.phis();
-    desc.update(&mut rob, &rob_phis)?;  
-
-    rob.move_p_sync(&mut desc, Position::new(Vec3::new(330.0, 0.0, 400.0)), 1.0)?;
-
-    let rob_phis = rob.phis();
-    desc.update(&mut rob, &rob_phis)?;
-
-    let inst = Instant::now();
-
-    rob.move_l(&mut desc, Vec3::new(0.0, 0.0, 50.0), 0.5, Omega(50.0))?;
-
-    println!("{:?}", inst.elapsed().as_secs_f32());
-
-    rob.await_inactive()?;
-
-    let rob_phis = rob.phis();
-    desc.update(&mut rob, &rob_phis)?;
-    println!("{:?}", desc.current_tcp().pos());
 
     println!("\nGCode interpreter");
 

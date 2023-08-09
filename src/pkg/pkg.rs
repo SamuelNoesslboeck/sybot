@@ -167,16 +167,14 @@ impl Package {
 
         pub fn load_file<T : for<'de> Deserialize<'de>, P : AsRef<Path>>(&self, libs : &PartLib, path : P) -> Result<Option<T>, crate::Error> {
             if let Ok(cont) = fs::read_to_string(path.as_ref()) {
-                let mut j_cont : serde_json::Value = match serde_json::from_str(&cont) {
-                    Ok(value) => value,
-                    Err(err) => return Err(format!("Error parsing JSON for file '{:?}': {:?}", path.as_ref(), err).into())
-                };
+                let mut j_cont : serde_json::Value = serde_json::from_str(&cont).map_err(|err| -> crate::Error {
+                    format!("Error parsing JSON for file '{:?}': {:?}", path.as_ref(), err).into()
+                })?;
     
                 self.replace_links(libs, &mut j_cont)?;
-                Ok(Some(match serde_json::from_value::<T>(j_cont) {
-                    Ok(value) => value,
-                    Err(err) => return Err(format!("Error converting JSON to value for file '{:?}': {:?}", path.as_ref(), err).into())
-                }))
+                Ok(Some(serde_json::from_value::<T>(j_cont).map_err(|err| -> crate::Error {
+                    format!("Error converting JSON to value for file '{:?}': {:?}", path.as_ref(), err).into()
+                })?))
             } else {
                 Ok(None)
             }
