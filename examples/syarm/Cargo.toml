@@ -3,6 +3,15 @@ name = "syarm"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "syarm"
+path = "src/main.rs"
+default-run = true
+
+[[bin]]
+name = "syarm_comp_test"
+path = "bin/syarm_comp_test"
+
 [dependencies]
 clap = "4.3.12"
 glam = "0.24.0"

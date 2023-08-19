@@ -1,0 +1,22 @@
+[
+  {
+    "meas_speed_f": 1.0,
+    "set_gamma": 0.3856,
+    "max_dist": -250.0
+  },
+  {
+    "meas_speed_f": 1.0,
+    "set_gamma": 0.3856,
+    "max_dist": -250.0
+  },
+  {
+    "meas_speed_f": 1.0,
+    "set_gamma": 0.75,
+    "max_dist": -250.0
+  },
+  {
+    "meas_speed_f": 1.0,
+    "set_gamma": -1.84,
+    "max_dist": -6.3
+  }
+]

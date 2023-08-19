@@ -129,7 +129,7 @@ use crate::scr::gcode::*;
         Ok(serde_json::json!({ 
             "phis": Vec::from(robot.phis()),
             "gammas": Vec::from(robot.gammas()),
-            "pos": desc.current_tcp().pos().to_array()
+            "pos": desc.tcp().pos().to_array()
         }))
     }
 

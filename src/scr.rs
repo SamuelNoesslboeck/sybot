@@ -1,4 +1,4 @@
-use crate::robs::{Robot, Descriptor};
+use crate::rds::{Robot, Descriptor};
 
 // Submodules
     #[cfg(feature = "gcode")]

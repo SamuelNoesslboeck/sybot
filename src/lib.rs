@@ -43,8 +43,8 @@ pub use syact::{Setup, Tool, SyncComp};
 
     pub mod rcs;
 
-    pub mod robs;
-    pub use robs::*;
+    pub mod rds;
+    pub use rds::*;
 
     pub mod scr;
 

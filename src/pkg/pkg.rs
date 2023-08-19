@@ -3,7 +3,7 @@ use std::path::Path;
 
 use regex::Regex;
 use serde::Deserialize;
-use syact::prelude::SimpleMeas;
+use syact::prelude::{SimpleMeas, SimpleMeasData};
 use syact::{CompData, Tool};
 
 use crate::pkg::{AnyJsonInfo, Pins, PartLib, get_pin};
@@ -77,7 +77,11 @@ pub struct DescPackage {
 
 #[derive(Debug, Default)]
 pub struct StationPackage {
-    // TODO: Add stations
+    /// Measurement data
+    pub mdata : Option<Vec<SimpleMeasData>>,
+
+    /// Custom data
+    pub obj : serde_json::Value
 }
 
 #[derive(Debug)]
@@ -128,22 +132,27 @@ impl Package {
                 return Err("Invalid path! No pkg found at the given path!".into()); 
             }
 
+            // Create the paths for the sub-dirs
             let rob_dir = path.as_ref().join("rob");
             let desc_dir = path.as_ref().join("desc");
+            let stat_dir = path.as_ref().join("stat");
 
-            let info_cont = match fs::read_to_string(path.as_ref().join("info.json")) {
-                Ok(info) => info,
-                Err(err) => return Err(format!("Error in reading info.json for pkg!\nError: {:?}", err).into())
-            }; 
-            let info = match serde_json::from_str(&info_cont) {
-                Ok(info) => info,
-                Err(err) => return Err(format!("Error in parsing info.json for pkg!\nError: {:?}", err).into())
-            };
+            // Read the content of the "info.json" file
+            let info_cont = fs::read_to_string(path.as_ref().join("info.json")).map_err(|err| -> crate::Error { 
+                format!("Error occured when reading info.json for pkg!\nError: {:?}", err).into() 
+            })?;
+            
+            let info = serde_json::from_str(&info_cont).map_err(|err| -> crate::Error { 
+                format!("Error occured when parsing JSON info-data for pkg!\nError: {:?}", err).into()
+            })?;
 
+            // Create the package using default values
             let mut _self = Self::new(info);
 
+            // Load the pin config, as it is often required for linking in other files
             _self.pins = _self.load_file(&_self.libs, path.as_ref().join("pins.json"))?;
 
+            // Robot directory, only load data if it exists
             if rob_dir.exists() {
                 _self.rob.data = _self.load_file(&_self.libs, rob_dir.join("data.json"))?;
                 _self.rob.meas = _self.load_file(&_self.libs, rob_dir.join("meas.json"))?;
@@ -151,16 +160,14 @@ impl Package {
                 _self.rob.tools = _self.load_file(&_self.libs, rob_dir.join("tools.json"))?;
             }
 
-            // if lib_dir.exists() {
-            //     _self.tools = _self.load_file(lib_dir.join("tools.json"))?;
-            // } 
-
             if desc_dir.exists() {
                 _self.desc.rcs = _self.load_file(&_self.libs, desc_dir.join("rcs.json"))?;
                 _self.desc.segments = _self.load_file(&_self.libs, desc_dir.join("segments.json"))?;
             }
 
-            // TODO: Station
+            if stat_dir.exists() {
+                _self.stat.mdata = _self.load_file(&_self.libs, stat_dir.join("mdata.json"))?;
+            }
 
             Ok(_self)
         }

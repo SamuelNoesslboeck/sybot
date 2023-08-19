@@ -230,7 +230,7 @@ where
         }
 
         fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
-            let pos_0 = desc.current_tcp().pos();
+            let pos_0 = desc.tcp().pos();
             self.move_l(desc, pos - pos_0, accuracy, speed)
         }
     // 

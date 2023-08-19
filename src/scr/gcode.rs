@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::robs::{Robot, Descriptor};
+use crate::rds::{Robot, Descriptor};
 use crate::scr::Interpreter;
 
 mod gfuncs;

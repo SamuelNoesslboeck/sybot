@@ -1,127 +1,18 @@
-extern crate alloc;
-
-use core::fmt::Debug;
-
 use glam::Vec3;
 use syact::{SyncCompGroup, Tool, Setup, SimpleTool, SyncComp};
 use syact::units::*;
 
+use crate::{Descriptor, Mode};
 use crate::pkg::info::AngConf;
-use crate::rcs::{WorldObj, Position, PointRef};
+use crate::rcs::Position;
 use crate::remote::PushRemote;
 
-// Submodules
-    mod device;
-    pub use device::*;
+use crate::rds::Vars;
 
-    mod seg;
-    pub use seg::*;
-
+// Robs
     mod stepper;
     pub use stepper::*;
 // 
-
-#[derive(Clone, Debug)]
-pub struct Mode {
-    pub name : String,
-    pub desc : String,
-
-    pub speed_f : f32
-}
-
-impl Mode {
-    pub fn new<N : Into<String>, D : Into<String>>(name : N, desc : D, speed_f : f32) -> Self {
-        Self { name : name.into(), desc: desc.into(), speed_f }
-    }
-}
-
-pub fn default_modes() -> [Mode; 2] { 
-    [
-        Mode {
-            name: String::from("Setup"), 
-            desc: String::from("Mode with decreased speeds used for setting up"),
-            speed_f : 0.5
-        },
-        Mode {
-            name: String::from("Auto"), 
-            desc: String::from("Mode used for running automated programms with full speed"),
-            speed_f : 1.0
-        }
-    ]
-}
-
-#[derive(Clone, Debug)]
-pub struct Vars<const C : usize> {
-    pub phis : [Phi; C],
-}
-
-impl<const C : usize> Vars<C> {
-    pub fn cache_phis(&self, phis_opt : [Option<Phi>; C]) -> [Phi; C] {
-        let mut phis = self.phis;
-
-        for i in 0 .. C {
-            if let Some(phi) = phis_opt[i] {
-                phis[i] = phi;
-            }
-        }
-
-        phis
-    }
-}
-
-impl<const C : usize> Default for Vars<C> {
-    fn default() -> Self {
-        Self {
-            phis: [Phi::default(); C]
-        }
-    }
-}
-
-pub trait AxisConf {
-    fn phis<'a>(&'a self) -> &'a [Phi];
-
-    fn configure(&mut self, phis : Vec<Phi>) -> Result<(), crate::Error>; 
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct EmptyConf { }
-
-impl AxisConf for EmptyConf {
-    fn phis<'a>(&'a self) -> &'a [Phi] {
-        &[]
-    }
-
-    fn configure(&mut self, _ : Vec<Phi>) -> Result<(), crate::Error> {
-        Ok(())
-    }
-}
-
-pub trait Descriptor<const C : usize> {
-    // Axis conf
-        fn aconf<'a>(&'a self) -> &'a dyn AxisConf;
-
-        fn aconf_mut<'a>(&'a mut self) -> &'a mut dyn AxisConf;
-    //
-
-    // Events
-        fn update<R : Robot<C, Comp = S, CompGroup = G>, S : SyncComp + ?Sized + 'static, G : SyncCompGroup<S, C>>(&mut self, rob : &mut R, phis : &[Phi; C]) -> Result<(), crate::Error>;
-    // 
-
-    // Calculation
-        fn convert_pos<R : Robot<C, Comp = S, CompGroup = G>, S : SyncComp + ?Sized, G>(&mut self, rob : &mut R, pos : Position) -> Result<[Phi; C], crate::Error>;
-    //
-
-    // World object
-        fn wobj<'a>(&'a self) -> &'a WorldObj;
-
-        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
-
-        fn current_tcp(&self) -> &PointRef;
-
-        /// Create a Vec3 from optional coordinates 
-        fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3;
-    // 
-}
 
 pub trait Robot<const C : usize> : Setup {
     type Comp : SyncComp + ?Sized + 'static;
@@ -302,8 +193,3 @@ pub trait Robot<const C : usize> : Setup {
         fn update(&mut self) -> Result<(), crate::Error>;
     // 
 }
-
-// For future releases 
-// trait AsyncRobot {
-
-// }
