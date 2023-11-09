@@ -1,100 +1,87 @@
 #![doc = include_str!("../README.md")]
 #![crate_name = "sybot"]
+#![warn(missing_docs)]
 
 extern crate alloc;
 
-pub use syact::{Setup, Tool, SyncComp};
+// ####################
+// #    SUBMODULES    #
+// ####################
+    /// Configurations for the robot in terms of position, speed and mode
+    pub mod conf;
 
-// Module decleration
-    pub mod ctrl;
+    // pub mod ctrl;
 
-    #[cfg(feature = "gcode")]
-    pub use scr::gcode as gcode;
+    // #[cfg(feature = "gcode")]
+    // pub use scr::gcode as gcode;
     
-    /// Structures and methods for exposing the robot to the internet with a HTTP server 
-    /// 
-    /// # Features
-    /// 
-    /// Only available if the "http"-feature is available
-    #[cfg(feature = "http")]
-    pub use remote::http as http;
+    // /// Structures and methods for exposing the robot to the internet with a HTTP server 
+    // /// 
+    // /// # Features
+    // /// 
+    // /// Only available if the "http"-feature is available
+    // #[cfg(feature = "http")]
+    // pub use remote::http as http;
 
     /// Interpreters for sending text commands to control a [BasicRobot](crate::BasicRobot)
     // pub mod intpr;
     // pub use intpr::Interpreter;
 
-    /// Structs and functions for calculating paths, loads and more
-    pub use rcs::math;
-
+    /// Quick and easy import of the library essentials
     pub mod prelude; 
 
-    /// Structures and methods for exposing the robot to the internet with a MQTT server
-    /// 
-    /// # Features 
-    /// 
-    /// Only available if the "mqtt"-feature is enabled
-    #[cfg(feature = "mqtt")]
-    pub use remote::mqtt as mqtt;
+    // /// Structures and methods for exposing the robot to the internet with a MQTT server
+    // /// 
+    // /// # Features 
+    // /// 
+    // /// Only available if the "mqtt"-feature is enabled
+    // #[cfg(feature = "mqtt")]
+    // pub use remote::mqtt as mqtt;
 
-    mod remote;
+    pub mod remote;
+    pub use remote::PushRemote;
 
-    pub mod pkg;
-    pub use pkg::Package;
+    // ##################
+    // #    PACKAGES    #
+    // ##################
+    //
+    // Packages are disabled currently, as a more static approach to the library is desired
+    //
+    // pub mod pkg;
+    // pub use pkg::Package;
 
     pub mod rcs;
 
-    pub mod robs;
-    pub use robs::*;
-
+    // ###################
+    // #    SCRIPTING    #
+    // ###################
+    //
+    /// Scripting of robots and more
     pub mod scr;
 
     // #[cfg(test)]
     // mod tests;       TODO: Fix tests
 //
 
-// Types
-/// Universal error type used in the crate
-pub type Error = Box<dyn std::error::Error>;
+// ########################
+// #    R.D.S - SYSTEM    #
+// ########################
+    /// Everything related to the `Robot` trait
+    pub mod robs;
+    pub use robs::Robot;
 
-// Lua
-#[cfg(feature = "lua")]
-use mlua::{Lua, Result, Table};
+    /// Everything related to the `Descriptor` trait
+    pub mod desc;
+    pub use desc::Descriptor;
 
-#[cfg(feature = "lua")]
-#[mlua::lua_module]
-fn sybot(lua : &Lua) -> Result<Table> {
-    use core::cell::RefCell;
+    /// Everything related to the `Station` trait
+    pub mod stat;
+    pub use stat::Station;
+// 
 
-    use alloc::rc::Rc;
-    use pkg::Package;
-
-    let globals = lua.globals();
-
-    std::env::set_var("RUST_BACKTRACE", "full");
-
-    globals.set("load_rob", lua.create_function(|lua, path : String| {
-        let globals = lua.globals();
-
-        println!("Loading pkg ('{}'') ... ", path);
-
-        let pkg = Package::load(path).unwrap();
-
-        println!(" => Package loaded! "); 
-        println!(" | - Info: {:?}", pkg.info);
-
-        let mut syarm = SyArm::try_from(
-            pkg
-        ).unwrap();
-
-        syarm.rob.setup().unwrap();
-    
-        globals.set("rob", scr::lua::RobStorage {
-            rob: Rc::new(RefCell::new(syarm.rob)),
-            desc: Rc::new(RefCell::new(syarm.desc))
-        })?;     
-
-        Ok(())
-    })?)?;
-
-    scr::lua::init_lib::<4>(lua)
-}
+// ################
+// #    ERRORS    #
+// ################
+    /// Universal error type used in the crate
+    pub type Error = Box<dyn std::error::Error>;
+//

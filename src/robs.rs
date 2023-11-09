@@ -1,147 +1,94 @@
-extern crate alloc;
-
 use core::fmt::Debug;
 
 use glam::Vec3;
 use syact::{SyncCompGroup, Tool, Setup, SimpleTool, SyncComp};
 use syact::units::*;
 
-use crate::pkg::info::AngConf;
-use crate::rcs::{WorldObj, Position, PointRef};
+// use crate::pkg::info::AngConf;
+use crate::Descriptor;
+use crate::conf::{AxisConf, Mode, AngConf};
+use crate::rcs::Position;
 use crate::remote::PushRemote;
 
-// Submodules
-    mod device;
-    pub use device::*;
-
-    mod seg;
-    pub use seg::*;
+// ####################
+// #    SUBMODULES    #
+// ####################
+    /// Robot segments used for calculation of position and loads
+    mod elem;
+    pub use elem::*;
 
     mod stepper;
     pub use stepper::*;
 // 
 
-#[derive(Clone, Debug)]
-pub struct Mode {
-    pub name : String,
-    pub desc : String,
-
-    pub speed_f : f32
-}
-
-impl Mode {
-    pub fn new<N : Into<String>, D : Into<String>>(name : N, desc : D, speed_f : f32) -> Self {
-        Self { name : name.into(), desc: desc.into(), speed_f }
+// ##############
+// #    VARS    #
+// ##############
+    #[derive(Clone, Debug)]
+    pub struct Vars<const C : usize> {
+        pub phis : [Phi; C],
     }
-}
 
-pub fn default_modes() -> [Mode; 2] { 
-    [
-        Mode {
-            name: String::from("Setup"), 
-            desc: String::from("Mode with decreased speeds used for setting up"),
-            speed_f : 0.5
-        },
-        Mode {
-            name: String::from("Auto"), 
-            desc: String::from("Mode used for running automated programms with full speed"),
-            speed_f : 1.0
+    impl<const C : usize> Vars<C> {
+        pub fn cache_phis(&self, phis_opt : [Option<Phi>; C]) -> [Phi; C] {
+            let mut phis = self.phis;
+
+            for i in 0 .. C {
+                if let Some(phi) = phis_opt[i] {
+                    phis[i] = phi;
+                }
+            }
+
+            phis
         }
-    ]
-}
+    }
 
-#[derive(Clone, Debug)]
-pub struct Vars<const C : usize> {
-    pub phis : [Phi; C],
-}
-
-impl<const C : usize> Vars<C> {
-    pub fn cache_phis(&self, phis_opt : [Option<Phi>; C]) -> [Phi; C] {
-        let mut phis = self.phis;
-
-        for i in 0 .. C {
-            if let Some(phi) = phis_opt[i] {
-                phis[i] = phi;
+    impl<const C : usize> Default for Vars<C> {
+        fn default() -> Self {
+            Self {
+                phis: [Phi::default(); C]
             }
         }
-
-        phis
     }
-}
+// 
 
-impl<const C : usize> Default for Vars<C> {
-    fn default() -> Self {
-        Self {
-            phis: [Phi::default(); C]
-        }
-    }
-}
-
-pub trait AxisConf {
-    fn phis<'a>(&'a self) -> &'a [Phi];
-
-    fn configure(&mut self, phis : Vec<Phi>) -> Result<(), crate::Error>; 
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct EmptyConf { }
-
-impl AxisConf for EmptyConf {
-    fn phis<'a>(&'a self) -> &'a [Phi] {
-        &[]
-    }
-
-    fn configure(&mut self, _ : Vec<Phi>) -> Result<(), crate::Error> {
-        Ok(())
-    }
-}
-
-pub trait Descriptor<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> {
-    // Axis conf
-        fn aconf<'a>(&'a self) -> &'a dyn AxisConf;
-
-        fn aconf_mut<'a>(&'a mut self) -> &'a mut dyn AxisConf;
-    //
-
-    // Events
-        fn update(&mut self, rob : &mut dyn Robot<T, C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
-    // 
-
-    // Calculation
-        fn convert_pos(&self, rob : &dyn Robot<T, C>, pos : Position) -> Result<[Phi; C], crate::Error>;
-    //
-
-    // World object
-        fn wobj<'a>(&'a self) -> &'a WorldObj;
-
-        fn wobj_mut<'a>(&'a mut self) -> &'a mut WorldObj;
-
-        fn current_tcp(&self) -> &PointRef;
-
-        /// Create a Vec3 from optional coordinates 
-        fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3;
-    // 
-}
-
+// ###############
+// #    ROBOT    #
+// ###############
+//
+/// # `Robot` trait
+/// 
+/// The core trait that defines the properties of a robot. It is the first and core part of the R-D-S system, storing all the neccessary
+/// data to drive multiple *synchronous* motors in the context of a robot.
+/// 
+/// A robot stores the follwing types of data
+/// - `Vars` Robot variables (e.g. position)
+/// - Current `Mode`, defines speed and safety
+/// - `Tools` and tool currently selected
+/// - Driving components (`SyncComp`) (e.g. motors, cylinders)
+/// - `PushRemotes`
+/// 
+/// and provides the follwing functionalities
+/// - `Gamma` / `Phi` distance conversion
 pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
     // Data
         /// Returns a reference to the robots variables
-        fn vars<'a>(&'a self) -> &'a Vars<C>;
+        fn vars(&self) -> &Vars<C>;
 
         /// Returns a mutable reference to the robots variables
-        fn vars_mut<'a>(&'a mut self) -> &'a mut Vars<C>;
+        fn vars_mut(&mut self) -> &mut Vars<C>;
 
-        fn ang_confs<'a>(&'a self) -> &'a [AngConf];
+        fn ang_confs(&self) -> &[AngConf; C];
 
         /// Returns a reference to the component group of the robot
-        fn comps<'a>(&'a self) -> &'a T;
+        fn comps(&self) -> &T;
 
         /// Returns a mutable reference to the component group of the robot 
-        fn comps_mut<'a>(&'a mut self) -> &'a mut T;
+        fn comps_mut(&mut self) -> &mut T;
     // 
 
-    // Move data
-        /// Returns all the angles used by the controls to represent the components extension/drive distance
+    // Gamma & Phi - Distances
+        /// All the angles used by the controls to represent the components extension/drive distance
         #[inline]
         fn gammas(&self) -> [Gamma; C] {
             self.comps().gammas()
@@ -158,7 +105,8 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
 
             gammas
         }
-
+        
+        /// All the angles used by the controls to represent the mathematical angles
         #[inline]
         fn phis(&self) -> [Phi; C] {
             self.phis_from_gammas(self.gammas())
@@ -187,15 +135,7 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         }
     // 
 
-    // Movements
-        fn set_limits(&mut self, min : &[Option<Gamma>; C], max : &[Option<Gamma>; C]) {
-            self.comps_mut().set_limits(min, max)
-        }
-
-        fn set_omega_max(&mut self, omega_max : [Omega; C]) {
-            self.comps_mut().set_omega_max(omega_max)
-        }
-
+    // Synchronous movements
         fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
             self.comps_mut().drive_rel(deltas, [speed_f; C])
         }
@@ -208,7 +148,7 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
     
-    // Complex movement
+    // Asnychronous movement (complex movement)
         fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error>;
 
         fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error>;
@@ -232,11 +172,7 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         }
     // 
 
-    // Meas
-        fn auto_meas(&mut self) -> Result<(), crate::Error>;
-    // 
-
-    // Loads
+    // Loads & Limits
         #[inline]
         fn apply_forces(&mut self, forces : &[Force; C]) {
             self.comps_mut().apply_forces(forces)
@@ -245,6 +181,14 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         #[inline]
         fn apply_inertias(&mut self, inertias : &[Inertia; C]) {
             self.comps_mut().apply_inertias(inertias)
+        }
+
+        fn set_limits(&mut self, min : &[Option<Gamma>; C], max : &[Option<Gamma>; C]) {
+            self.comps_mut().set_limits(min, max)
+        }
+
+        fn set_omega_max(&mut self, omega_max : [Omega; C]) {
+            self.comps_mut().set_omega_max(omega_max)
         }
     // 
 
@@ -303,8 +247,3 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         fn update(&mut self) -> Result<(), crate::Error>;
     // 
 }
-
-// For future releases 
-// trait AsyncRobot {
-
-// }

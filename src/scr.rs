@@ -1,6 +1,6 @@
 use syact::SyncCompGroup;
 
-use crate::robs::{Robot, Descriptor};
+use crate::{Robot, Descriptor};
 
 // Submodules
     #[cfg(feature = "gcode")]

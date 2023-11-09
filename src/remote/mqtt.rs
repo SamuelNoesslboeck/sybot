@@ -63,7 +63,7 @@ impl PushRemote for Publisher {
         Ok(self.client.publish(msg)?)
     }
 
-    fn push_other(&mut self, _other : crate::robs::PushMsg) -> Result<(), crate::Error> {
+    fn push_other(&mut self, _other : crate::remote::PushMsg) -> Result<(), crate::Error> {
         Ok(())
     }
 

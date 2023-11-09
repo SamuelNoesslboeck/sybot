@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 use std::collections::HashMap;
 
-use crate::robs::{Robot, Descriptor};
+use crate::{Robot, Descriptor};
 use crate::scr::Interpreter;
 
 mod gfuncs;

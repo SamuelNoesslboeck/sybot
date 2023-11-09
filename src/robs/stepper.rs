@@ -2,14 +2,16 @@ use glam::Vec3;
 use serde::de::DeserializeOwned;
 use syact::{Setup, Tool, SyncCompGroup, SyncComp};
 use syact::comp::stepper::{StepperComp, StepperCompGroup};
-use syact::meas::SimpleMeas;
+use syact::meas::BoolMeas;
 use syact::units::*;
 
-use crate::pkg::{RobotPackage, parse_struct};
-use crate::pkg::info::AngConf;
+// use crate::pkg::{RobotPackage, parse_struct};
+// use crate::pkg::info::AngConf;
 use crate::rcs::Position;
 
-use crate::{Vars, Robot, PushRemote, Descriptor, Mode, default_modes};
+use crate::{Robot, PushRemote, Descriptor};
+use crate::conf::{AngConf, Mode, default_modes};
+use crate::robs::Vars;
 
 pub struct StepperRobot<T, const C : usize> 
 where 
@@ -18,9 +20,9 @@ where
 {
     vars : Vars<C>,
 
-    ang_confs : Vec<AngConf>,
+    ang_confs : [AngConf; C],
     comps : T,
-    meas : [Vec<Box<dyn SimpleMeas>>; C], 
+    meas : [Vec<Box<dyn BoolMeas<Error = ()>>>; C], 
 
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
@@ -37,7 +39,7 @@ where
     T: SyncCompGroup<dyn SyncComp, C>
 {
     pub fn new(ang_confs : Vec<AngConf>, comps : T, 
-    meas: [Vec<Box<dyn SimpleMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
+    meas: [Vec<Box<dyn BoolMeas<Error = ()>>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
             vars: Vars::default(),
 
@@ -56,32 +58,33 @@ where
     }
 }
 
-impl<T, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> 
-where 
-    T: StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>,
-    T: DeserializeOwned
-{
-    type Error = crate::Error;
+// TODO: Move to packages
+// impl<T, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> 
+// where 
+//     T: StepperCompGroup<dyn StepperComp, C>,
+//     T: SyncCompGroup<dyn SyncComp, C>,
+//     T: DeserializeOwned
+// {
+//     type Error = crate::Error;
 
-    #[allow(deprecated)]
-    fn try_from(pkg : RobotPackage) -> Result<Self, Self::Error> {      // TODO: Remove this mess
-        let tools = pkg.parse_tools_dyn()?;
-        let meas = pkg.parse_meas_dyn()?;
-        let ang_confs = pkg.parse_ang_confs().unwrap();
-        let comps : T = parse_struct(pkg.comps.unwrap())?.0;
+//     #[allow(deprecated)]
+//     fn try_from(pkg : RobotPackage) -> Result<Self, Self::Error> {      // TODO: Remove this mess
+//         let tools = pkg.parse_tools_dyn()?;
+//         let meas = pkg.parse_meas_dyn()?;
+//         let ang_confs = pkg.parse_ang_confs().unwrap();
+//         let comps : T = parse_struct(pkg.comps.unwrap())?.0;
 
-        let mut rob = Self::new(
-            ang_confs, comps, meas.try_into().ok().unwrap(), tools
-        );
+//         let mut rob = Self::new(
+//             ang_confs, comps, meas.try_into().ok().unwrap(), tools
+//         );
 
-        if let Some(link) = &pkg.data {
-            <T as SyncCompGroup<dyn SyncComp, C>>::write_data(rob.comps_mut(), link.clone());
-        }
+//         if let Some(link) = &pkg.data {
+//             <T as SyncCompGroup<dyn SyncComp, C>>::write_data(rob.comps_mut(), link.clone());
+//         }
 
-        Ok(rob)
-    }
-}
+//         Ok(rob)
+//     }
+// }
 
 impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for StepperRobot<T, C> 
 where 
@@ -108,7 +111,7 @@ where
 {
     // Data
         #[inline]
-        fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
+        fn ang_confs<'a>(&'a self) -> &[AngConf] {
             &self.ang_confs
         }
 
