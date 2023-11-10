@@ -1,11 +1,9 @@
-pub use crate::*;
+// Lazy prelude imports
 
-// Packages are disabled
-// pub use crate::pkg::{Package, RobotPackage, DescPackage, StationPackage};
-// pub use crate::pkg::info::SegmentInfo;
-
+pub use crate::{Robot, Descriptor, Station};
+pub use crate::conf::AngConf;
+pub use crate::desc::{KinElement, Movement, Kinematic, SerialKinematic};
 pub use crate::rcs::{Point, PointRef, Position, WorldObj};
-
-pub use crate::robs::*;
-
+pub use crate::remote::PushRemote;
+pub use crate::robs::{StepperRobot, Vars};
 pub use crate::scr::Interpreter;

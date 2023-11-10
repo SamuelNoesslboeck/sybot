@@ -82,15 +82,10 @@ use crate::scr::gcode::*;
     /// G28 \
     /// Return to home position
     pub fn g28<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize>
-        (robot : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
+        (_robot : &mut R, _ : &mut D, _ : &mut S, _ : &GCode, _ : &Args) -> Result<serde_json::Value, crate::Error> 
     {
-        match robot.auto_meas() {
-            Ok(_) => Ok(serde_json::Value::Null),
-            Err(meas) => {
-                println!(" -> Problems with measurement! {:?}", meas);      // TODO: Add proper error
-                Ok(serde_json::Value::Null)
-            }
-        }
+        // TODO
+        Ok(serde_json::Value::Null)
     }
 
     // /// G29 \

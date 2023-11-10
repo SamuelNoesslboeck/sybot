@@ -9,6 +9,26 @@ use syact::units::*;
         /// Wheiter or not the angle is a counterpart (negative addition)
         pub counter : bool
     }
+
+    impl AngConf {
+        /// Convert the given gamma angle to a phi angle
+        pub fn phi_from_gamma(&self, gamma : Gamma) -> Phi {
+            (if self.counter { 
+                -gamma
+            } else { 
+                gamma
+            } + self.offset).force_to_phi()
+        }
+        
+        /// Convert the given phi angle to a gamma angle
+        pub fn gamma_from_phi(&self, phi : Phi) -> Gamma {
+            if self.counter { 
+                -phi.force_to_gamma() + self.offset
+            } else { 
+                phi.force_to_gamma() - self.offset
+            }
+        }
+    }
 //
 
 // Mode

@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![crate_name = "sybot"]
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 extern crate alloc;
 

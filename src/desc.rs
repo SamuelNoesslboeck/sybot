@@ -9,13 +9,17 @@ use crate::rcs::{PointRef, Position, WorldObj};
 // ####################
 // #    SUBMODULES    #
 // ####################
+    mod elem;
+    pub use elem::{KinElement, Movement};
+
     mod kin;
+    pub use kin::{Kinematic, SerialKinematic};
 // 
 
 /// # `Descriptor` trait
 /// 
 /// 
-pub trait Descriptor<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> {
+pub trait Descriptor<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const C : usize> {
     // Axis conf
         fn aconf<'a>(&'a self) -> &'a dyn AxisConf;
 
@@ -23,11 +27,11 @@ pub trait Descriptor<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> {
     //
 
     // Events
-        fn update(&mut self, rob : &mut dyn Robot<T, C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
+        fn update(&mut self, rob : &mut dyn Robot<G, T, C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
     // 
 
     // Calculation
-        fn convert_pos(&self, rob : &dyn Robot<T, C>, pos : Position) -> Result<[Phi; C], crate::Error>;
+        fn convert_pos(&self, rob : &dyn Robot<G, T, C>, pos : Position) -> Result<[Phi; C], crate::Error>;
     //
 
     // World object

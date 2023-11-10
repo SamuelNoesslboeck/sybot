@@ -6,19 +6,15 @@ use syact::units::*;
 
 // use crate::pkg::info::AngConf;
 use crate::Descriptor;
-use crate::conf::{AxisConf, Mode, AngConf};
+use crate::conf::{Mode, AngConf};
 use crate::rcs::Position;
 use crate::remote::PushRemote;
 
 // ####################
 // #    SUBMODULES    #
 // ####################
-    /// Robot segments used for calculation of position and loads
-    mod elem;
-    pub use elem::*;
-
     mod stepper;
-    pub use stepper::*;
+    pub use stepper::StepperRobot;
 // 
 
 // ##############
@@ -70,7 +66,7 @@ use crate::remote::PushRemote;
 /// 
 /// and provides the follwing functionalities
 /// - `Gamma` / `Phi` distance conversion
-pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
+pub trait Robot<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const C : usize> : Setup {
     // Data
         /// Returns a reference to the robots variables
         fn vars(&self) -> &Vars<C>;
@@ -81,10 +77,10 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
         fn ang_confs(&self) -> &[AngConf; C];
 
         /// Returns a reference to the component group of the robot
-        fn comps(&self) -> &T;
+        fn comps(&self) -> &G;
 
         /// Returns a mutable reference to the component group of the robot 
-        fn comps_mut(&mut self) -> &mut T;
+        fn comps_mut(&mut self) -> &mut G;
     // 
 
     // Gamma & Phi - Distances
@@ -145,7 +141,7 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
             self.comps_mut().drive_abs(gammas, [speed_f; C])
         }
 
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
+        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<G, T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
     
     // Asnychronous movement (complex movement)
@@ -153,11 +149,11 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
 
         fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error>;
 
-        fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_p(&mut self, desc: &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
+        fn move_p(&mut self, desc: &mut dyn Descriptor<G, T, C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {
             let phis = desc.convert_pos(self, p)?;
             let gammas = self.gammas_from_phis(phis);
@@ -207,8 +203,10 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
 
         // Wrapper functions
             fn activate_tool(&mut self) -> Result<&dyn SimpleTool, crate::Error> {
-                let tool = self.get_tool_mut().ok_or("No tool has been equipped yet!")?;
-                let simple_tool = tool.simple_tool_mut().ok_or("The tool equipped is no 'SimpleTool' (cannot be activated)")?;
+                let tool = self.get_tool_mut()
+                    .ok_or("No tool has been equipped yet!")?;
+                let simple_tool = tool.simple_tool_mut()
+                    .ok_or("The tool equipped is no 'SimpleTool' (cannot be activated)")?;
                 
                 simple_tool.activate();
 
@@ -216,8 +214,10 @@ pub trait Robot<T : SyncCompGroup<dyn SyncComp, C>, const C : usize> : Setup {
             } 
 
             fn deactivate_tool(&mut self) -> Result<&dyn SimpleTool, crate::Error> {
-                let tool = self.get_tool_mut().ok_or("No tool has been equipped yet!")?;
-                let simple_tool = tool.simple_tool_mut().ok_or("The tool equipped is no 'SimpleTool' (cannot be deactivated)")?;
+                let tool = self.get_tool_mut()
+                    .ok_or("No tool has been equipped yet!")?;
+                let simple_tool = tool.simple_tool_mut()
+                    .ok_or("The tool equipped is no 'SimpleTool' (cannot be deactivated)")?;
                 
                 simple_tool.deactivate();
 

@@ -1,6 +1,7 @@
+use core::marker::PhantomData;
+
 use glam::Vec3;
-use serde::de::DeserializeOwned;
-use syact::{Setup, Tool, SyncCompGroup, SyncComp};
+use syact::{Setup, Tool, SyncCompGroup};
 use syact::comp::stepper::{StepperComp, StepperCompGroup};
 use syact::meas::BoolMeas;
 use syact::units::*;
@@ -13,16 +14,18 @@ use crate::{Robot, PushRemote, Descriptor};
 use crate::conf::{AngConf, Mode, default_modes};
 use crate::robs::Vars;
 
-pub struct StepperRobot<T, const C : usize> 
+pub trait DynMeas : BoolMeas<Error = ()> + Setup { }
+
+pub struct StepperRobot<G, T, const C : usize> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>
+    G : StepperCompGroup<T, C>,
+    T : StepperComp + ?Sized + 'static
 {
     vars : Vars<C>,
 
     ang_confs : [AngConf; C],
-    comps : T,
-    meas : [Vec<Box<dyn BoolMeas<Error = ()>>>; C], 
+    comps : G,
+    meas : [Vec<Box<dyn DynMeas>>; C], 
 
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
@@ -30,16 +33,18 @@ where
     modes : Vec<Mode>,
     mode_id : usize,
 
-    remotes : Vec<Box<dyn PushRemote>>
+    remotes : Vec<Box<dyn PushRemote>>,
+
+    __pd : PhantomData<T>
 }
 
-impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> StepperRobot<T, C>
+impl<G, T, const C : usize> StepperRobot<G, T, C>
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>
+    G : StepperCompGroup<T, C>,
+    T : StepperComp + ?Sized + 'static
 {
-    pub fn new(ang_confs : Vec<AngConf>, comps : T, 
-    meas: [Vec<Box<dyn BoolMeas<Error = ()>>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
+    pub fn new(ang_confs : [AngConf; C], comps : G, 
+    meas: [Vec<Box<dyn DynMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
             vars: Vars::default(),
 
@@ -53,43 +58,17 @@ where
             modes: Vec::from(default_modes()),
             mode_id: 0,
 
-            remotes: Vec::new()
+            remotes: Vec::new(),
+
+            __pd : PhantomData::default()
         }
     }
 }
 
-// TODO: Move to packages
-// impl<T, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> 
-// where 
-//     T: StepperCompGroup<dyn StepperComp, C>,
-//     T: SyncCompGroup<dyn SyncComp, C>,
-//     T: DeserializeOwned
-// {
-//     type Error = crate::Error;
-
-//     #[allow(deprecated)]
-//     fn try_from(pkg : RobotPackage) -> Result<Self, Self::Error> {      // TODO: Remove this mess
-//         let tools = pkg.parse_tools_dyn()?;
-//         let meas = pkg.parse_meas_dyn()?;
-//         let ang_confs = pkg.parse_ang_confs().unwrap();
-//         let comps : T = parse_struct(pkg.comps.unwrap())?.0;
-
-//         let mut rob = Self::new(
-//             ang_confs, comps, meas.try_into().ok().unwrap(), tools
-//         );
-
-//         if let Some(link) = &pkg.data {
-//             <T as SyncCompGroup<dyn SyncComp, C>>::write_data(rob.comps_mut(), link.clone());
-//         }
-
-//         Ok(rob)
-//     }
-// }
-
-impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for StepperRobot<T, C> 
+impl<G, T, const C : usize> Setup for StepperRobot<G, T, C> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T: SyncCompGroup<dyn SyncComp, C>
+    G : StepperCompGroup<T, C>,
+    T : StepperComp + ?Sized + 'static
 {
     fn setup(&mut self) -> Result<(), syact::Error> {
         self.comps_mut().setup()?;
@@ -104,24 +83,24 @@ where
     }
 }
 
-impl<T, const C : usize> Robot<T, C> for StepperRobot<T, C> 
+impl<G, T, const C : usize> Robot<G, T, C> for StepperRobot<G, T, C> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>,
-    T : SyncCompGroup<dyn SyncComp, C>
+    G : StepperCompGroup<T, C>,
+    T : StepperComp + ?Sized + 'static
 {
     // Data
         #[inline]
-        fn ang_confs<'a>(&'a self) -> &[AngConf] {
+        fn ang_confs<'a>(&'a self) -> &[AngConf; C] {
             &self.ang_confs
         }
 
         #[inline]
-        fn comps<'a>(&'a self) -> &'a T {
+        fn comps<'a>(&'a self) -> &'a G {
             &self.comps
         }
 
         #[inline]
-        fn comps_mut<'a>(&'a mut self) -> &'a mut T {
+        fn comps_mut<'a>(&'a mut self) -> &'a mut G {
             &mut self.comps
         }
         
@@ -137,7 +116,7 @@ where
     //
 
     // Movement
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<G, T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
             let phis = desc.convert_pos(self, p)?;
             self.move_abs_j_sync(
                 phis,
@@ -150,25 +129,25 @@ where
         #[allow(unused)]
         fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : f32) -> Result<(), crate::Error> {
             let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            <T as SyncCompGroup<dyn SyncComp, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+            <G as SyncCompGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
         #[allow(unused)]
         fn move_abs_j(&mut self, gammas : [Gamma; C], gen_speed_f : f32) -> Result<(), crate::Error> {
             // TODO: Implement gammas to deltas function
             let mut deltas = [Delta::ZERO; C];
-            let comp_gammas = <T as SyncCompGroup<dyn SyncComp, C>>::gammas(self.comps());
+            let comp_gammas = <G as SyncCompGroup<T, C>>::gammas(self.comps());
 
             for i in 0 .. C {
                 deltas[i] = gammas[i] - comp_gammas[i];
             }
 
             let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            <T as SyncCompGroup<dyn SyncComp, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+            <G as SyncCompGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
         #[allow(unused)]
-        fn move_l(&mut self, desc : &mut dyn Descriptor<T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
             todo!();
 
             // let pos_0 = desc.current_tcp().pos();
@@ -233,23 +212,9 @@ where
             Ok(())
         }
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
             let pos_0 = desc.current_tcp().pos();
             self.move_l(desc, pos - pos_0, accuracy, speed)
-        }
-    // 
-
-    // Auto-Meas
-        fn auto_meas(&mut self) -> Result<(), crate::Error> {
-            // for i in 0 .. C {
-            //     if let Some(main) = self.meas[i].first_mut() {
-            //         main.measure(self.comps.index_mut(i))?;
-            //     }
-            // }
-
-            // TODO: REWORK MEAS MECHANIC
-
-            Ok(())
         }
     // 
 
