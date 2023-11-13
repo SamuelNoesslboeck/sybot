@@ -170,7 +170,7 @@ pub trait Robot<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const 
 
     // Loads & Limits
         #[inline]
-        fn apply_forces(&mut self, forces : &[Force; C]) {
+        fn apply_forces(&mut self, forces : &[Force; C]) -> Result<(), crate::Error> {
             self.comps_mut().apply_forces(forces)
         }
 

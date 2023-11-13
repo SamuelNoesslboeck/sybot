@@ -1,9 +1,9 @@
 use core::marker::PhantomData;
 
 use glam::Vec3;
+use syact::ctrl::Interruptor;
 use syact::{Setup, Tool, SyncCompGroup};
 use syact::comp::stepper::{StepperComp, StepperCompGroup};
-use syact::meas::BoolMeas;
 use syact::units::*;
 
 // use crate::pkg::{RobotPackage, parse_struct};
@@ -14,7 +14,7 @@ use crate::{Robot, PushRemote, Descriptor};
 use crate::conf::{AngConf, Mode, default_modes};
 use crate::robs::Vars;
 
-pub trait DynMeas : BoolMeas<Error = ()> + Setup { }
+pub trait DynMeas : Interruptor + Setup + Send { }
 
 pub struct StepperRobot<G, T, const C : usize> 
 where 
@@ -25,7 +25,6 @@ where
 
     ang_confs : [AngConf; C],
     comps : G,
-    meas : [Vec<Box<dyn DynMeas>>; C], 
 
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
@@ -43,14 +42,12 @@ where
     G : StepperCompGroup<T, C>,
     T : StepperComp + ?Sized + 'static
 {
-    pub fn new(ang_confs : [AngConf; C], comps : G, 
-    meas: [Vec<Box<dyn DynMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
+    pub fn new(ang_confs : [AngConf; C], comps : G, tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
             vars: Vars::default(),
 
             ang_confs,
             comps,
-            meas,
             
             tools,
             tool_id: None,
@@ -71,15 +68,7 @@ where
     T : StepperComp + ?Sized + 'static
 {
     fn setup(&mut self) -> Result<(), syact::Error> {
-        self.comps_mut().setup()?;
-
-        for meas_vec in &mut self.meas {
-            for meas in meas_vec {
-                meas.setup()?;
-            }
-        }
-
-        Ok(())
+        self.comps_mut().setup()
     }
 }
 
