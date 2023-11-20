@@ -48,8 +48,6 @@ impl KinElement {
 
     #[inline]
     pub fn pos(&self) -> Vec3 {
-        let mut servo = Servo::new(ServoConst::MG996R, 20); 
-
         self._point.pos()    
     }
 
