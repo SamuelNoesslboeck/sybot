@@ -51,6 +51,17 @@ pub struct SerialKinematic<const C : usize> {
     tcp : PointRef
 }
 
+impl<const C : usize> SerialKinematic<C> {
+    pub fn new(segments : [KinElement; C]) -> Self {
+        let last = &segments[C - 1];
+
+        Self {
+            tcp: last.point().clone(),
+            segments
+        }
+    }
+}
+
 impl<const C : usize> Index<usize> for SerialKinematic<C> {
     type Output = KinElement;
 
@@ -71,7 +82,7 @@ impl<const C : usize> Kinematic<C> for SerialKinematic<C> {
     // 
 
     // TCP
-        fn tcp<'a>(&'a self) -> &'a PointRef {
+        fn tcp<'a>(&'a self) -> &PointRef {
             &self.tcp
         }
 
@@ -82,7 +93,7 @@ impl<const C : usize> Kinematic<C> for SerialKinematic<C> {
 
     fn calculate_end(&self) -> Position {
         let segments = self.segments(); 
-        let mut pos_0 = Position::new(self.tcp().borrow().pos().clone());
+        let mut pos_0 = Position::from(self.tcp().borrow().pos().clone());
 
         for i in 1 ..= C {
             let index = C - i;

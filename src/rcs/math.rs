@@ -13,22 +13,6 @@ pub fn sub_phis<const C : usize>(a : [Phi; C], b : [Phi; C]) -> [Delta; C] {
     deltas
 }
 
-pub fn full_atan(x : f32, y : f32) -> f32 {
-    if x > 0.0 {
-        (y / x).atan()
-    } else if x < 0.0 {
-        PI + (y / x).atan()
-    } else {
-        if y > 0.0 {
-            PI / 2.0
-        } else if y < 0.0 {
-            PI / -2.0
-        } else {
-            0.0
-        }
-    }
-}
-
 pub fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
     ((a.powi(2) + b.powi(2) - c.powi(2)) / 2.0 / a / b).acos()
 }

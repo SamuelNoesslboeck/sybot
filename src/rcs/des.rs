@@ -30,7 +30,7 @@ impl Into<Position> for PositionDes {
                 Mat3::from_cols_array_2d(ori)
             )
         } else {
-            Position::new(
+            Position::from_vec3(
                 Vec3::from(self.pos)
             )
         }
@@ -106,9 +106,9 @@ impl<'de> Deserialize<'de> for PointRef {
                     Mat3::IDENTITY
                 })))),
             PointEnum::Wo { pos, sub } => 
-                PointRef(Rc::new(RefCell::new(WorldObj::new_sub(pos, sub)))),
+                PointRef(Rc::new(RefCell::new(WorldObj::from_pos_sub(pos, sub)))),
             PointEnum::WoDir { pos, sub } => 
-                PointRef(Rc::new(RefCell::new(WorldObj::new_sub(Position::new(Vec3::from(pos)), sub))))
+                PointRef(Rc::new(RefCell::new(WorldObj::from_pos_sub(Position::from_vec3(Vec3::from(pos)), sub))))
         })
     }
 }
