@@ -67,16 +67,13 @@ use syact::units::*;
 // 
 
 // AxisConf
-    pub trait AxisConf {
+    pub trait AxisConfig {
         fn phis<'a>(&'a self) -> &'a [Phi];
 
         fn configure(&mut self, phis : Vec<Phi>) -> Result<(), crate::Error>; 
     }
 
-    #[derive(Clone, Debug, Default)]
-    pub struct EmptyConf { }
-
-    impl AxisConf for EmptyConf {
+    impl AxisConfig for () {
         fn phis<'a>(&'a self) -> &'a [Phi] {
             &[]
         }

@@ -1,14 +1,15 @@
-use glam::Vec3;
 use syact::{SyncCompGroup, SyncComp};
 use syact::units::*;
 
 use crate::Robot;
-use crate::conf::AxisConf;
+use crate::config::AxisConfig;
 use crate::rcs::{PointRef, Position, WorldObj};
 
 // ####################
 // #    SUBMODULES    #
 // ####################
+    pub mod common;
+
     mod elem;
     pub use elem::{KinElement, Movement, Rot};
 
@@ -19,35 +20,42 @@ use crate::rcs::{PointRef, Position, WorldObj};
 /// # `Descriptor` trait
 /// 
 /// 
-pub trait Descriptor<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const C : usize> {
-    // Axis conf
-        fn aconf(&self) -> &dyn AxisConf;
-
-        fn aconf_mut(&mut self) -> &mut dyn AxisConf;
-    //
-
-    // Events
-        fn update(&mut self, rob : &mut dyn Robot<G, T, C>, phis : &[Phi; C]) -> Result<(), crate::Error>;
+pub trait Descriptor<const C : usize> {
+    // Types
+        type AxisConfig : AxisConfig;
+        type Kinematic : Kinematic<C>;
     // 
 
-    // Calculation
-        fn convert_pos(&self, rob : &dyn Robot<G, T, C>, pos : Position) -> Result<[Phi; C], crate::Error>;
+    // Axis config
+        fn axis_config(&self) -> &Self::AxisConfig;
+
+        fn axis_config_mut(&mut self) -> &mut Self::AxisConfig;
     //
 
-    // Kinematics
-        fn kin(&self) -> &dyn Kinematic<C>;
+    // Calculation
+        fn phis_for_pos(&self, pos : Position) -> Result<[Phi; C], crate::Error>;
 
-        fn kin_mut(&mut self) -> &mut dyn Kinematic<C>;
+    //
+
+    // Kinematic
+        fn kinematic(&self) -> &Self::Kinematic;
+
+        fn kinematic_mut(&mut self) -> &mut Self::Kinematic;
     // 
 
     // World object
-        fn wobj(&self) -> &WorldObj;
+        fn world_obj(&self) -> &WorldObj;
 
-        fn wobj_mut(&mut self) -> &mut WorldObj;
+        fn world_obj_mut(&mut self) -> &mut WorldObj;
 
-        fn current_tcp(&self) -> &PointRef;
+        fn tcp(&self) -> &PointRef;
+    // 
 
-        /// Create a Vec3 from optional coordinates 
-        fn cache_tcp(&self, x_opt : Option<f32>, y_opt : Option<f32>, z_opt : Option<f32>) -> Vec3;
+    // Events
+        fn update<R, G, T>(&mut self, rob : &mut R, phis : &[Phi; C]) -> Result<(), crate::Error>
+        where
+            R : Robot<G, T, C>,
+            G : SyncCompGroup<T, C>,
+            T : SyncComp + ?Sized + 'static;
     // 
 }

@@ -6,14 +6,14 @@ use syact::units::*;
 
 // use crate::pkg::info::AngConf;
 use crate::Descriptor;
-use crate::conf::{Mode, AngConf};
+use crate::config::{Mode, AngConf};
 use crate::rcs::Position;
 use crate::remote::PushRemote;
 
 // ####################
 // #    SUBMODULES    #
 // ####################
-    mod stepper;
+    pub mod stepper;
     pub use stepper::StepperRobot;
 // 
 
@@ -141,7 +141,7 @@ pub trait Robot<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const 
             self.comps_mut().drive_abs(gammas, [speed_f; C])
         }
 
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<G, T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
     // 
     
     // Asnychronous movement (complex movement)
@@ -149,13 +149,13 @@ pub trait Robot<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const 
 
         fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error>;
 
-        fn move_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_p(&mut self, desc: &mut dyn Descriptor<G, T, C>, p : Position, speed_f : f32) -> Result<(), crate::Error>
+        fn move_p<D : Descriptor<C>>(&mut self, desc: &mut D, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {
-            let phis = desc.convert_pos(self, p)?;
+            let phis = desc.phis_for_pos(p)?;
             let gammas = self.gammas_from_phis(phis);
             self.move_abs_j(
                 gammas,

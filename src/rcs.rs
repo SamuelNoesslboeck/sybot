@@ -60,6 +60,10 @@ pub trait Point : Debug {
             Self::from_vec3(Vec3::new(x, y, z))
         }
 
+        pub fn zero() -> Self {
+            Self::new(0.0, 0.0, 0.0)
+        }
+
         pub fn from_vec3(pos : Vec3) -> Self {
             Self {
                 pos, 
@@ -243,6 +247,11 @@ impl WorldObj {
     #[inline]
     pub fn new(x : f32, y : f32, z : f32) -> Self {
         Self::from_pos(Position::new(x, y, z))
+    }
+
+    #[inline]
+    pub fn zero() -> Self {
+        Self::new(0.0, 0.0, 0.0)
     }
 
     #[inline]

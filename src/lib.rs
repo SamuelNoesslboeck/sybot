@@ -8,7 +8,7 @@ extern crate alloc;
 // #    SUBMODULES    #
 // ####################
     /// Configurations for the robot in terms of position, speed and mode
-    pub mod conf;
+    pub mod config;
 
     // pub mod ctrl;
 

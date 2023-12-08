@@ -1,8 +1,9 @@
 use core::marker::PhantomData;
 
 use glam::Vec3;
+use syact::comp::Cylinder;
 use syact::ctrl::Interruptor;
-use syact::{Setup, Tool, SyncCompGroup};
+use syact::{Setup, Tool, SyncCompGroup, Stepper};
 use syact::comp::stepper::{StepperComp, StepperCompGroup};
 use syact::units::*;
 
@@ -11,7 +12,7 @@ use syact::units::*;
 use crate::rcs::Position;
 
 use crate::{Robot, PushRemote, Descriptor};
-use crate::conf::{AngConf, Mode, default_modes};
+use crate::config::{AngConf, Mode, default_modes};
 use crate::robs::Vars;
 
 pub trait DynMeas : Interruptor + Setup + Send { }
@@ -105,8 +106,8 @@ where
     //
 
     // Movement
-        fn move_p_sync(&mut self, desc : &mut dyn Descriptor<G, T, C>, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
-            let phis = desc.convert_pos(self, p)?;
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
+            let phis = desc.phis_for_pos(p)?;
             self.move_abs_j_sync(
                 phis,
                 speed_f
@@ -136,7 +137,7 @@ where
         }
 
         #[allow(unused)]
-        fn move_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
             todo!();
 
             // let pos_0 = desc.current_tcp().pos();
@@ -201,8 +202,8 @@ where
             Ok(())
         }
 
-        fn move_abs_l(&mut self, desc : &mut dyn Descriptor<G, T, C>, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
-            let pos_0 = desc.current_tcp().pos();
+        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+            let pos_0 = desc.tcp().pos();
             self.move_l(desc, pos - pos_0, accuracy, speed)
         }
     // 
@@ -286,3 +287,17 @@ where
         }
     //
 }
+
+
+// ################
+// #    COMMON    #
+// ################
+    #[derive(StepperCompGroup)]
+    pub struct LinearXYZStepperActuators {
+        pub x : Cylinder<Stepper>,
+        pub y : Cylinder<Stepper>,
+        pub z : Cylinder<Stepper>
+    }
+
+    pub type LinearXYZStepperRobot = StepperRobot<LinearXYZStepperActuators, dyn StepperComp, 3>;
+// 
