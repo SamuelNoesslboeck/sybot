@@ -1,4 +1,4 @@
-use syact::{SyncCompGroup, SyncComp};
+use syact::{SyncActuatorGroup, SyncActuator};
 use syact::units::*;
 
 use crate::Robot;
@@ -55,7 +55,7 @@ pub trait Descriptor<const C : usize> {
         fn update<R, G, T>(&mut self, rob : &mut R, phis : &[Phi; C]) -> Result<(), crate::Error>
         where
             R : Robot<G, T, C>,
-            G : SyncCompGroup<T, C>,
-            T : SyncComp + ?Sized + 'static;
+            G : SyncActuatorGroup<T, C>,
+            T : SyncActuator + ?Sized + 'static;
     // 
 }

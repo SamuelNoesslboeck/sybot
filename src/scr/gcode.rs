@@ -6,7 +6,7 @@ use crate::scr::Interpreter;
 
 mod gfuncs;
 pub use gfuncs::*;
-use syact::{SyncCompGroup, SyncComp};
+use syact::{SyncActuatorGroup, SyncActuator};
 
 pub type Letter = gcode::Mnemonic;
 pub type GCode = gcode::GCode;
@@ -25,7 +25,7 @@ pub trait GCodeBasis<R, D, S> {
     fn add_functions(&mut self, funcs : &mut Entries<R, D, S>);
 }
 
-pub struct GCodeIntpr<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> {
+pub struct GCodeIntpr<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> {
     pub funcs : Entries<R, D, S>,
     pub tool_change : Option<ToolChangeFunc<R, D, S>>,
 
@@ -33,7 +33,7 @@ pub struct GCodeIntpr<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : D
     __pdata : PhantomData<T>
 }
 
-impl<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> GCodeIntpr<T, R, D, S, C> {   
+impl<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> GCodeIntpr<T, R, D, S, C> {   
     pub fn new(tool_change : Option<ToolChangeFunc<R, D, S>>, funcs : Entries<R, D, S>, not_found : NotFoundFunc) -> Self {
         return GCodeIntpr {
             funcs,
@@ -45,7 +45,7 @@ impl<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, 
     }
 }
 
-impl<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> GCodeIntpr<T, R, D, S, C> {
+impl<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> GCodeIntpr<T, R, D, S, C> {
     pub fn init() -> Self {
         let funcs = Entries::from([
             (Letter::General, NumEntries::from([
@@ -76,7 +76,7 @@ impl<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, 
     }
 }
 
-impl<T : SyncCompGroup<dyn SyncComp, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> Interpreter<T, R, D, S, GCodeResult, C> for GCodeIntpr<T, R, D, S, C> {
+impl<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> Interpreter<T, R, D, S, GCodeResult, C> for GCodeIntpr<T, R, D, S, C> {
     fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, gc_str : &str) -> Vec<GCodeResult> {
         let mut res = vec![]; 
 

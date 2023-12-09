@@ -49,7 +49,7 @@ fn main() -> std::io::Result<()> {
     // Load the standard-partlibs in order to use motor names as data
     //
     // ```json
-    // "ctrl": {
+    // "device": {
     //     "consts": "MOT_17HE15_1504S",    // Motor name, see
     // // <https://docs.rs/syact/0.11.1/syact/data/struct.StepperConst.html#associatedconstant.MOT_17HE15_1504S>
     //     "pin_dir": 17,

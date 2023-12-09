@@ -1,16 +1,18 @@
 use syact::units::*;
 
-// AxisConf
-    /// Angle config (phi to gamma conversion)
+// Angle Configuration
+    /// Angle configuration (phi to gamma conversion), allowing 
+    /// - `offset`: The `Phi` value has an offset compared to the `Gamma` value
+    /// - `counter`: The `Phi` value is working as a counter angle to `Gamma` (The `Gamma` value will be negated)
     #[derive(Debug, Default, Clone, Copy)]
-    pub struct AngConf {
+    pub struct AngleConfig {
         /// Offset of the value
         pub offset : Delta,
         /// Wheiter or not the angle is a counterpart (negative addition)
         pub counter : bool
     }
 
-    impl AngConf {
+    impl AngleConfig {
         /// Convert the given gamma angle to a phi angle
         pub fn phi_from_gamma(&self, gamma : Gamma) -> Phi {
             (if self.counter { 

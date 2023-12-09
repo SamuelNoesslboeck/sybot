@@ -1,7 +1,13 @@
-use syact::{SyncComp, SyncCompGroup};
+use syact::{SyncActuator, SyncActuatorGroup};
 
 use crate::Robot;
 
-pub trait Station<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const C : usize> {
-    fn home(&mut self, rob : &mut impl Robot<G, T, C>) -> Result<(), crate::Error>;
+pub trait Station<G, T, const C : usize> 
+where
+    G : SyncActuatorGroup<T, C>,
+    T : SyncActuator + ?Sized + 'static
+{
+    type Robot : Robot<G, T, C>;
+
+    fn home(&mut self, rob : &mut Self::Robot) -> Result<(), crate::Error>;
 }

@@ -1,10 +1,9 @@
 use core::marker::PhantomData;
 
 use glam::Vec3;
-use syact::comp::Cylinder;
-use syact::ctrl::Interruptor;
-use syact::{Setup, Tool, SyncCompGroup, Stepper};
-use syact::comp::stepper::{StepperComp, StepperCompGroup};
+use syact::act::{Interruptor, LinearAxis};
+use syact::{Setup, Tool, SyncActuatorGroup, Stepper};
+use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
 use syact::units::*;
 
 // use crate::pkg::{RobotPackage, parse_struct};
@@ -12,19 +11,19 @@ use syact::units::*;
 use crate::rcs::Position;
 
 use crate::{Robot, PushRemote, Descriptor};
-use crate::config::{AngConf, Mode, default_modes};
+use crate::config::{AngleConfig, Mode, default_modes};
 use crate::robs::Vars;
 
 pub trait DynMeas : Interruptor + Setup + Send { }
 
 pub struct StepperRobot<G, T, const C : usize> 
 where 
-    G : StepperCompGroup<T, C>,
-    T : StepperComp + ?Sized + 'static
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + ?Sized + 'static
 {
     vars : Vars<C>,
 
-    ang_confs : [AngConf; C],
+    ang_confs : [AngleConfig; C],
     comps : G,
 
     tools : Vec<Box<dyn Tool>>,
@@ -40,10 +39,10 @@ where
 
 impl<G, T, const C : usize> StepperRobot<G, T, C>
 where 
-    G : StepperCompGroup<T, C>,
-    T : StepperComp + ?Sized + 'static
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + ?Sized + 'static
 {
-    pub fn new(ang_confs : [AngConf; C], comps : G, tools : Vec<Box<dyn Tool>>) -> Self {
+    pub fn new(ang_confs : [AngleConfig; C], comps : G, tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
             vars: Vars::default(),
 
@@ -65,8 +64,8 @@ where
 
 impl<G, T, const C : usize> Setup for StepperRobot<G, T, C> 
 where 
-    G : StepperCompGroup<T, C>,
-    T : StepperComp + ?Sized + 'static
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + ?Sized + 'static
 {
     fn setup(&mut self) -> Result<(), syact::Error> {
         self.comps_mut().setup()
@@ -75,12 +74,12 @@ where
 
 impl<G, T, const C : usize> Robot<G, T, C> for StepperRobot<G, T, C> 
 where 
-    G : StepperCompGroup<T, C>,
-    T : StepperComp + ?Sized + 'static
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + ?Sized + 'static
 {
     // Data
         #[inline]
-        fn ang_confs<'a>(&'a self) -> &[AngConf; C] {
+        fn ang_confs<'a>(&'a self) -> &[AngleConfig; C] {
             &self.ang_confs
         }
 
@@ -119,21 +118,21 @@ where
         #[allow(unused)]
         fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : f32) -> Result<(), crate::Error> {
             let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            <G as SyncCompGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+            <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
         #[allow(unused)]
         fn move_abs_j(&mut self, gammas : [Gamma; C], gen_speed_f : f32) -> Result<(), crate::Error> {
             // TODO: Implement gammas to deltas function
             let mut deltas = [Delta::ZERO; C];
-            let comp_gammas = <G as SyncCompGroup<T, C>>::gammas(self.comps());
+            let comp_gammas = <G as SyncActuatorGroup<T, C>>::gammas(self.comps());
 
             for i in 0 .. C {
                 deltas[i] = gammas[i] - comp_gammas[i];
             }
 
             let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            <G as SyncCompGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+            <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
         #[allow(unused)]
@@ -292,12 +291,20 @@ where
 // ################
 // #    COMMON    #
 // ################
-    #[derive(StepperCompGroup)]
-    pub struct LinearXYZStepperActuators {
-        pub x : Cylinder<Stepper>,
-        pub y : Cylinder<Stepper>,
-        pub z : Cylinder<Stepper>
+    #[derive(StepperActuatorGroup)]
+    pub struct LinearXYStepperActuators {
+        pub x : LinearAxis<Stepper>,
+        pub y : LinearAxis<Stepper>
     }
 
-    pub type LinearXYZStepperRobot = StepperRobot<LinearXYZStepperActuators, dyn StepperComp, 3>;
+    pub type LinearXYStepperRobot = StepperRobot<LinearXYStepperActuators, dyn StepperActuator, 2>;
+
+    #[derive(StepperActuatorGroup)]
+    pub struct LinearXYZStepperActuators {
+        pub x : LinearAxis<Stepper>,
+        pub y : LinearAxis<Stepper>,
+        pub z : LinearAxis<Stepper>
+    }
+
+    pub type LinearXYZStepperRobot = StepperRobot<LinearXYZStepperActuators, dyn StepperActuator, 3>;
 // 

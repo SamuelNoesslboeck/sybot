@@ -32,9 +32,9 @@ Example configuration file:
   "comps": [
     {
       "name": "Base",
-      "type_name": "syact::comp::gear_bearing::GearJoint",
+      "type_name": "syact::act::gear_bearing::GearJoint",
       "obj": {
-        "ctrl": {
+        "device": {
           "consts": "MOT_17HE15_1504S",
           "pin_dir": 17,
           "pin_step": 26

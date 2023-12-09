@@ -1,12 +1,12 @@
 use core::fmt::Debug;
 
 use glam::Vec3;
-use syact::{SyncCompGroup, Tool, Setup, SimpleTool, SyncComp};
+use syact::{SyncActuatorGroup, Tool, Setup, SimpleTool, SyncActuator};
 use syact::units::*;
 
 // use crate::pkg::info::AngConf;
 use crate::Descriptor;
-use crate::config::{Mode, AngConf};
+use crate::config::{Mode, AngleConfig};
 use crate::rcs::Position;
 use crate::remote::PushRemote;
 
@@ -61,12 +61,12 @@ use crate::remote::PushRemote;
 /// - `Vars` Robot variables (e.g. position)
 /// - Current `Mode`, defines speed and safety
 /// - `Tools` and tool currently selected
-/// - Driving components (`SyncComp`) (e.g. motors, cylinders)
+/// - Driving components (`SyncActuator`) (e.g. motors, cylinders)
 /// - `PushRemotes`
 /// 
 /// and provides the follwing functionalities
 /// - `Gamma` / `Phi` distance conversion
-pub trait Robot<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const C : usize> : Setup {
+pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static, const C : usize> : Setup {
     // Data
         /// Returns a reference to the robots variables
         fn vars(&self) -> &Vars<C>;
@@ -74,7 +74,7 @@ pub trait Robot<G : SyncCompGroup<T, C>, T : SyncComp + ?Sized + 'static, const 
         /// Returns a mutable reference to the robots variables
         fn vars_mut(&mut self) -> &mut Vars<C>;
 
-        fn ang_confs(&self) -> &[AngConf; C];
+        fn ang_confs(&self) -> &[AngleConfig; C];
 
         /// Returns a reference to the component group of the robot
         fn comps(&self) -> &G;

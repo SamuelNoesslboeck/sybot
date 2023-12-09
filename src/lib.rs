@@ -10,7 +10,7 @@ extern crate alloc;
     /// Configurations for the robot in terms of position, speed and mode
     pub mod config;
 
-    // pub mod ctrl;
+    // pub mod device;
 
     // #[cfg(feature = "gcode")]
     // pub use scr::gcode as gcode;
