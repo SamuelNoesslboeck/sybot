@@ -38,19 +38,44 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
         add_samples: 2,
         sample_dist: Some(Delta(20.0))
     };
+
+    // const LIMITS_MIN = [
+
+    // ]; 
+
+    // const
 // 
 
-pub struct LinearXYStation { }
+// Station
+    pub struct LinearXYStation { }
 
-impl Station<LinearXYStepperActuators, dyn StepperActuator, 2> for LinearXYStation {
-    type Robot = LinearXYStepperRobot;
+    impl Station<LinearXYStepperActuators, dyn StepperActuator, 2> for LinearXYStation {
+        type Robot = LinearXYStepperRobot;
 
-    fn home(&mut self, rob : &mut Self::Robot) -> Result<(), sybot::Error> {
-        dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 0.5)?);
-        dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 0.5)?);
-        Ok(())
+        fn home(&mut self, rob : &mut Self::Robot) -> Result<(), sybot::Error> {
+            dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 0.5)?);
+            dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 0.5)?);
+            Ok(())
+        }
     }
-}
+// 
+
+// Points
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct Line {
+        p1 : [f32; 2],
+        p2 : [f32; 2]
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct PointsFile {
+        contour : Vec<Line>
+    }
+
+    pub fn load_points(path : &str) -> PointsFile {
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
+    }
+// 
 
 fn main() {
     // RDS

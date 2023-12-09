@@ -122,7 +122,8 @@ where
         }
 
         #[allow(unused)]
-        fn move_abs_j(&mut self, gammas : [Gamma; C], gen_speed_f : f32) -> Result<(), crate::Error> {
+        fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : f32) -> Result<(), crate::Error> {
+            let gammas = self.gammas_from_phis(phis);
             // TODO: Implement gammas to deltas function
             let mut deltas = [Delta::ZERO; C];
             let comp_gammas = <G as SyncActuatorGroup<T, C>>::gammas(self.comps());

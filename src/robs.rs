@@ -147,7 +147,7 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
     // Asnychronous movement (complex movement)
         fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error>;
 
-        fn move_abs_j(&mut self, gammas : [Gamma; C], speed_f : f32) -> Result<(), crate::Error>;
+        fn move_abs_j(&mut self, phis : [Phi; C], speed_f : f32) -> Result<(), crate::Error>;
 
         fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
@@ -156,9 +156,8 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
         fn move_p<D : Descriptor<C>>(&mut self, desc: &mut D, p : Position, speed_f : f32) -> Result<(), crate::Error>
         where Self: Sized {
             let phis = desc.phis_for_pos(p)?;
-            let gammas = self.gammas_from_phis(phis);
             self.move_abs_j(
-                gammas,
+                phis,
                 speed_f
             )
         }
