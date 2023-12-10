@@ -134,7 +134,7 @@ fn main() {
     // 
 
     // Lines
-        let lines = load_points("assets/sample_lines.json");
+        // let lines = load_points("assets/sample_lines.json");
     // 
 
     rob.comps_mut().set_config(StepperConfig::new(12.0, 1.5));
@@ -144,18 +144,39 @@ fn main() {
 
     station.home(&mut rob).unwrap();
 
-    // FIX #2: Workaround for limits
-    rob.comps_mut().x.overwrite_limits(None, None);
-    rob.comps_mut().y.overwrite_limits(None, None);
-
     println!("Starting to draw ... ");
 
-    for line in lines.contour {
-        let points = convert_line(line);
+    // for line in lines.contour {
+    //     let points = convert_line(line);
 
-        println!("Driving to {:?}", points[0]);
-        rob.move_abs_j(points[0], 0.25).unwrap();
-        println!("Driving to {:?}", points[1]);
-        rob.move_abs_j(points[1], 0.25).unwrap();
+    //     println!("Driving to {:?}", points[0]);
+    //     // rob.move_abs_j(points[0], 0.25).unwrap();
+    //     // rob.await_inactive().unwrap();
+    //     rob.move_abs_j_sync(points[0], 0.25).unwrap();
+
+    //     println!("Driving to {:?}", points[1]);
+    //     // rob.move_abs_j(points[1], 0.25).unwrap();
+    //     // rob.await_inactive().unwrap();
+    //     rob.move_abs_j_sync(points[1], 0.25).unwrap();
+    // }
+    
+    let mut buffer;
+    loop {
+        println!("X: ");
+
+        buffer = String::new();
+        std::io::stdin().read_line(&mut buffer).unwrap();
+
+        let x = buffer.trim().parse::<Phi>().unwrap();
+
+        println!("Y: ");
+
+        buffer = String::new();
+        std::io::stdin().read_line(&mut buffer).unwrap();
+
+        let y = buffer.trim().parse::<Phi>().unwrap();
+
+        rob.move_abs_j([ x, y ], 0.25).unwrap();
+        rob.await_inactive().unwrap();
     }
 }
