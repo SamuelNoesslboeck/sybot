@@ -62,7 +62,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
             dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 0.5)?);
             dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 0.5)?);
 
-            rob.move_abs_j(HOME, 1.0);
+            rob.move_abs_j(HOME, 1.0)?;
 
             Ok(())
         }
@@ -71,13 +71,13 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
 // Points
     #[derive(serde::Serialize, serde::Deserialize)]
-    struct Line {
+    pub struct Line {
         p1 : [f32; 2],
         p2 : [f32; 2]
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
-    struct PointsFile {
+    pub struct PointsFile {
         contour : Vec<Line>
     }
 
