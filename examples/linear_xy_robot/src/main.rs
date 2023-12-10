@@ -6,8 +6,8 @@ use sybot::prelude::*;
 use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
 // Constants
-    const OFFSET_X : Delta = Delta(0.0);
-    const OFFSET_Y : Delta = Delta(0.0);
+    const OFFSET_X : Delta = Delta(50.0);
+    const OFFSET_Y : Delta = Delta(50.0);
 
     const PIN_STEP_X : u8 = 14;
     const PIN_STEP_Y : u8 = 15;
@@ -24,7 +24,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     const MEAS_DATA_X : SimpleMeasData = SimpleMeasData {
         set_gamma: Gamma(0.0),
         max_dist: Delta(-300.0),
-        meas_speed_f: 0.2,
+        meas_speed_f: 0.4,
 
         add_samples: 0,
         sample_dist: Some(Delta(20.0))
@@ -33,7 +33,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     const MEAS_DATA_Y : SimpleMeasData = SimpleMeasData {
         set_gamma: Gamma(0.0),
         max_dist: Delta(-300.0),
-        meas_speed_f: 0.2,
+        meas_speed_f: 0.4,
 
         add_samples: 0,
         sample_dist: Some(Delta(20.0))
@@ -62,7 +62,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
             dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 1.0)?);
             dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 1.0)?);
 
-            dbg!(rob.move_abs_j_sync(HOME, 1.0)?);
+            dbg!(rob.move_abs_j_sync(HOME, 0.25)?);
 
             Ok(())
         }
@@ -70,6 +70,8 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 // 
 
 // Points
+    const PIXEL_PER_MM : f32 = 4.0;
+
     #[derive(serde::Serialize, serde::Deserialize)]
     pub struct Line {
         p1 : [f32; 2],
@@ -77,18 +79,22 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
-    pub struct PointsFile {
+    pub struct LinesFile {
         contour : Vec<Line>
     }
 
-    pub fn load_points(path : &str) -> PointsFile {
+    pub fn load_points(path : &str) -> LinesFile {
         serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
     }
 
-    pub fn convert_line(line : Line) -> [Position; 2] {
+    pub fn convert_pixel(pixel : f32) -> Phi {
+        Phi(pixel / PIXEL_PER_MM)
+    }
+
+    pub fn convert_line(line : Line) -> [[Phi; 2]; 2] {
         [
-            Position::new(line.p1[0], line.p1[1], 0.0),
-            Position::new(line.p2[0], line.p2[1], 0.0)
+            [ convert_pixel(line.p1[0]), convert_pixel(line.p1[1]) ],
+            [ convert_pixel(line.p2[0]), convert_pixel(line.p2[1]) ]
         ]
     }
 // 
@@ -128,10 +134,19 @@ fn main() {
         let mut station = LinearXYStation { };
     // 
 
+    // Lines
+        let lines = load_points("assets/sample_lines.json");
+    // 
+
     rob.comps_mut().set_config(StepperConfig::new(12.0, 1.5));
     rob.setup().unwrap();
 
     station.home(&mut rob).unwrap();
 
-    
+    for line in lines.contour {
+        let points = convert_line(line);
+
+        rob.move_abs_j(points[0], 0.25)?;
+        rob.move_abs_j(points[1], 0.25)?;
+    }
 }
