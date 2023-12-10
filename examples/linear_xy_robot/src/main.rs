@@ -23,19 +23,19 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
     const MEAS_DATA_X : SimpleMeasData = SimpleMeasData {
         set_gamma: Gamma(0.0),
-        max_dist: Delta(300.0),
+        max_dist: Delta(-300.0),
         meas_speed_f: 0.2,
 
-        add_samples: 2,
+        add_samples: 0,
         sample_dist: Some(Delta(20.0))
     };
 
     const MEAS_DATA_Y : SimpleMeasData = SimpleMeasData {
         set_gamma: Gamma(0.0),
-        max_dist: Delta(300.0),
+        max_dist: Delta(-300.0),
         meas_speed_f: 0.2,
 
-        add_samples: 2,
+        add_samples: 0,
         sample_dist: Some(Delta(20.0))
     };
 
@@ -44,6 +44,12 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     // ]; 
 
     // const
+
+    // Positions
+    const HOME : [Phi; 2] = [
+        Phi(150.0),
+        Phi(150.0)
+    ];
 // 
 
 // Station
@@ -55,6 +61,9 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
         fn home(&mut self, rob : &mut Self::Robot) -> Result<(), sybot::Error> {
             dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 0.5)?);
             dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 0.5)?);
+
+            rob.move_abs_j(HOME, 1.0);
+
             Ok(())
         }
     }
@@ -74,6 +83,13 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
     pub fn load_points(path : &str) -> PointsFile {
         serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
+    }
+
+    pub fn convert_line(line : Line) -> [Position; 2] {
+        [
+            Position::new(line.p1[0], line.p1[1], 0.0),
+            Position::new(line.p2[0], line.p2[1], 0.0)
+        ]
     }
 // 
 
@@ -116,4 +132,6 @@ fn main() {
     rob.setup().unwrap();
 
     station.home(&mut rob).unwrap();
+
+    
 }
