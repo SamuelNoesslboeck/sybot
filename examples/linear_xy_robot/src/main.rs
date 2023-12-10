@@ -59,10 +59,10 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
         type Robot = LinearXYStepperRobot;
 
         fn home(&mut self, rob : &mut Self::Robot) -> Result<(), sybot::Error> {
-            dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 0.5)?);
-            dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 0.5)?);
+            dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 1.0)?);
+            dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 1.0)?);
 
-            rob.move_abs_j(HOME, 1.0)?;
+            dbg!(rob.move_abs_j_sync(HOME, 1.0)?);
 
             Ok(())
         }
