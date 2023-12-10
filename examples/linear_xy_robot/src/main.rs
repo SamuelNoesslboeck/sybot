@@ -99,6 +99,10 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 // 
 
 fn main() {
+    // Init logging
+        env_logger::init();
+    // 
+
     // RDS
         let mut rob = LinearXYStepperRobot::new([
             AngleConfig {
@@ -113,7 +117,7 @@ fn main() {
             x: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_X, PIN_DIR_X).unwrap(), StepperConst::MOT_17HE15_1504S)
                     .add_interruptor_inline(Box::new(
-                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_X))
+                        EndSwitch::new(true, Some(Direction::CCW), UniInPin::new(PIN_MEAS_X))
                             .setup_inline().unwrap()
                     )),
                 RATIO_X
@@ -121,7 +125,7 @@ fn main() {
             y: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_Y, PIN_DIR_Y).unwrap(), StepperConst::MOT_17HE15_1504S)
                     .add_interruptor_inline(Box::new(
-                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_Y))
+                        EndSwitch::new(true, Some(Direction::CCW), UniInPin::new(PIN_MEAS_Y))
                             .setup_inline().unwrap()
                     )),
                 RATIO_Y
@@ -134,7 +138,7 @@ fn main() {
     // 
 
     // Lines
-        // let lines = load_points("assets/sample_lines.json");
+        let lines = load_points("assets/sample_lines.json");
     // 
 
     rob.comps_mut().set_config(StepperConfig::new(12.0, 1.5));
@@ -146,19 +150,19 @@ fn main() {
 
     println!("Starting to draw ... ");
 
-    // for line in lines.contour {
-    //     let points = convert_line(line);
+    for line in lines.contour {
+        let points = convert_line(line);
 
-    //     println!("Driving to {:?}", points[0]);
-    //     // rob.move_abs_j(points[0], 0.25).unwrap();
-    //     // rob.await_inactive().unwrap();
-    //     rob.move_abs_j_sync(points[0], 0.25).unwrap();
+        println!("Driving to {:?}", points[0]);
+        // rob.move_abs_j(points[0], 0.25).unwrap();
+        // rob.await_inactive().unwrap();
+        rob.move_abs_j_sync(points[0], 0.25).unwrap();
 
-    //     println!("Driving to {:?}", points[1]);
-    //     // rob.move_abs_j(points[1], 0.25).unwrap();
-    //     // rob.await_inactive().unwrap();
-    //     rob.move_abs_j_sync(points[1], 0.25).unwrap();
-    // }
+        println!("Driving to {:?}", points[1]);
+        // rob.move_abs_j(points[1], 0.25).unwrap();
+        // rob.await_inactive().unwrap();
+        rob.move_abs_j_sync(points[1], 0.25).unwrap();
+    }
     
     let mut buffer;
     loop {
