@@ -1,8 +1,7 @@
-use syact::meas::take_simple_meas;
 use syact::prelude::*;
-use sybot::desc::common::LinearXYDescriptor;
 use sybot::prelude::*;
 
+use syact::meas::take_simple_meas;
 use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
 // Constants
@@ -62,7 +61,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
             dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 1.0)?);
             dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 1.0)?);
 
-            dbg!(rob.move_abs_j_sync(HOME, 0.25)?);
+            dbg!(rob.move_abs_j_sync(HOME, 0.25)?);     // Changed speed factor: FIX #1
 
             Ok(())
         }
@@ -129,7 +128,7 @@ fn main() {
             )
         }, Vec::new());
 
-        let mut desc = LinearXYDescriptor::new();
+        // let desc = LinearXYDescriptor::new();
 
         let mut station = LinearXYStation { };
     // 
@@ -144,6 +143,10 @@ fn main() {
     println!("Driving to home position ... ");
 
     station.home(&mut rob).unwrap();
+
+    // FIX #2: Workaround for limits
+    rob.comps_mut().x.overwrite_limits(None, None);
+    rob.comps_mut().y.overwrite_limits(None, None);
 
     println!("Starting to draw ... ");
 
