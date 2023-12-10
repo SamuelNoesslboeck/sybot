@@ -6,8 +6,8 @@ use sybot::prelude::*;
 use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
 // Constants
-    const OFFSET_X : Delta = Delta(50.0);
-    const OFFSET_Y : Delta = Delta(50.0);
+    const OFFSET_X : Delta = Delta(-50.0);
+    const OFFSET_Y : Delta = Delta(-50.0);
 
     const PIN_STEP_X : u8 = 14;
     const PIN_STEP_Y : u8 = 15;
@@ -146,7 +146,7 @@ fn main() {
     for line in lines.contour {
         let points = convert_line(line);
 
-        rob.move_abs_j(points[0], 0.25)?;
-        rob.move_abs_j(points[1], 0.25)?;
+        rob.move_abs_j(points[0], 0.25).unwrap();
+        rob.move_abs_j(points[1], 0.25).unwrap();
     }
 }
