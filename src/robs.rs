@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use glam::Vec3;
-use syact::{SyncActuatorGroup, Tool, Setup, SimpleTool, SyncActuator};
+use syact::{SyncActuatorGroup, Tool, Setup, SimpleTool, SyncActuator, SpeedFactor};
 use syact::units::*;
 
 // use crate::pkg::info::AngConf;
@@ -132,28 +132,28 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
     // 
 
     // Synchronous movements
-        fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : SpeedFactor) -> Result<(), crate::Error> {
             self.comps_mut().drive_rel(deltas, [speed_f; C])
         }
 
-        fn move_abs_j_sync(&mut self, phis : [Phi; C], speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_abs_j_sync(&mut self, phis : [Phi; C], speed_f : SpeedFactor) -> Result<(), crate::Error> {
             let gammas = self.gammas_from_phis(phis);
             self.comps_mut().drive_abs(gammas, [speed_f; C])
         }
 
-        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error>;
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : SpeedFactor) -> Result<(), crate::Error>;
     // 
     
     // Asnychronous movement (complex movement)
-        fn move_j(&mut self, deltas : [Delta; C], speed_f : f32) -> Result<(), crate::Error>;
+        fn move_j(&mut self, deltas : [Delta; C], speed_f : SpeedFactor) -> Result<(), crate::Error>;
 
-        fn move_abs_j(&mut self, phis : [Phi; C], speed_f : f32) -> Result<(), crate::Error>;
+        fn move_abs_j(&mut self, phis : [Phi; C], speed_f : SpeedFactor) -> Result<(), crate::Error>;
 
         fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
         fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
 
-        fn move_p<D : Descriptor<C>>(&mut self, desc: &mut D, p : Position, speed_f : f32) -> Result<(), crate::Error>
+        fn move_p<D : Descriptor<C>>(&mut self, desc: &mut D, p : Position, speed_f : SpeedFactor) -> Result<(), crate::Error>
         where Self: Sized {
             let phis = desc.phis_for_pos(p)?;
             self.move_abs_j(
