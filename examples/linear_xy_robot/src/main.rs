@@ -1,3 +1,4 @@
+use indicatif::ProgressBar;
 use syact::prelude::*;
 use sybot::prelude::*;
 
@@ -116,19 +117,19 @@ fn main() {
         ], LinearXYStepperActuators {
             x: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_X, PIN_DIR_X).unwrap(), StepperConst::MOT_17HE15_1504S)
-                    .add_interruptor_inline(Box::new(
-                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_X))
-                            .setup_inline().unwrap()
-                    )),
-                RATIO_X
+                    // .add_interruptor_inline(Box::new(
+                    //     EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_X))
+                    //         .setup_inline().unwrap()
+                    // )),
+                , RATIO_X
             ),
             y: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_Y, PIN_DIR_Y).unwrap(), StepperConst::MOT_17HE15_1504S)
-                    .add_interruptor_inline(Box::new(
-                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_Y))
-                            .setup_inline().unwrap()
-                    )),
-                RATIO_Y
+                    // .add_interruptor_inline(Box::new(
+                    //     EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_Y))
+                    //         .setup_inline().unwrap()
+                    // )),
+                , RATIO_Y
             )
         }, Vec::new());
 
@@ -146,23 +147,29 @@ fn main() {
 
     println!("Driving to home position ... ");
 
-    station.home(&mut rob).unwrap();
+    // station.home(&mut rob).unwrap();
 
     println!("Starting to draw ... ");
+
+    let pb = ProgressBar::new(lines.contour.len() as u64);
 
     for line in lines.contour {
         let points = convert_line(line);
 
-        println!("Driving to {:?}", points[0]);
+        log::debug!("Driving to {:?}", points[0]);
         // rob.move_abs_j(points[0], 0.25).unwrap();
         // rob.await_inactive().unwrap();
         rob.move_abs_j_sync(points[0], 0.25).unwrap();
 
-        println!("Driving to {:?}", points[1]);
+        log::debug!("Driving to {:?}", points[1]);
         // rob.move_abs_j(points[1], 0.25).unwrap();
         // rob.await_inactive().unwrap();
         rob.move_abs_j_sync(points[1], 0.25).unwrap();
+
+        pb.inc(1);
     }
+
+    pb.finish_with_message("done");
     
     let mut buffer;
     loop {
