@@ -105,7 +105,7 @@ where
     //
 
     // Movement
-        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : SpeedFactor) -> Result<[Delta; C], crate::Error> {
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : SpeedFactor) -> Result<(), crate::Error> {
             let phis = desc.phis_for_pos(p)?;
             self.move_abs_j_sync(
                 phis,
@@ -117,7 +117,7 @@ where
     // Complex movement
         #[allow(unused)]
         fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : SpeedFactor) -> Result<(), crate::Error> {
-            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
+            let speed_f = syact::math::movements::ptp_speed_factors(self.comps_mut(), deltas, gen_speed_f);
             <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
@@ -132,7 +132,7 @@ where
                 deltas[i] = gammas[i] - comp_gammas[i];
             }
 
-            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
+            let speed_f = syact::math::movements::ptp_speed_factors(self.comps_mut(), deltas, gen_speed_f);
             <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
