@@ -1,8 +1,8 @@
 use core::marker::PhantomData;
 
 use glam::Vec3;
+use syact::{Setup, Tool, SyncActuatorGroup, Stepper, SpeedFactor};
 use syact::act::{Interruptor, LinearAxis};
-use syact::{Setup, Tool, SyncActuatorGroup, Stepper};
 use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
 use syact::units::*;
 
@@ -105,7 +105,7 @@ where
     //
 
     // Movement
-        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : SpeedFactor) -> Result<(), crate::Error> {
             let phis = desc.phis_for_pos(p)?;
             self.move_abs_j_sync(
                 phis,
@@ -116,13 +116,13 @@ where
 
     // Complex movement
         #[allow(unused)]
-        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : f32) -> Result<(), crate::Error> {
-            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
+        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : SpeedFactor) -> Result<(), crate::Error> {
+            let speed_f = syact::math::movements::ptp_speed_factors(self.comps_mut(), deltas, gen_speed_f);
             <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
         #[allow(unused)]
-        fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : f32) -> Result<(), crate::Error> {
+        fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : SpeedFactor) -> Result<(), crate::Error> {
             let gammas = self.gammas_from_phis(phis);
             // TODO: Implement gammas to deltas function
             let mut deltas = [Delta::ZERO; C];
@@ -132,7 +132,7 @@ where
                 deltas[i] = gammas[i] - comp_gammas[i];
             }
 
-            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
+            let speed_f = syact::math::movements::ptp_speed_factors(self.comps_mut(), deltas, gen_speed_f);
             <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
