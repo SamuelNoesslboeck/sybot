@@ -1,4 +1,5 @@
 use indicatif::ProgressBar;
+use syact::math::movements::DefinedActuator;
 use syact::prelude::*;
 use sybot::prelude::*;
 
@@ -24,7 +25,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     const MEAS_DATA_X : SimpleMeasData = SimpleMeasData {
         set_gamma: Gamma(0.0),
         max_dist: Delta(-300.0),
-        meas_speed_f: 0.4,
+        meas_speed: unsafe { SpeedFactor::from_unchecked(0.4) },
 
         add_samples: 0,
         sample_dist: Some(Delta(20.0))
@@ -33,7 +34,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     const MEAS_DATA_Y : SimpleMeasData = SimpleMeasData {
         set_gamma: Gamma(0.0),
         max_dist: Delta(-300.0),
-        meas_speed_f: 0.4,
+        meas_speed: unsafe { SpeedFactor::from_unchecked(0.4) },
 
         add_samples: 0,
         sample_dist: Some(Delta(20.0))
@@ -59,10 +60,10 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
         type Robot = LinearXYStepperRobot;
 
         fn home(&mut self, rob : &mut Self::Robot) -> Result<(), sybot::Error> {
-            dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, 1.0)?);
-            dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, 1.0)?);
+            dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, SpeedFactor::MAX)?);
+            dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, SpeedFactor::MAX)?);
 
-            dbg!(rob.move_abs_j_sync(HOME, 0.25)?);     // Changed speed factor: FIX #1
+            dbg!(rob.move_abs_j_sync(HOME, SpeedFactor::from(0.25))?);     // Changed speed factor: FIX #1
 
             Ok(())
         }
@@ -117,18 +118,18 @@ fn main() {
         ], LinearXYStepperActuators {
             x: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_X, PIN_DIR_X).unwrap(), StepperConst::MOT_17HE15_1504S)
-                    // .add_interruptor_inline(Box::new(
-                    //     EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_X))
-                    //         .setup_inline().unwrap()
-                    // )),
+                    .add_interruptor_inline(Box::new(
+                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_X))
+                            .setup_inline().unwrap()
+                    ))
                 , RATIO_X
             ),
             y: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_Y, PIN_DIR_Y).unwrap(), StepperConst::MOT_17HE15_1504S)
-                    // .add_interruptor_inline(Box::new(
-                    //     EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_Y))
-                    //         .setup_inline().unwrap()
-                    // )),
+                    .add_interruptor_inline(Box::new(
+                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_Y))
+                            .setup_inline().unwrap()
+                    ))
                 , RATIO_Y
             )
         }, Vec::new());
@@ -142,12 +143,12 @@ fn main() {
         let lines = load_points("assets/sample_lines.json");
     // 
 
-    rob.comps_mut().set_config(StepperConfig::new(12.0, 1.5));
+    rob.comps_mut().set_config(StepperConfig::new(12.0));
     rob.setup().unwrap();
 
     println!("Driving to home position ... ");
 
-    // station.home(&mut rob).unwrap();
+    station.home(&mut rob).unwrap();
 
     println!("Starting to draw ... ");
 
@@ -159,12 +160,12 @@ fn main() {
         log::debug!("Driving to {:?}", points[0]);
         // rob.move_abs_j(points[0], 0.25).unwrap();
         // rob.await_inactive().unwrap();
-        rob.move_abs_j_sync(points[0], 0.25).unwrap();
+        rob.move_abs_j_sync(points[0], SpeedFactor::from(0.25)).unwrap();
 
         log::debug!("Driving to {:?}", points[1]);
         // rob.move_abs_j(points[1], 0.25).unwrap();
         // rob.await_inactive().unwrap();
-        rob.move_abs_j_sync(points[1], 0.25).unwrap();
+        rob.move_abs_j_sync(points[1], SpeedFactor::from(0.25)).unwrap();
 
         pb.inc(1);
     }
@@ -187,7 +188,7 @@ fn main() {
 
         let y = buffer.trim().parse::<Phi>().unwrap();
 
-        rob.move_abs_j([ x, y ], 0.25).unwrap();
+        rob.move_abs_j([ x, y ], SpeedFactor::from(0.25)).unwrap();
         rob.await_inactive().unwrap();
     }
 }

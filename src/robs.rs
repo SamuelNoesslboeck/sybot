@@ -162,7 +162,7 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
             )
         }
 
-        fn await_inactive(&mut self) -> Result<[Delta; C], crate::Error> {
+        fn await_inactive(&mut self) -> Result<(), crate::Error> {
             self.comps_mut().await_inactive()
         }
     // 
