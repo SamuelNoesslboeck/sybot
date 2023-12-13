@@ -1,3 +1,4 @@
+use syact::act::StateActuator;
 use syact::prelude::*;
 use sybot::prelude::*;
 
@@ -5,7 +6,7 @@ use syact::meas::take_simple_meas;
 use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
 
-// pub constants
+// Constants
     pub const OFFSET_X : Delta = Delta(-50.0);
     pub const OFFSET_Y : Delta = Delta(-50.0);
 
@@ -22,6 +23,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
     pub const RATIO_X : f32 = 6.0;
     pub const RATIO_Y : f32 = 6.0;
+    pub const RATIO_Z : f32 = 8.0 / core::f32::consts::PI / 2.0;
 
     pub const MEAS_DATA_X : SimpleMeasData = SimpleMeasData {
         set_gamma: Gamma(0.0),
@@ -51,6 +53,16 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
         Phi(125.0)
     ];
 
+    pub const STATES_Z : [Gamma; 2] = [
+        Gamma::ZERO,
+        Gamma(5.0)
+    ]; 
+
+    pub const STATE_Z_DRAW : usize = 0;
+    pub const STATE_Z_LIFT : usize = 1;
+//
+
+// Robots
     pub fn linear_xy_robot_new() -> LinearXYStepperRobot {
         LinearXYStepperRobot::new([
             AngleConfig {
@@ -83,12 +95,47 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 // 
 
 // Station
-    pub struct LinearXYStation { }
+    pub struct LinearXYStation { 
+        pub z_axis : StateActuator<LinearAxis<Stepper>, 2>
+    }
+
+    impl LinearXYStation {
+        pub fn new() -> Self {
+            Self {
+                z_axis: StateActuator::new(
+                    LinearAxis::new(
+                        Stepper::new(
+                            GenericPWM::new(PIN_STEP_Z, PIN_DIR_Z).unwrap(),
+                            StepperConst::MOT_17HE15_1504S
+                        ),
+                        RATIO_Z
+                    ),
+                    STATES_Z
+                )
+            }
+        }
+
+        pub fn lift_pen(&mut self) -> Result<(), sybot::Error> {
+            self.z_axis.drive_to_state(STATE_Z_LIFT, SpeedFactor::MAX)
+        }
+
+        pub fn put_down_pen(&mut self) -> Result<(), sybot::Error> {
+            self.z_axis.drive_to_state(STATE_Z_DRAW, SpeedFactor::MAX)
+        }
+
+        pub fn reposition_pen(&mut self, rob : &mut LinearXYStepperRobot, new_pos : [Phi; 2]) -> Result<(), sybot::Error> {
+            self.lift_pen()?;
+            rob.move_abs_j(new_pos, SpeedFactor::MAX)?;
+            self.put_down_pen()
+        }
+    }
 
     impl Station<LinearXYStepperActuators, dyn StepperActuator, 2> for LinearXYStation {
         type Robot = LinearXYStepperRobot;
 
         fn home(&mut self, rob : &mut Self::Robot) -> Result<(), sybot::Error> {
+            self.lift_pen()?;
+
             dbg!(take_simple_meas(&mut rob.comps_mut().x, &MEAS_DATA_X, SpeedFactor::MAX)?);
             dbg!(take_simple_meas(&mut rob.comps_mut().y, &MEAS_DATA_Y, SpeedFactor::MAX)?);
 

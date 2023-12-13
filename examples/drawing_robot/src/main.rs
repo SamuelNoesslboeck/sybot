@@ -1,3 +1,4 @@
+use clap::{command, arg, value_parser};
 use indicatif::ProgressBar;
 
 use syact::prelude::*;
@@ -6,10 +7,14 @@ use sybot::prelude::*;
 mod robot;
 pub use robot::*;
 
+pub const DRAW_SPEED_DEFAULT : SpeedFactor = unsafe {
+    SpeedFactor::from_unchecked(0.25)
+};
+
 // Points
     pub const PIXEL_PER_MM : f32 = 4.0;
 
-    #[derive(serde::Serialize, serde::Deserialize)]
+    #[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
     pub struct Line {
         p1 : [f32; 2],
         p2 : [f32; 2]
@@ -41,46 +46,71 @@ fn main() {
         env_logger::init();
     // 
 
+    // Cmd
+        let matches = command!() 
+            .about("Drawing robot system")
+            .arg(arg!([path] "Pin number of the step pin").value_parser(value_parser!(String)))
+            .arg(arg!([z_state] "The current state of the Z-Axis (Drawing 0, Lifted 1)").value_parser(value_parser!(usize)))
+            .get_matches();
+
+        let path : String = matches.get_one::<String>("path").expect("A valid path has to be provided").clone();
+        let z_state : usize = *matches.get_one("z_state").expect("A valid Z-State has to be provided");
+
+        let draw_speed = std::env::var("DRAW_SPEED").map(|s| s.parse::<SpeedFactor>().unwrap()).unwrap_or(DRAW_SPEED_DEFAULT);
+    // 
+
     // RDS
         let mut rob = linear_xy_robot_new();
 
         // let desc = LinearXYDescriptor::new();
 
-        let mut station = LinearXYStation { };
+        let mut stat = LinearXYStation::new();
     // 
 
     // Lines
-        let lines = load_points("assets/sample_lines.json");
+        let lines = load_points(path.as_str());
     // 
 
+    // Init
     rob.comps_mut().set_config(StepperConfig::new(12.0, None));
     rob.setup().unwrap();
 
+    stat.z_axis.set_state(z_state);
+
     println!("Driving to home position ... ");
 
-    station.home(&mut rob).unwrap();
+    stat.home(&mut rob).unwrap();
 
     println!("Starting to draw ... ");
 
     let pb = ProgressBar::new(lines.contour.len() as u64);
 
+    // Safe to use
+    let mut last_point = unsafe { core::mem::zeroed() };
+
+    if let Some(&init_line) = lines.contour.first() {
+        let [ p1, _ ] = convert_line(init_line);
+        stat.reposition_pen(&mut rob, p1).unwrap();   
+        last_point = p1;
+    }
+
     for line in lines.contour {
-        let points = convert_line(line);
+        let [ p1, p2 ] = convert_line(line);
 
-        log::debug!("Driving to {:?}", points[0]);
-        rob.move_abs_j(points[0], SpeedFactor::from(0.25)).unwrap();
-        rob.await_inactive().unwrap();
-        // rob.move_abs_j_sync(points[0], SpeedFactor::from(0.25)).unwrap();
+        if p1 != last_point {
+            stat.reposition_pen(&mut rob, p1).unwrap();
+        }
 
-        log::debug!("Driving to {:?}", points[1]);
-        rob.move_abs_j(points[1], SpeedFactor::from(0.25)).unwrap();
+        log::debug!("Driving to {:?}", p2);
+        rob.move_abs_j(p2, draw_speed).unwrap();
         rob.await_inactive().unwrap();
-        // rob.move_abs_j_sync(points[1], SpeedFactor::from(0.25)).unwrap();
+        
+        last_point = p2;
 
         pb.inc(1);
     }
 
     pb.finish_with_message("done");
 
-    station.home(&mut rob).unwrap();
+    stat.home(&mut rob).unwrap();
 }
