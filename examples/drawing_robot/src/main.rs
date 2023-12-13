@@ -59,24 +59,28 @@ fn main() {
     println!("Driving to home position ... ");
 
     station.home(&mut rob).unwrap();
-    
-    let mut buffer;
-    loop {
-        println!("X: ");
 
-        buffer = String::new();
-        std::io::stdin().read_line(&mut buffer).unwrap();
+    println!("Starting to draw ... ");
 
-        let x = buffer.trim().parse::<Phi>().unwrap();
+    let pb = ProgressBar::new(lines.contour.len() as u64);
 
-        println!("Y: ");
+    for line in lines.contour {
+        let points = convert_line(line);
 
-        buffer = String::new();
-        std::io::stdin().read_line(&mut buffer).unwrap();
-
-        let y = buffer.trim().parse::<Phi>().unwrap();
-
-        rob.move_abs_j([ x, y ], SpeedFactor::from(0.25)).unwrap();
+        log::debug!("Driving to {:?}", points[0]);
+        rob.move_abs_j(points[0], SpeedFactor::from(0.25)).unwrap();
         rob.await_inactive().unwrap();
+        // rob.move_abs_j_sync(points[0], SpeedFactor::from(0.25)).unwrap();
+
+        log::debug!("Driving to {:?}", points[1]);
+        rob.move_abs_j(points[1], SpeedFactor::from(0.25)).unwrap();
+        rob.await_inactive().unwrap();
+        // rob.move_abs_j_sync(points[1], SpeedFactor::from(0.25)).unwrap();
+
+        pb.inc(1);
     }
+
+    pb.finish_with_message("done");
+
+    station.home(&mut rob).unwrap();
 }

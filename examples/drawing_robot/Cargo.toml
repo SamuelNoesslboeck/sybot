@@ -1,5 +1,5 @@
 [package]
-name = "linear_xy_robot"
+name = "drawing_robot"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 env_logger = "0.10.1"
 log = "0.4.20"
+indicatif = "0.17.7"
 serde = "1.0.193"
 serde_json = "1.0.108"
 
