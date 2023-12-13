@@ -12,11 +12,11 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
     pub const PIN_STEP_X : u8 = 14;
     pub const PIN_STEP_Y : u8 = 15;
-    pub const PIN_STEP_Z : u8 = 0;
+    pub const PIN_STEP_Z : u8 = 18;
 
     pub const PIN_DIR_X : u8 = 24;
     pub const PIN_DIR_Y : u8 = 25; 
-    pub const PIN_DIR_Z : u8 = 0;
+    pub const PIN_DIR_Z : u8 = 8;
 
     pub const PIN_MEAS_X : u8 = 4;
     pub const PIN_MEAS_Y : u8 = 17;
@@ -127,6 +127,12 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
             self.lift_pen()?;
             rob.move_abs_j(new_pos, SpeedFactor::MAX)?;
             self.put_down_pen()
+        }
+    }
+
+    impl Setup for LinearXYStation {
+        fn setup(&mut self) -> Result<(), syact::Error> {
+            self.z_axis.setup()
         }
     }
 
