@@ -73,9 +73,12 @@ fn main() {
 
     // Init
     rob.comps_mut().set_config(StepperConfig::new(12.0, None));
+    rob.comps_mut().apply_inertias(&WEIGHT_AXES);
     rob.setup().unwrap();
 
     stat.z_axis.set_state(z_state);
+    stat.z_axis.apply_inertia(WEIGHT_BED);
+    stat.z_axis.setup().unwrap();
 
     println!("Driving to home position ... ");
 

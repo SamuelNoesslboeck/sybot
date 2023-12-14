@@ -60,6 +60,13 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
 
     pub const STATE_Z_DRAW : usize = 0;
     pub const STATE_Z_LIFT : usize = 1;
+
+    // Load data    
+    pub const WEIGHT_AXES : [Inertia; 2] = [
+        Inertia(0.5),
+        Inertia(1.0)
+    ];
+    pub const WEIGHT_BED : Inertia = Inertia(2.0);  // 2kgs
 //
 
 // Robots
