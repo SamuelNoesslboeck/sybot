@@ -84,7 +84,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
             x: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_X, PIN_DIR_X).unwrap(), StepperConst::MOT_17HE15_1504S)
                     .add_interruptor_inline(Box::new(
-                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_X))
+                        EndSwitch::new(false, Some(Direction::CW), UniInPin::new(PIN_MEAS_X))
                             .setup_inline().unwrap()
                     ))
                 , RATIO_X
@@ -92,7 +92,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
             y: LinearAxis::new(
                 Stepper::new(GenericPWM::new(PIN_STEP_Y, PIN_DIR_Y).unwrap(), StepperConst::MOT_17HE15_1504S)
                     .add_interruptor_inline(Box::new(
-                        EndSwitch::new(false, Some(Direction::CCW), UniInPin::new(PIN_MEAS_Y))
+                        EndSwitch::new(false, Some(Direction::CW), UniInPin::new(PIN_MEAS_Y))
                             .setup_inline().unwrap()
                     ))
                 , RATIO_Y
