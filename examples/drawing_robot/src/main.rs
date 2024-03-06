@@ -1,3 +1,5 @@
+use std::io::{stdout, stdin, Read, Write};
+
 use clap::{command, arg, value_parser};
 use indicatif::ProgressBar;
 
@@ -38,6 +40,15 @@ pub const DRAW_SPEED_DEFAULT : SpeedFactor = unsafe {
             [ convert_pixel(line.p1[0]), convert_pixel(line.p1[1]) ],
             [ convert_pixel(line.p2[0]), convert_pixel(line.p2[1]) ]
         ]
+    }
+// 
+
+// Process
+    fn pause() {
+        let mut stdout = stdout();
+        stdout.write(b"Press Enter to continue...").unwrap();
+        stdout.flush().unwrap();
+        stdin().read(&mut [0]).unwrap();
     }
 // 
 
@@ -83,6 +94,12 @@ fn main() {
     println!("Driving to home position ... ");
 
     stat.home(&mut rob).unwrap();
+
+    // Debug
+        println!("Press enter to start drawing");
+
+        pause();
+    // 
 
     println!("Starting to draw ... ");
 

@@ -10,24 +10,24 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     pub const OFFSET_X : Delta = Delta(-50.0);
     pub const OFFSET_Y : Delta = Delta(-50.0);
 
-    pub const PIN_STEP_X : u8 = 14;
-    pub const PIN_STEP_Y : u8 = 15;
-    pub const PIN_STEP_Z : u8 = 18;
+    pub const PIN_STEP_X : u8 = 12;
+    pub const PIN_STEP_Y : u8 = 20;
+    pub const PIN_STEP_Z : u8 = 19;
 
-    pub const PIN_DIR_X : u8 = 24;
-    pub const PIN_DIR_Y : u8 = 25; 
-    pub const PIN_DIR_Z : u8 = 8;
+    pub const PIN_DIR_X : u8 = 21;
+    pub const PIN_DIR_Y : u8 = 13; 
+    pub const PIN_DIR_Z : u8 = 26;
 
-    pub const PIN_MEAS_X : u8 = 4;
-    pub const PIN_MEAS_Y : u8 = 17;
+    pub const PIN_MEAS_X : u8 = 5;
+    pub const PIN_MEAS_Y : u8 = 6;
 
     pub const RATIO_X : f32 = 6.0;
     pub const RATIO_Y : f32 = 6.0;
     pub const RATIO_Z : f32 = 8.0 / core::f32::consts::PI / 2.0;
 
     pub const MEAS_DATA_X : SimpleMeasData = SimpleMeasData {
-        set_gamma: Gamma(0.0),
-        max_dist: Delta(-300.0),
+        set_gamma: Gamma(325.0),
+        max_dist: Delta(400.0),
         meas_speed: unsafe { SpeedFactor::from_unchecked(0.4) },
 
         add_samples: 0,
@@ -35,8 +35,8 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     };
 
     pub const MEAS_DATA_Y : SimpleMeasData = SimpleMeasData {
-        set_gamma: Gamma(0.0),
-        max_dist: Delta(-300.0),
+        set_gamma: Gamma(230.0),
+        max_dist: Delta(800.0),
         meas_speed: unsafe { SpeedFactor::from_unchecked(0.4) },
 
         add_samples: 0,
@@ -50,7 +50,7 @@ use sybot::robs::stepper::{LinearXYStepperRobot, LinearXYStepperActuators};
     // Positions
     pub const HOME : [Phi; 2] = [
         Phi(125.0),
-        Phi(125.0)
+        Phi(75.0)
     ];
 
     pub const STATES_Z : [Gamma; 2] = [
