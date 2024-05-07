@@ -4,7 +4,7 @@ use crate::rcs::{Point, Position, PointRef, WorldObj};
 
 use glam::Vec3;
 use syact::{SyncActuator, SyncActuatorGroup};
-use syact::units::*;
+use syunit::*;
 
 // Linear
     pub struct LinearXYDescriptor {

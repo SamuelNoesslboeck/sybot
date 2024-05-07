@@ -2,18 +2,18 @@ use core::marker::PhantomData;
 
 use glam::Vec3;
 use syact::math::movements::DefinedActuator;
-use syact::{Setup, Tool, SyncActuatorGroup, Stepper, SpeedFactor};
-use syact::act::{Interruptor, LinearAxis};
+use syact::{Setup, SyncActuatorGroup};
+use syact::act::Interruptor;
 use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
-use syact::units::*;
+use syunit::*;
 
 // use crate::pkg::{RobotPackage, parse_struct};
 // use crate::pkg::info::AngConf;
-use crate::rcs::Position;
 
 use crate::{Robot, PushRemote, Descriptor};
 use crate::config::{AngleConfig, Mode, default_modes};
-use crate::robs::Vars;
+use crate::rcs::Position;
+use crate::robs::{Vars, Tool};
 
 pub trait DynMeas : Interruptor + Setup + Send { }
 
@@ -106,7 +106,7 @@ where
     //
 
     // Movement
-        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : SpeedFactor) -> Result<(), crate::Error> {
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error> {
             let phis = desc.phis_for_pos(p)?;
             self.move_abs_j_sync(
                 phis,
@@ -117,7 +117,7 @@ where
 
     // Complex movement
         #[allow(unused)]
-        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : SpeedFactor) -> Result<(), crate::Error> {
+        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
             let gamma_0 = self.gammas();
             let gamma_t = add_unit_arrays(gamma_0, deltas);
             let speed_f = syact::math::movements::ptp_speed_factors(
@@ -127,7 +127,7 @@ where
         }
 
         #[allow(unused)]
-        fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : SpeedFactor) -> Result<(), crate::Error> {
+        fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
             let gamma_0 = self.gammas();
             let gamma_t = self.gammas_from_phis(phis);
             let speed_f = syact::math::movements::ptp_speed_factors(
@@ -137,7 +137,7 @@ where
         }
 
         #[allow(unused)]
-        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
             todo!();
 
             // let pos_0 = desc.current_tcp().pos();
@@ -172,8 +172,8 @@ where
 
             // let mut tstack = vec![accuracy / speed; dstack.len()];
 
-            // let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
-            // builder.generate(&mut tstack, dstack.as_slice(), [Some(Omega::ZERO); C]);
+            // let mut builder = self.comps.create_path_builder([Velocity::ZERO; C]);
+            // builder.generate(&mut tstack, dstack.as_slice(), [Some(Velocity::ZERO); C]);
 
             // let mut nodes = builder.unpack();
 
@@ -192,7 +192,7 @@ where
             // }
 
             // if let Some(last) = nodes.last() {
-            //     self.comps.drive_nodes(&last, [Omega::ZERO; C], &mut corr)?;
+            //     self.comps.drive_nodes(&last, [Velocity::ZERO; C], &mut corr)?;
             // }
 
             // dbg!(corr, t_err);
@@ -202,7 +202,7 @@ where
             Ok(())
         }
 
-        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
             let pos_0 = desc.tcp().pos();
             self.move_l(desc, pos - pos_0, accuracy, speed)
         }
@@ -287,25 +287,3 @@ where
         }
     //
 }
-
-
-// ################
-// #    COMMON    #
-// ################
-    #[derive(StepperActuatorGroup)]
-    pub struct LinearXYStepperActuators {
-        pub x : LinearAxis<Stepper>,
-        pub y : LinearAxis<Stepper>
-    }
-
-    pub type LinearXYStepperRobot = StepperRobot<LinearXYStepperActuators, dyn StepperActuator, 2>;
-
-    #[derive(StepperActuatorGroup)]
-    pub struct LinearXYZStepperActuators {
-        pub x : LinearAxis<Stepper>,
-        pub y : LinearAxis<Stepper>,
-        pub z : LinearAxis<Stepper>
-    }
-
-    pub type LinearXYZStepperRobot = StepperRobot<LinearXYZStepperActuators, dyn StepperActuator, 3>;
-// 

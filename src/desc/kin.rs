@@ -1,6 +1,6 @@
 use core::ops::Index;
 
-use syact::units::*;
+use syunit::*;
 
 use crate::rcs::{PointRef, Position, Point};
 use crate::desc::KinElement;

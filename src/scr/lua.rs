@@ -5,7 +5,7 @@ use alloc::rc::Rc;
 use glam::Vec3;
 use mlua::{Lua, Result, Table, UserData, LuaSerdeExt};
 use serde::{Serialize, Deserialize};
-use syact::units::*;
+use syunit::*;
 use crate::rcs::Position;
 use crate::robs::{BasicRobot, RobotDesc};
 

@@ -1,4 +1,4 @@
-use syact::units::*;
+use syunit::*;
 
 // Angle Configuration
     /// Angle configuration (phi to gamma conversion), allowing 

@@ -1,7 +1,7 @@
 use std::process::exit;
 
 use syact::{SyncActuatorGroup, SyncActuator};
-use syact::units::*;
+use syunit::*;
 
 use crate::rcs::Position;
 use crate::scr::gcode::*;

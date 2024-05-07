@@ -1,5 +1,5 @@
 use syact::{SyncActuatorGroup, SyncActuator};
-use syact::units::*;
+use syunit::*;
 
 use crate::Robot;
 use crate::config::AxisConfig;

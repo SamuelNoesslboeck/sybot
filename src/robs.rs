@@ -1,8 +1,8 @@
 use core::fmt::Debug;
 
 use glam::Vec3;
-use syact::{SyncActuatorGroup, Tool, Setup, SimpleTool, SyncActuator, SpeedFactor};
-use syact::units::*;
+use syact::{SyncActuatorGroup, Setup, SyncActuator};
+use syunit::*;
 
 // use crate::pkg::info::AngConf;
 use crate::Descriptor;
@@ -15,6 +15,9 @@ use crate::remote::PushRemote;
 // ####################
     pub mod stepper;
     pub use stepper::StepperRobot;
+
+    pub mod tool;
+    pub use tool::Tool;
 // 
 
 // ##############
@@ -132,28 +135,28 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
     // 
 
     // Synchronous movements
-        fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : SpeedFactor) -> Result<(), crate::Error> {
+        fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : Factor) -> Result<(), crate::Error> {
             self.comps_mut().drive_rel(deltas, [speed_f; C])
         }
 
-        fn move_abs_j_sync(&mut self, phis : [Phi; C], speed_f : SpeedFactor) -> Result<(), crate::Error> {
+        fn move_abs_j_sync(&mut self, phis : [Phi; C], speed_f : Factor) -> Result<(), crate::Error> {
             let gammas = self.gammas_from_phis(phis);
             self.comps_mut().drive_abs(gammas, [speed_f; C])
         }
 
-        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : SpeedFactor) -> Result<(), crate::Error>;
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error>;
     // 
     
     // Asnychronous movement (complex movement)
-        fn move_j(&mut self, deltas : [Delta; C], speed_f : SpeedFactor) -> Result<(), crate::Error>;
+        fn move_j(&mut self, deltas : [Delta; C], speed_f : Factor) -> Result<(), crate::Error>;
 
-        fn move_abs_j(&mut self, phis : [Phi; C], speed_f : SpeedFactor) -> Result<(), crate::Error>;
+        fn move_abs_j(&mut self, phis : [Phi; C], speed_f : Factor) -> Result<(), crate::Error>;
 
-        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error>;
 
-        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error>;
+        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error>;
 
-        fn move_p<D : Descriptor<C>>(&mut self, desc: &mut D, p : Position, speed_f : SpeedFactor) -> Result<(), crate::Error>
+        fn move_p<D : Descriptor<C>>(&mut self, desc: &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error>
         where Self: Sized {
             let phis = desc.phis_for_pos(p)?;
             self.move_abs_j(
@@ -182,8 +185,8 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
             self.comps_mut().set_limits(min, max)
         }
 
-        fn set_omega_max(&mut self, omega_max : [Omega; C]) {
-            self.comps_mut().set_omega_max(omega_max)
+        fn set_omega_max(&mut self, omega_max : [Velocity; C]) {
+            self.comps_mut().set_velocity_max(omega_max)
         }
     // 
 
@@ -201,7 +204,7 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
         fn set_tool_id(&mut self, tool_id : Option<usize>) -> Option<&mut dyn Tool>;
 
         // Wrapper functions
-            fn activate_tool(&mut self) -> Result<&dyn SimpleTool, crate::Error> {
+            fn activate_tool(&mut self) -> Result<&dyn tool::SimpleTool, crate::Error> {
                 let tool = self.get_tool_mut()
                     .ok_or("No tool has been equipped yet!")?;
                 let simple_tool = tool.simple_tool_mut()
@@ -212,7 +215,7 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
                 Ok(simple_tool)
             } 
 
-            fn deactivate_tool(&mut self) -> Result<&dyn SimpleTool, crate::Error> {
+            fn deactivate_tool(&mut self) -> Result<&dyn tool::SimpleTool, crate::Error> {
                 let tool = self.get_tool_mut()
                     .ok_or("No tool has been equipped yet!")?;
                 let simple_tool = tool.simple_tool_mut()
