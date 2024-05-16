@@ -1,27 +1,31 @@
+use core::marker::PhantomData;
 
 use glam::Vec3;
-use serde::de::DeserializeOwned;
-use syact::{Setup, Tool, SyncCompGroup};
-use syact::comp::stepper::{StepperComp, StepperCompGroup};
-use syact::meas::SimpleMeas;
-use syact::units::*;
+use syact::math::movements::DefinedActuator;
+use syact::{Setup, SyncActuatorGroup};
+use syact::act::Interruptor;
+use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
+use syunit::*;
 
-use crate::pkg::{RobotPackage, parse_struct};
-use crate::pkg::info::AngConf;
+// use crate::pkg::{RobotPackage, parse_struct};
+// use crate::pkg::info::AngConf;
+
+use crate::{Robot, PushRemote, Descriptor};
+use crate::config::{AngleConfig, Mode, default_modes};
 use crate::rcs::Position;
+use crate::robs::{Vars, Tool};
 
-use crate::remote::PushRemote;
-use crate::{Vars, Robot, Descriptor, Mode, default_modes};
+pub trait DynMeas : Interruptor + Setup + Send { }
 
-pub struct StepperRobot<T, const C : usize> 
+pub struct StepperRobot<G, T, const C : usize> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + ?Sized + 'static
 {
     _vars : Vars<C>,
 
-    _ang_confs : Vec<AngConf>,
-    _comps : T,
-    meas : [Vec<Box<dyn SimpleMeas>>; C], 
+    ang_confs : [AngleConfig; C],
+    comps : G,
 
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
@@ -29,21 +33,22 @@ where
     modes : Vec<Mode>,
     mode_id : usize,
 
-    remotes : Vec<Box<dyn PushRemote>>
+    remotes : Vec<Box<dyn PushRemote>>,
+
+    __pd : PhantomData<T>
 }
 
-impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> StepperRobot<T, C>
+impl<G, T, const C : usize> StepperRobot<G, T, C>
 where 
-    T : StepperCompGroup<dyn StepperComp, C>
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + ?Sized + 'static
 {
-    pub fn new(ang_confs : Vec<AngConf>, comps : T, 
-    meas: [Vec<Box<dyn SimpleMeas>>; C], tools : Vec<Box<dyn Tool>>) -> Self {
+    pub fn new(ang_confs : [AngleConfig; C], comps : G, tools : Vec<Box<dyn Tool>>) -> Self {
         Self {
             _vars: Vars::default(),
 
-            _ang_confs: ang_confs,
-            _comps: comps,
-            meas,
+            ang_confs,
+            comps,
             
             tools,
             tool_id: None,
@@ -51,75 +56,42 @@ where
             modes: Vec::from(default_modes()),
             mode_id: 0,
 
-            remotes: Vec::new()
+            remotes: Vec::new(),
+
+            __pd : PhantomData::default()
         }
     }
 }
 
-impl<T, const C : usize> TryFrom<RobotPackage> for StepperRobot<T, C> 
+impl<G, T, const C : usize> Setup for StepperRobot<G, T, C> 
 where 
-    T: StepperCompGroup<dyn StepperComp, C>,
-    T: DeserializeOwned
-{
-    type Error = crate::Error;
-
-    #[allow(deprecated)]
-    fn try_from(pkg : RobotPackage) -> Result<Self, Self::Error> {      // TODO: Remove this mess
-        let tools = pkg.parse_tools_dyn()?;
-        let meas = pkg.parse_meas_dyn()?;
-        let ang_confs = pkg.parse_ang_confs().unwrap();
-        let comps : T = parse_struct(pkg.comps.unwrap())?.0;
-
-        let mut rob = Self::new(
-            ang_confs, comps, meas.try_into().ok().unwrap(), tools
-        );
-
-        if let Some(link) = &pkg.data {
-            <T as SyncCompGroup<dyn StepperComp, C>>::write_data(rob.comps_mut(), link.clone());
-        }
-
-        Ok(rob)
-    }
-}
-
-impl<T : StepperCompGroup<dyn StepperComp, C>, const C : usize> Setup for StepperRobot<T, C> 
-where 
-    T : StepperCompGroup<dyn StepperComp, C>
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + DefinedActuator + ?Sized + 'static
 {
     fn setup(&mut self) -> Result<(), syact::Error> {
-        self.comps_mut().setup()?;
-
-        for meas_vec in &mut self.meas {
-            for meas in meas_vec {
-                meas.setup()?;
-            }
-        }
-
-        Ok(())
+        self.comps_mut().setup()
     }
 }
 
-impl<T, const C : usize> Robot<C> for StepperRobot<T, C> 
+impl<G, T, const C : usize> Robot<G, T, C> for StepperRobot<G, T, C> 
 where 
-    T : StepperCompGroup<dyn StepperComp, C>
-{
-    type Comp = dyn StepperComp;
-    type CompGroup = T;    
-
+    G : StepperActuatorGroup<T, C>,
+    T : StepperActuator + DefinedActuator + ?Sized + 'static
+{  
     // Data
         #[inline]
-        fn ang_confs<'a>(&'a self) -> &'a [AngConf] {
-            &self._ang_confs
+        fn ang_confs<'a>(&'a self) -> &[AngleConfig; C] {
+            &self.ang_confs
         }
 
         #[inline]
-        fn comps<'a>(&'a self) -> &'a T {
-            &self._comps
+        fn comps<'a>(&'a self) -> &'a G {
+            &self.comps
         }
 
         #[inline]
-        fn comps_mut<'a>(&'a mut self) -> &'a mut T {
-            &mut self._comps
+        fn comps_mut<'a>(&'a mut self) -> &'a mut G {
+            &mut self.comps
         }
         
         #[inline]
@@ -134,8 +106,8 @@ where
     //
 
     // Movement
-        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : f32) -> Result<[Delta; C], crate::Error> {
-            let phis = desc.convert_pos(self, p)?;
+        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error> {
+            let phis = desc.phis_for_pos(p)?;
             self.move_abs_j_sync(
                 phis,
                 speed_f
@@ -145,27 +117,27 @@ where
 
     // Complex movement
         #[allow(unused)]
-        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : f32) -> Result<(), crate::Error> {
-            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            self.comps_mut().drive_rel_async(deltas, speed_f)
+        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
+            let gamma_0 = self.gammas();
+            let gamma_t = add_unit_arrays(gamma_0, deltas);
+            let speed_f = syact::math::movements::ptp_speed_factors(
+                self.comps_mut(), gamma_0, gamma_t, gen_speed_f
+            );
+            <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
         }
 
         #[allow(unused)]
-        fn move_abs_j(&mut self, gammas : [Gamma; C], gen_speed_f : f32) -> Result<(), crate::Error> {
-            // TODO: Implement gammas to deltas function
-            let mut deltas = [Delta::ZERO; C];
-            let comp_gammas = self.comps().gammas();
-
-            for i in 0 .. C {
-                deltas[i] = gammas[i] - comp_gammas[i];
-            }
-
-            let speed_f = syact::math::movements::ptp_exact_unbuffered(self.comps_mut(), deltas, gen_speed_f);
-            self.comps_mut().drive_rel_async(deltas, speed_f)
+        fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
+            let gamma_0 = self.gammas();
+            let gamma_t = self.gammas_from_phis(phis);
+            let speed_f = syact::math::movements::ptp_speed_factors(
+                self.comps_mut(), gamma_0, gamma_t, gen_speed_f
+            );
+            <G as SyncActuatorGroup<T, C>>::drive_abs_async(self.comps_mut(), gamma_t, speed_f)
         }
 
         #[allow(unused)]
-        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
             todo!();
 
             // let pos_0 = desc.current_tcp().pos();
@@ -200,8 +172,8 @@ where
 
             // let mut tstack = vec![accuracy / speed; dstack.len()];
 
-            // let mut builder = self.comps.create_path_builder([Omega::ZERO; C]);
-            // builder.generate(&mut tstack, dstack.as_slice(), [Some(Omega::ZERO); C]);
+            // let mut builder = self.comps.create_path_builder([Velocity::ZERO; C]);
+            // builder.generate(&mut tstack, dstack.as_slice(), [Some(Velocity::ZERO); C]);
 
             // let mut nodes = builder.unpack();
 
@@ -220,7 +192,7 @@ where
             // }
 
             // if let Some(last) = nodes.last() {
-            //     self.comps.drive_nodes(&last, [Omega::ZERO; C], &mut corr)?;
+            //     self.comps.drive_nodes(&last, [Velocity::ZERO; C], &mut corr)?;
             // }
 
             // dbg!(corr, t_err);
@@ -230,7 +202,7 @@ where
             Ok(())
         }
 
-        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Omega) -> Result<(), crate::Error> {
+        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
             let pos_0 = desc.tcp().pos();
             self.move_l(desc, pos - pos_0, accuracy, speed)
         }

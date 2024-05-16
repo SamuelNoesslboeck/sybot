@@ -48,85 +48,101 @@ pub trait Point : Debug {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Position {
-    pos : Vec3,
-    ori : Mat3
-}
-
-impl Default for Position {
-    fn default() -> Self {
-        Self {
-            pos: Vec3::default(),
-            ori: Mat3::IDENTITY
-        }
+// Position
+    #[derive(Clone, Debug)]
+    pub struct Position {
+        pos : Vec3,
+        ori : Mat3
     }
-}
 
-impl Point for Position {
-    // Positions
-        fn x(&self) -> f32 {
-            self.pos.x
+    impl Position {
+        pub fn new(x : f32, y : f32, z : f32) -> Self {
+            Self::from_vec3(Vec3::new(x, y, z))
         }
 
-        fn y(&self) -> f32 {
-            self.pos.y
+        pub fn zero() -> Self {
+            Self::new(0.0, 0.0, 0.0)
         }
 
-        fn z(&self) -> f32 {
-            self.pos.z
+        pub fn from_vec3(pos : Vec3) -> Self {
+            Self {
+                pos, 
+                ori: Mat3::IDENTITY
+            }
         }
-    // 
 
-    fn pos<'a>(&'a self) -> &'a Vec3 {
-        &self.pos   
-    }
+        pub fn new_ori(pos : Vec3, ori : Mat3) -> Self {
+            Self { pos, ori }
+        }
 
-    fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3 {
-        &mut self.pos
-    }
-    
-    fn ori<'a>(&'a self) -> &'a Mat3 {
-        &self.ori
-    }
-
-    fn ori_mut<'a>(&'a mut self) -> &'a mut Mat3 {
-        &mut self.ori
-    }
-
-    fn shift(&mut self, by : Vec3) {
-        self.pos += by;
-    }
-
-    fn transform(&mut self, by : Mat3) {
-        self.pos = by * self.pos;
-    }
-
-    fn as_wo<'a>(&'a self) -> Option<&'a WorldObj> {
-        None
-    }
-
-    fn as_pos<'a>(&'a self) -> Option<&'a Position> {
-        Some(self)
-    }
-}
-
-impl Position {
-    pub fn new(pos : Vec3) -> Self {
-        Self {
-            pos, 
-            ori: Mat3::IDENTITY
+        pub fn to_wo(self) -> WorldObj {
+            WorldObj::from_pos(self)
         }
     }
 
-    pub fn new_ori(pos : Vec3, ori : Mat3) -> Self {
-        Self { pos, ori }
+    impl Default for Position {
+        fn default() -> Self {
+            Self {
+                pos: Vec3::default(),
+                ori: Mat3::IDENTITY
+            }
+        }
     }
 
-    pub fn to_wo(self) -> WorldObj {
-        WorldObj::new(self)
+    impl Point for Position {
+        // Positions
+            fn x(&self) -> f32 {
+                self.pos.x
+            }
+
+            fn y(&self) -> f32 {
+                self.pos.y
+            }
+
+            fn z(&self) -> f32 {
+                self.pos.z
+            }
+        // 
+
+        fn pos(&self) -> &Vec3 {
+            &self.pos   
+        }
+
+        fn pos_mut(&mut self) -> &mut Vec3 {
+            &mut self.pos
+        }
+        
+        fn ori(&self) -> &Mat3 {
+            &self.ori
+        }
+
+        fn ori_mut(&mut self) -> &mut Mat3 {
+            &mut self.ori
+        }
+
+        fn shift(&mut self, by : Vec3) {
+            self.pos += by;
+        }
+
+        fn transform(&mut self, by : Mat3) {
+            self.pos = by * self.pos;
+        }
+
+        fn as_wo<'a>(&self) -> Option<&WorldObj> {
+            None
+        }
+
+        fn as_pos<'a>(&self) -> Option<&Position> {
+            Some(self)
+        }
     }
-}
+
+    impl From<Vec3> for Position {
+        fn from(value: Vec3) -> Self {
+            Self::from_vec3(value)
+        }
+    }
+// 
 
 #[derive(Clone, Debug)]
 pub struct PointRef(pub Rc<RefCell<dyn Point>>);
@@ -228,14 +244,25 @@ impl Point for WorldObj {
 }
 
 impl WorldObj {
-    pub fn new(pos : Position) -> Self {
+    #[inline]
+    pub fn new(x : f32, y : f32, z : f32) -> Self {
+        Self::from_pos(Position::new(x, y, z))
+    }
+
+    #[inline]
+    pub fn zero() -> Self {
+        Self::new(0.0, 0.0, 0.0)
+    }
+
+    #[inline]
+    pub fn from_pos(pos : Position) -> Self {
         Self {
             pos,
             sub: HashMap::new()
         }
     }
 
-    pub fn new_sub(pos : Position, sub : HashMap<String, PointRef>) -> Self {
+    pub fn from_pos_sub(pos : Position, sub : HashMap<String, PointRef>) -> Self {
         Self {
             pos, sub
         }
@@ -248,6 +275,11 @@ impl WorldObj {
         }
         
         self.sub.insert(name_str, point);
+    }
+
+    pub fn add_point_inline<N : Into<String>>(mut self, name : N, point : PointRef) -> Self {
+        self.add_point(name, point);
+        self
     }
 
     pub fn point<S : Into<String>>(&self, path : S) -> Option<PointRef> {

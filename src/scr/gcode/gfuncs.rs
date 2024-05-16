@@ -1,5 +1,6 @@
 use std::process::exit;
 
+use syact::{SyncCompGroup, SyncComp};
 use syact::units::*;
 
 use crate::rcs::Position;

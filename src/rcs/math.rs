@@ -1,7 +1,7 @@
 use core::f32::consts::PI;
 
 use glam::Vec3;
-use syact::units::*;
+use syunit::*;
 
 use crate::rcs::Point;
 
@@ -11,22 +11,6 @@ pub fn sub_phis<const C : usize>(a : [Phi; C], b : [Phi; C]) -> [Delta; C] {
         deltas[i] = a[i] - b[i];
     }
     deltas
-}
-
-pub fn full_atan(x : f32, y : f32) -> f32 {
-    if x > 0.0 {
-        (y / x).atan()
-    } else if x < 0.0 {
-        PI + (y / x).atan()
-    } else {
-        if y > 0.0 {
-            PI / 2.0
-        } else if y < 0.0 {
-            PI / -2.0
-        } else {
-            0.0
-        }
-    }
 }
 
 pub fn law_of_cosines(a : f32, b : f32, c : f32) -> f32 {
@@ -93,7 +77,7 @@ pub fn split_linear(pos_0 : Vec3, delta_pos : Vec3, split_len : f32) -> Vec<Vec3
 // }
 
 // pub fn build_path<const C : usize>(robot : &impl ActRobot<C>, phis : &Vec<[Phi; C]>) {
-//     let mut builder : PathBuilder<C> = robot.comps().get_pathbuilder([Omega::ZERO; C]);
+//     let mut builder : PathBuilder<C> = robot.comps().get_pathbuilder([Velocity::ZERO; C]);
     
 //     let mut tstack = vec![];
 //     let mut dstack = vec![];

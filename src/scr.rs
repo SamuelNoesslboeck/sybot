@@ -1,15 +1,12 @@
-use crate::rds::{Robot, Descriptor};
+use syact::{SyncActuatorGroup, SyncActuator};
 
-// Submodules
-    #[cfg(feature = "gcode")]
-    pub mod gcode;
-
-    #[cfg(feature = "lua")]
-    pub mod lua; 
-// 
+use crate::{Robot, Descriptor};
 
 /// Interpreters convert a string prompt into actions for the robot
-pub trait Interpreter<R : Robot<C>, D : Descriptor<C>, S, O, const C : usize> {
+pub trait Interpreter<G : SyncActuatorGroup<T, C>, R : Robot<G, T, C>, D : Descriptor<C>, S, T, O, const C : usize> 
+where
+    T : SyncActuator + ?Sized + 'static
+{
     /// Interpret a code string for a given robot
     fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, code : &str) -> Vec<O>; 
 
