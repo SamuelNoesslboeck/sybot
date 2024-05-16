@@ -1,12 +1,11 @@
 use core::marker::PhantomData;
 use std::collections::HashMap;
 
-use crate::{Robot, Descriptor};
+use crate::rds::{Robot, Descriptor};
 use crate::scr::Interpreter;
 
 mod gfuncs;
 pub use gfuncs::*;
-use syact::{SyncActuatorGroup, SyncActuator};
 
 pub type Letter = gcode::Mnemonic;
 pub type GCode = gcode::GCode;
@@ -25,58 +24,56 @@ pub trait GCodeBasis<R, D, S> {
     fn add_functions(&mut self, funcs : &mut Entries<R, D, S>);
 }
 
-pub struct GCodeIntpr<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> {
+pub struct GCodeIntpr<R : Robot<C>, D : Descriptor<C>, S, const C : usize> {
     pub funcs : Entries<R, D, S>,
     pub tool_change : Option<ToolChangeFunc<R, D, S>>,
 
-    not_found : NotFoundFunc,
-    __pdata : PhantomData<T>
+    not_found : NotFoundFunc
 }
 
-impl<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> GCodeIntpr<T, R, D, S, C> {   
+impl<R : Robot<C>, D : Descriptor<C>, S, const C : usize> GCodeIntpr<R, D, S, C> {   
     pub fn new(tool_change : Option<ToolChangeFunc<R, D, S>>, funcs : Entries<R, D, S>, not_found : NotFoundFunc) -> Self {
         return GCodeIntpr {
             funcs,
             tool_change,
 
-            not_found,
-            __pdata: PhantomData::default()          
+            not_found    
         }
     }
 }
 
-impl<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> GCodeIntpr<T, R, D, S, C> {
+impl<R : Robot<C>, D : Descriptor<C>, S, const C : usize> GCodeIntpr<R, D, S, C> {
     pub fn init() -> Self {
         let funcs = Entries::from([
             (Letter::General, NumEntries::from([
-                (0, g0::<T, R, D, S, C> as GCodeFunc<R, D, S>),
-                (4, g4::<T, R, D, S, C>),
-                (28, g28::<T, R, D, S, C>),
+                (0, g0::<R, D, S, C> as GCodeFunc<R, D, S>),
+                (4, g4::<R, D, S, C>),
+                (28, g28::<R, D, S, C>),
                 // (29, g29::<R, D, C>),
-                (100, g100::<T, R, D, S, C>),
-                (1000, g1000::<T, R, D, S, C>),
-                (1100, g1100::<T, R, D, S, C>)
+                (100, g100::<R, D, S, C>),
+                (1000, g1000::<R, D, S, C>),
+                (1100, g1100::<R, D, S, C>)
             ])), 
             (Letter::Miscellaneous, NumEntries::from([
-                (3, m3::<T, R, D, S, C> as GCodeFunc<R, D, S>),
-                (4, m4::<T, R, D, S, C>),
-                (5, m5::<T, R, D, S, C>),
-                (30, m30::<T, R, D, S, C>),
-                (119, m119::<T, R, D, S, C>),
-                (1006, m1006::<T, R, D, S, C>),
+                (3, m3::<R, D, S, C> as GCodeFunc<R, D, S>),
+                (4, m4::<R, D, S, C>),
+                (5, m5::<R, D, S, C>),
+                (30, m30::<R, D, S, C>),
+                (119, m119::<R, D, S, C>),
+                (1006, m1006::<R, D, S, C>),
             ])), 
             (Letter::ProgramNumber, NumEntries::from([
-                (0, o0::<T, R, D, S, C> as GCodeFunc<R, D, S>)
+                (0, o0::<R, D, S, C> as GCodeFunc<R, D, S>)
             ]))
         ]);
         
-        GCodeIntpr::new(Some(t), funcs, |_| { 
+        GCodeIntpr::new(Some(t::<R, D, S, C>), funcs, |_| { 
             Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid GCode input")))
         })
     }
 }
 
-impl<T : SyncActuatorGroup<dyn SyncActuator, C>, R : Robot<T, C>, D : Descriptor<T, C>, S, const C : usize> Interpreter<T, R, D, S, GCodeResult, C> for GCodeIntpr<T, R, D, S, C> {
+impl<R : Robot<C>, D : Descriptor<C>, S, const C : usize> Interpreter<R, D, S, GCodeResult, C> for GCodeIntpr<R, D, S, C> {
     fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, gc_str : &str) -> Vec<GCodeResult> {
         let mut res = vec![]; 
 

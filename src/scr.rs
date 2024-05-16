@@ -2,14 +2,6 @@ use syact::{SyncActuatorGroup, SyncActuator};
 
 use crate::{Robot, Descriptor};
 
-// Submodules
-    #[cfg(feature = "gcode")]
-    pub mod gcode;
-
-    #[cfg(feature = "lua")]
-    pub mod lua; 
-// 
-
 /// Interpreters convert a string prompt into actions for the robot
 pub trait Interpreter<G : SyncActuatorGroup<T, C>, R : Robot<G, T, C>, D : Descriptor<C>, S, T, O, const C : usize> 
 where
