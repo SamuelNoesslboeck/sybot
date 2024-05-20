@@ -13,6 +13,8 @@ use syunit::*;
     }
 
     impl AngleConfig {
+        pub const EMPTY : Self = Self { offset: Delta::ZERO, counter: false };
+
         /// Convert the given gamma angle to a phi angle
         pub fn phi_from_gamma(&self, gamma : Gamma) -> Phi {
             (if self.counter { 

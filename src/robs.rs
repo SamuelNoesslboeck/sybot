@@ -5,10 +5,9 @@ use syact::{SyncActuatorGroup, Setup, SyncActuator};
 use syunit::*;
 
 // use crate::pkg::info::AngConf;
-use crate::Descriptor;
+use crate::{Descriptor, PushRemote};
 use crate::config::{Mode, AngleConfig};
 use crate::rcs::Position;
-use crate::remote::PushRemote;
 
 // ####################
 // #    SUBMODULES    #

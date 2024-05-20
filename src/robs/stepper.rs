@@ -7,9 +7,6 @@ use syact::act::Interruptor;
 use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
 use syunit::*;
 
-// use crate::pkg::{RobotPackage, parse_struct};
-// use crate::pkg::info::AngConf;
-
 use crate::{Robot, PushRemote, Descriptor};
 use crate::config::{AngleConfig, Mode, default_modes};
 use crate::rcs::Position;
@@ -24,8 +21,8 @@ where
 {
     _vars : Vars<C>,
 
-    ang_confs : [AngleConfig; C],
-    comps : G,
+    _ang_confs : [AngleConfig; C],
+    _comps : G,
 
     tools : Vec<Box<dyn Tool>>,
     tool_id : Option<usize>,
@@ -47,8 +44,8 @@ where
         Self {
             _vars: Vars::default(),
 
-            ang_confs,
-            comps,
+            _ang_confs: ang_confs,
+            _comps: comps,
             
             tools,
             tool_id: None,
@@ -81,17 +78,17 @@ where
     // Data
         #[inline]
         fn ang_confs<'a>(&'a self) -> &[AngleConfig; C] {
-            &self.ang_confs
+            &self._ang_confs
         }
 
         #[inline]
         fn comps<'a>(&'a self) -> &'a G {
-            &self.comps
+            &self._comps
         }
 
         #[inline]
         fn comps_mut<'a>(&'a mut self) -> &'a mut G {
-            &mut self.comps
+            &mut self._comps
         }
         
         #[inline]

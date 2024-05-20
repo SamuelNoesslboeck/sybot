@@ -9,5 +9,7 @@ where
 {
     type Robot : Robot<G, T, C>;
 
+    fn calibrate(&mut self, rob : &mut Self::Robot) -> Result<(), crate::Error>;
+
     fn home(&mut self, rob : &mut Self::Robot) -> Result<(), crate::Error>;
 }
