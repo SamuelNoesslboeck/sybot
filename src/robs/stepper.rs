@@ -1,10 +1,10 @@
 use core::marker::PhantomData;
 
 use glam::Vec3;
-use syact::math::movements::DefinedActuator;
-use syact::{Setup, SyncActuatorGroup};
+use syact::Setup;
 use syact::act::Interruptor;
 use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
+use syact::math::movements::DefinedActuator;
 use syunit::*;
 
 use crate::{Robot, PushRemote, Descriptor};
@@ -103,38 +103,40 @@ where
     //
 
     // Movement
-        fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error> {
+        async fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error> {
             let phis = desc.phis_for_pos(p)?;
             self.move_abs_j_sync(
                 phis,
                 speed_f
-            )
+            ).await
         }
     //
 
     // Complex movement
         #[allow(unused)]
-        fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
-            let gamma_0 = self.gammas();
-            let gamma_t = add_unit_arrays(gamma_0, deltas);
-            let speed_f = syact::math::movements::ptp_speed_factors(
-                self.comps_mut(), gamma_0, gamma_t, gen_speed_f
-            );
-            <G as SyncActuatorGroup<T, C>>::drive_rel_async(self.comps_mut(), deltas, speed_f)
+        async fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
+            // let gamma_0 = self.gammas();
+            // let gamma_t = add_unit_arrays(gamma_0, deltas);
+            // let speed_f = syact::math::movements::ptp_speed_factors(
+            //     self.comps_mut(), gamma_0, gamma_t, gen_speed_f
+            // );
+            // <G as SyncActuatorGroup<T, C>>::drive_rel(self.comps_mut(), deltas, speed_f)
+            todo!()
         }
 
         #[allow(unused)]
-        fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
-            let gamma_0 = self.gammas();
-            let gamma_t = self.gammas_from_phis(phis);
-            let speed_f = syact::math::movements::ptp_speed_factors(
-                self.comps_mut(), gamma_0, gamma_t, gen_speed_f
-            );
-            <G as SyncActuatorGroup<T, C>>::drive_abs_async(self.comps_mut(), gamma_t, speed_f)
+        async fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
+            // let gamma_0 = self.gammas();
+            // let gamma_t = self.gammas_from_phis(phis);
+            // let speed_f = syact::math::movements::ptp_speed_factors(
+            //     self.comps_mut(), gamma_0, gamma_t, gen_speed_f
+            // );
+            // <G as SyncActuatorGroup<T, C>>::drive_abs_async(self.comps_mut(), gamma_t, speed_f)
+            todo!()
         }
 
         #[allow(unused)]
-        fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
+        async fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
             todo!();
 
             // let pos_0 = desc.current_tcp().pos();
@@ -199,9 +201,9 @@ where
             Ok(())
         }
 
-        fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
+        async fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
             let pos_0 = desc.tcp().pos();
-            self.move_l(desc, pos - pos_0, accuracy, speed)
+            self.move_l(desc, pos - pos_0, accuracy, speed).await
         }
     // 
 
