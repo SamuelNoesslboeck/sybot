@@ -1,7 +1,7 @@
 [package]
 name = "sybot"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.10.0"
+version = "0.10.1"
 description = "Rust library for coordinating components, defining robotic systems and their communication "
 edition = "2021"
 repository = "https://github.com/SamuelNoesslboeck/sybot"

@@ -2,6 +2,7 @@ use syact::{SyncActuator, SyncActuatorGroup};
 
 use crate::Robot;
 
+#[allow(async_fn_in_trait)]
 pub trait Station<G, T, const C : usize> 
 where
     G : SyncActuatorGroup<T, C>,
@@ -9,7 +10,7 @@ where
 {
     type Robot : Robot<G, T, C>;
 
-    fn calibrate(&mut self, rob : &mut Self::Robot) -> Result<(), crate::Error>;
+    async fn calibrate(&mut self, rob : &mut Self::Robot) -> Result<(), crate::Error>;
 
-    fn home(&mut self, rob : &mut Self::Robot) -> Result<(), crate::Error>;
+    async fn home(&mut self, rob : &mut Self::Robot) -> Result<(), crate::Error>;
 }
