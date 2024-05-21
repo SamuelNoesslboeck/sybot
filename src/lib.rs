@@ -15,6 +15,7 @@ extern crate alloc;
     /// Quick and easy import of the library essentials
     pub mod prelude; 
 
+    /// RCS (Robot-Coordinate-System) module, manages the coordinate system and positions
     pub mod rcs;
 
     // ###################
@@ -49,8 +50,11 @@ extern crate alloc;
 //
 
 // Remotes
+    /// Different types of events that can occur
     pub enum PushMsg {
+        /// The robot has conducted a measurement
         Measurement,
+        /// The robot has undergone a tool change
         ToolChange
     }
 
@@ -59,8 +63,10 @@ extern crate alloc;
         /// Publish a set of phis to the remote connection
         fn push_phis(&mut self, phis : &[Phi]) -> Result<(), crate::Error>;
 
+        /// Publish a new `PushMsg`
         fn push_other(&mut self, other : PushMsg) -> Result<(), crate::Error>;
 
+        /// Publish any type via bytes
         fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), crate::Error>;
     }
 // 

@@ -6,7 +6,7 @@ use syunit::*;
 
 // use crate::pkg::info::AngConf;
 use crate::{Descriptor, PushRemote};
-use crate::config::{Mode, AngleConfig};
+use crate::config::AngleConfig;
 use crate::rcs::Position;
 
 // ####################
@@ -77,6 +77,7 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
         /// Returns a mutable reference to the robots variables
         fn vars_mut(&mut self) -> &mut Vars<C>;
 
+        /// Returns the robots angle configuration
         fn ang_confs(&self) -> &[AngleConfig; C];
 
         /// Returns a reference to the component group of the robot
@@ -123,6 +124,7 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
             phis
         }
 
+        /// Checks if a given set of `Phi` values is valid
         fn valid_phis(&self, phis : &[Phi; C]) -> Result<(), crate::Error> {
             if self.comps().valid_gammas(
                 &self.gammas_from_phis(*phis)
@@ -135,6 +137,9 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
     // 
 
     // Synchronous movements
+        /// # `move_j` - Joints movement / PTP Movement
+        /// 
+        /// TODO: Docs
         async fn move_j_sync(&mut self, deltas : [Delta; C], speed_f : Factor) -> Result<(), crate::Error> {
             let futures = self.comps_mut().drive_rel(deltas, [speed_f; C]);
             for future in futures.into_iter() {
@@ -152,17 +157,31 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
             Ok(())
         }
 
-        async fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error>;
+        async fn move_p_sync<D : Descriptor<C>>(&mut self, desc : &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error> {
+            let phis = desc.phis_for_pos(p)?;
+            self.move_abs_j_sync(
+                phis,
+                speed_f
+            ).await
+        }
     // 
     
     // Asnychronous movement (complex movement)
-        async fn move_j(&mut self, deltas : [Delta; C], speed_f : Factor) -> Result<(), crate::Error>;
+        async fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error>;
 
-        async fn move_abs_j(&mut self, phis : [Phi; C], speed_f : Factor) -> Result<(), crate::Error>;
+        async fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
+            let gamma_0 = self.gammas();
+            let gamma_t = self.gammas_from_phis(phis);
+            let deltas = sub_unit_arrays(gamma_t, gamma_0);
+            self.move_j(deltas, gen_speed_f).await
+        }
 
         async fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error>;
 
-        async fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error>;
+        async fn move_abs_l<D : Descriptor<C>>(&mut self, desc : &mut D, pos : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
+            let pos_0 = desc.tcp().pos();
+            self.move_l(desc, pos - pos_0, accuracy, speed).await
+        }
 
         async fn move_p<D : Descriptor<C>>(&mut self, desc: &mut D, p : Position, speed_f : Factor) -> Result<(), crate::Error>
         where Self: Sized {
@@ -230,12 +249,6 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
                 Ok(simple_tool)
             }
         // 
-    // 
-
-    // Modes
-        fn mode(&self) -> &Mode;
-
-        fn set_mode(&mut self, index : usize) -> Result<&Mode, crate::Error>;
     // 
 
     // Remote

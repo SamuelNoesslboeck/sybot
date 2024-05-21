@@ -13,6 +13,7 @@ use syunit::*;
     }
 
     impl AngleConfig {
+        /// An empty `AngleConfig`, with all values set to `0`/´false`
         pub const EMPTY : Self = Self { offset: Delta::ZERO, counter: false };
 
         /// Convert the given gamma angle to a phi angle
@@ -35,45 +36,13 @@ use syunit::*;
     }
 //
 
-// Mode
-    #[derive(Clone, Debug)]
-    pub struct Mode {
-        pub name : String,
-        pub desc : String,
-
-        pub speed_f : f32
-    }
-
-    impl Mode {
-        pub fn new<N : Into<String>, D : Into<String>>(name : N, desc : D, speed_f : f32) -> Self {
-            Self { 
-                name: name.into(), 
-                desc: desc.into(), 
-                speed_f 
-            }
-        }
-    }
-
-    pub fn default_modes() -> [Mode; 2] { 
-        [
-            Mode {
-                name: String::from("Setup"), 
-                desc: String::from("Mode with decreased speeds used for setting up"),
-                speed_f : 0.5
-            },
-            Mode {
-                name: String::from("Auto"), 
-                desc: String::from("Mode used for running automated programms with full speed"),
-                speed_f : 1.0
-            }
-        ]
-    }
-// 
-
 // AxisConf
+    /// Defines the way a robot should act when there is more than one possible way of accessing an object
     pub trait AxisConfig {
+        /// Returns the phis stored
         fn phis<'a>(&'a self) -> &'a [Phi];
 
+        /// Configure the configuration by altering the `Phi` values
         fn configure(&mut self, phis : Vec<Phi>) -> Result<(), crate::Error>; 
     }
 
