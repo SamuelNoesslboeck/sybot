@@ -1,11 +1,10 @@
 use core::marker::PhantomData;
 
 use glam::Vec3;
-use syact::{SyncActuatorGroup, Setup};
+use syact::Setup;
 use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
 use syact::math::movements::DefinedActuator;
 use syunit::*;
-use tokio::task::JoinSet;
 
 use crate::{Robot, PushRemote, Descriptor};
 use crate::config::AngleConfig;
@@ -99,27 +98,6 @@ where
     //
 
     // Movement
-        #[allow(unused)]
-        async fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
-            let gamma_0 = self.gammas();
-            let gamma_t = add_unit_arrays(gamma_0, deltas);
-            let speed_f = syact::math::movements::ptp_speed_factors(
-                self.comps_mut(), gamma_0, gamma_t, gen_speed_f
-            );
-
-            let mut set = JoinSet::new();
-
-            for fut in <G as SyncActuatorGroup<T, C>>::drive_rel(self.comps_mut(), deltas, speed_f) {
-                set.spawn(fut);
-            }
-
-            while let Some(res) = set.join_next().await {
-                res?;
-            }
-
-            Ok(())
-        }
-
         #[allow(unused)]
         async fn move_l<D : Descriptor<C>>(&mut self, desc : &mut D, distance : Vec3, accuracy : f32, speed : Velocity) -> Result<(), crate::Error> {
             todo!();

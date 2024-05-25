@@ -2,6 +2,7 @@
 #![crate_name = "sybot"]
 // #![deny(missing_docs)]
 
+use syact::math::movements::DefinedActuator;
 use syact::{SyncActuator, SyncActuatorGroup};
 use syunit::*;
 
@@ -19,7 +20,6 @@ extern crate alloc;
     /// RCS (Robot-Coordinate-System) module, manages the coordinate system and positions
     pub mod rcs;
 
-    /// Testing modules
     #[cfg(test)]
     pub mod tests;
 //
@@ -71,9 +71,12 @@ extern crate alloc;
 
 // Interpreters
     /// Interpreters convert a string prompt into actions for the robot
-    pub trait Interpreter<G : SyncActuatorGroup<T, C>, R : Robot<G, T, C>, D : Descriptor<C>, S, T, O, const C : usize> 
+    pub trait Interpreter<G, R, D, S, T, O, const C : usize> 
     where
-        T : SyncActuator + ?Sized + 'static
+        G : SyncActuatorGroup<T, C>,
+        R : Robot<G, T, C>,
+        D : Descriptor<C>,
+        T : SyncActuator + DefinedActuator + ?Sized + 'static
     {
         /// Interpret a code string for a given robot
         fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, code : &str) -> Vec<O>; 

@@ -1,8 +1,10 @@
 use core::fmt::Debug;
 
 use glam::Vec3;
+use syact::math::movements::DefinedActuator;
 use syact::{SyncActuatorGroup, Setup, SyncActuator};
 use syunit::*;
+use tokio::task::JoinSet;
 
 // use crate::pkg::info::AngConf;
 use crate::{Descriptor, PushRemote};
@@ -69,7 +71,7 @@ use crate::rcs::Position;
 /// and provides the follwing functionalities
 /// - `Gamma` / `Phi` distance conversion
 #[allow(async_fn_in_trait)]
-pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static, const C : usize> : Setup {
+pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + DefinedActuator + ?Sized + 'static, const C : usize> : Setup {
     // Data
         /// Returns a reference to the robots variables
         fn vars(&self) -> &Vars<C>;
@@ -167,7 +169,25 @@ pub trait Robot<G : SyncActuatorGroup<T, C>, T : SyncActuator + ?Sized + 'static
     // 
     
     // Asnychronous movement (complex movement)
-        async fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error>;
+        async fn move_j(&mut self, deltas : [Delta; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
+            let gamma_0 = self.gammas();
+            let gamma_t = add_unit_arrays(gamma_0, deltas);
+            let speed_f = syact::math::movements::ptp_speed_factors(
+                self.comps_mut(), gamma_0, gamma_t, gen_speed_f
+            );
+
+            let mut set = JoinSet::new();
+
+            for fut in <G as SyncActuatorGroup<T, C>>::drive_rel(self.comps_mut(), deltas, speed_f) {
+                set.spawn(fut);
+            }
+
+            while let Some(res) = set.join_next().await {
+                res??;
+            }
+
+            Ok(())
+        }
 
         async fn move_abs_j(&mut self, phis : [Phi; C], gen_speed_f : Factor) -> Result<(), crate::Error> {
             let gamma_0 = self.gammas();

@@ -1,3 +1,4 @@
+use syact::math::movements::DefinedActuator;
 use syact::{SyncActuator, SyncActuatorGroup};
 
 use crate::Robot;
@@ -7,7 +8,7 @@ use crate::Robot;
 pub trait Station<G, T, const C : usize> 
 where
     G : SyncActuatorGroup<T, C>,
-    T : SyncActuator + ?Sized + 'static
+    T : SyncActuator + DefinedActuator + ?Sized + 'static
 {
     /// The robot of the station
     type Robot : Robot<G, T, C>;

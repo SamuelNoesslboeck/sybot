@@ -3,6 +3,7 @@ use crate::desc::{SerialKinematic, Kinematic, KinElement, Movement};
 use crate::rcs::{Point, Position, PointRef, WorldObj};
 
 use glam::Vec3;
+use syact::math::movements::DefinedActuator;
 use syact::{SyncActuator, SyncActuatorGroup};
 use syunit::*;
 
@@ -68,7 +69,7 @@ use syunit::*;
             where
                 R : Robot<G, T, 2>,
                 G : SyncActuatorGroup<T, 2>,
-                T : SyncActuator + ?Sized + 'static
+                T : SyncActuator + DefinedActuator + ?Sized + 'static
             {
                 self._kinematic.update(phis)
             }
@@ -162,7 +163,7 @@ use syunit::*;
             where
                 R : Robot<G, T, 3>,
                 G : SyncActuatorGroup<T, 3>,
-                T : SyncActuator + ?Sized + 'static
+                T : SyncActuator + DefinedActuator + ?Sized + 'static
             {
                 self._kinematic.update(phis)
             }

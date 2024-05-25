@@ -1,3 +1,4 @@
+use syact::math::movements::DefinedActuator;
 use syact::{SyncActuatorGroup, SyncActuator};
 use syunit::*;
 
@@ -67,6 +68,6 @@ pub trait Descriptor<const C : usize> {
         where
             R : Robot<G, T, C>,
             G : SyncActuatorGroup<T, C>,
-            T : SyncActuator + ?Sized + 'static;
+            T : SyncActuator + DefinedActuator + ?Sized + 'static;
     // 
 }
