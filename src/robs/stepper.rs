@@ -5,6 +5,7 @@ use syact::{SyncActuatorGroup, Setup};
 use syact::act::stepper::{StepperActuator, StepperActuatorGroup};
 use syact::math::movements::DefinedActuator;
 use syunit::*;
+use tokio::task::JoinSet;
 
 use crate::{Robot, PushRemote, Descriptor};
 use crate::config::AngleConfig;
@@ -106,9 +107,14 @@ where
                 self.comps_mut(), gamma_0, gamma_t, gen_speed_f
             );
 
-            let handles = <G as SyncActuatorGroup<T, C>>::drive_rel(self.comps_mut(), deltas, speed_f).map(tokio::spawn);
-            for handle in handles {
-                handle.await?;
+            let mut set = JoinSet::new();
+
+            for fut in <G as SyncActuatorGroup<T, C>>::drive_rel(self.comps_mut(), deltas, speed_f) {
+                set.spawn(fut);
+            }
+
+            while let Some(res) = set.join_next().await {
+                res?;
             }
 
             Ok(())

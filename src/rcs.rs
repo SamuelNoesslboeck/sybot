@@ -11,18 +11,20 @@ use serde::{Serialize, Deserialize};
 // Submodules
     mod des;
 
+    /// Mathematical operations of the coordinate system
     pub mod math;
 // 
 
-pub type Error = Box<dyn std::error::Error>;
-
 pub trait Point : Debug {
     // Coords
+        /// X-Coordinate of the point
         fn x(&self) -> f32;
+        /// Y-Coordinate of the point
         fn y(&self) -> f32;
+        /// Z-Coordinate of the point
         fn z(&self) -> f32;
     // 
-
+    
     fn pos<'a>(&'a self) -> &'a Vec3;
     fn pos_mut<'a>(&'a mut self) -> &'a mut Vec3;
 
