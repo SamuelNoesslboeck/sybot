@@ -12,7 +12,9 @@ use crate::config::AngleConfig;
 use crate::prelude::StepperRobot;
 use crate::Robot;
 
-// SimPin
+// Submodules
+    pub mod scr;
+// 
 
 // Helper structs
     pub struct SimPin {

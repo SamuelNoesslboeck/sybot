@@ -20,6 +20,8 @@ extern crate alloc;
     /// RCS (Robot-Coordinate-System) module, manages the coordinate system and positions
     pub mod rcs;
 
+    pub mod scr;
+
     #[cfg(test)]
     pub mod tests;
 //
@@ -29,7 +31,7 @@ extern crate alloc;
 // ########################
     /// Everything related to the `Robot` trait
     pub mod robs;
-    pub use robs::Robot;
+    pub use robs::{Robot, StepperRobot};
 
     /// Everything related to the `Descriptor` trait
     pub mod desc;
@@ -79,10 +81,10 @@ extern crate alloc;
         T : SyncActuator + DefinedActuator + ?Sized + 'static
     {
         /// Interpret a code string for a given robot
-        fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, code : &str) -> Vec<O>; 
+        fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, code : &str) -> O; 
 
         /// Interpret a file for a given robot
-        fn interpret_file(&self, rob : &mut R, desc : &mut D, stat : &mut S, path : &str) -> Vec<O> {
+        fn interpret_file(&self, rob : &mut R, desc : &mut D, stat : &mut S, path : &str) -> O {
             self.interpret(rob, desc, stat, std::fs::read_to_string(path).unwrap().as_str())
         }
     }
