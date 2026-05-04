@@ -1,29 +1,20 @@
 [package]
 name = "sybot"
 authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
-version = "0.10.4"
+version = "0.11.0"
 description = "Rust library for coordinating components, defining robotic systems and their communication "
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/SamuelNoesslboeck/sybot"
 license-file = "LICENSE"
-keywords = [ "framework", "robotics", "automation", "iot", "raspberry-pi" ]
+keywords = [ "framework", "robotics" ]
 
 [lib]
 name = "sybot"
 path = "src/lib.rs"
 
 [dependencies]
-glam = "0.27.0"
-serde = { version = "1.0.192", features = ["derive"] }
-serde_json = "1.0.108"
-syact = { version = "0.13.7" } 
-syunit = "0.2.0"
-tokio = { version = "1.37.0", features = ["full"] }
+glam = "0.32.1"
+serde = { version = "1.0.228", features = ["derive"] }
 
-[dev-dependencies]
-embedded-hal = "1.0.0"
-
-# Tests
-[[test]]
-name = "movements"
-path = "tests/movements.rs"
+syact = "0.15.0"
+syunit = "0.4.0"

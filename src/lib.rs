@@ -2,88 +2,103 @@
 #![crate_name = "sybot"]
 // #![deny(missing_docs)]
 
-use syact::math::movements::DefinedActuator;
-use syact::{SyncActuator, SyncActuatorGroup};
-use syunit::*;
+/* Submodules */
 
-extern crate alloc;
+use glam::{Vec2, Vec3};
+/**/
 
-// ####################
-// #    SUBMODULES    #
-// ####################
-    /// Configurations for the robot in terms of position, speed and mode
-    pub mod config;
+use syact::{DefinedActuator, SyncActuator};
+use syunit::prelude::Millimeters;
+use syunit::{Factor, MetricMM, UnitSet, Unit};
 
-    /// Quick and easy import of the library essentials
-    pub mod prelude; 
+pub fn ptp_factors<U : UnitSet, const C : usize>
+    (act : [&dyn DefinedActuator<U>; C], pos_0 : [U::Position; C], pos : [U::Position; C], f_gen : Factor) -> [Factor; C] 
+{
+    let mut f = [Factor::MIN; C];
+    let mut t = [U::Time::default(); C];
+    let mut t_max = U::Time::default();     // will be 0, so times will always be greater
 
-    /// RCS (Robot-Coordinate-System) module, manages the coordinate system and positions
-    pub mod rcs;
+    for i in 0 .. C {
+        t[i] = act[i].ptp_time_for_distance(pos_0[i], pos[i]);
 
-    #[cfg(test)]
-    pub mod tests;
-//
-
-// ########################
-// #    R.D.S - SYSTEM    #
-// ########################
-    /// Everything related to the `Robot` trait
-    pub mod robs;
-    pub use robs::Robot;
-
-    /// Everything related to the `Descriptor` trait
-    pub mod desc;
-    pub use desc::Descriptor;
-
-    /// Everything related to the `Station` trait
-    pub mod stat;
-    pub use stat::Station;
-// 
-
-// ################
-// #    ERRORS    #
-// ################
-    /// Universal error type used in the crate
-    pub type Error = Box<dyn std::error::Error>;
-//
-
-// Remotes
-    /// Different types of events that can occur
-    pub enum PushMsg {
-        /// The robot has conducted a measurement
-        Measurement,
-        /// The robot has undergone a tool change
-        ToolChange
+        t_max = t[i].max(t_max);
     }
 
-    /// A `PushRemote` defines a remote connection that the robot can push values to
-    pub trait PushRemote {
-        /// Publish a set of phis to the remote connection
-        fn push_phis(&mut self, phis : &[Phi]) -> Result<(), crate::Error>;
-
-        /// Publish a new `PushMsg`
-        fn push_other(&mut self, other : PushMsg) -> Result<(), crate::Error>;
-
-        /// Publish any type via bytes
-        fn push_any(&mut self, msg_type : &str, msg : &[u8]) -> Result<(), crate::Error>;
+    for i in 0 .. C {
+        f[i] = Factor::new(t[i] / t_max) * f_gen;
     }
-// 
 
-// Interpreters
-    /// Interpreters convert a string prompt into actions for the robot
-    pub trait Interpreter<G, R, D, S, T, O, const C : usize> 
-    where
-        G : SyncActuatorGroup<T, C>,
-        R : Robot<G, T, C>,
-        D : Descriptor<C>,
-        T : SyncActuator + DefinedActuator + ?Sized + 'static
-    {
-        /// Interpret a code string for a given robot
-        fn interpret(&self, rob : &mut R, desc : &mut D, stat : &mut S, code : &str) -> Vec<O>; 
+    f
+}
 
-        /// Interpret a file for a given robot
-        fn interpret_file(&self, rob : &mut R, desc : &mut D, stat : &mut S, path : &str) -> Vec<O> {
-            self.interpret(rob, desc, stat, std::fs::read_to_string(path).unwrap().as_str())
-        }
+pub trait Descriptor {
+    type SysCoord;
+    type RobCoord;
+
+    fn rob_to_sys(&self, rob : Self::RobCoord) -> Result<Self::SysCoord, ()>;
+
+    fn sys_to_rob(&self, sys : Self::SysCoord) -> Result<Self::RobCoord, ()>;
+}
+
+pub struct LinDesc2 { }
+
+impl Descriptor for LinDesc2 {
+    type SysCoord = Vec2;
+    type RobCoord = (Millimeters, Millimeters);
+
+    fn rob_to_sys(&self, rob : Self::RobCoord) -> Result<Self::SysCoord, ()> {
+        Ok(Vec2::new(rob.0.into(), rob.1.into()))
     }
-// 
+
+    fn sys_to_rob(&self, sys : Self::SysCoord) -> Result<Self::RobCoord, ()> {
+        Ok((Millimeters(sys.x), Millimeters(sys.y)))
+    }
+}
+
+pub struct LinDesc3 { }
+
+impl Descriptor for LinDesc3 {
+    type SysCoord = Vec3;
+    type RobCoord = (Millimeters, Millimeters, Millimeters);
+
+    fn rob_to_sys(&self, rob : Self::RobCoord) -> Result<Self::SysCoord, ()> {
+        Ok(Vec3::new(rob.0.into(), rob.1.into(), rob.2.into()))
+    }
+
+    fn sys_to_rob(&self, sys : Self::SysCoord) -> Result<Self::RobCoord, ()> {
+        Ok((Millimeters(sys.x), Millimeters(sys.y), Millimeters(sys.z)))
+    }
+}
+
+pub trait Actuators {
+    type RobCoord; 
+
+    fn move_
+}
+
+pub trait PtpActuators : Actuators {
+    fn move_ptp(&mut self, )
+}
+
+pub struct Actuators2<UX : UnitSet, UY : UnitSet, X : SyncActuator<UX>, Y : SyncActuator<UY>> {
+    x : X,
+    y : Y
+}
+
+pub struct Lin3Actuators<X : SyncActuator<MetricMM>, Y : SyncActuator<MetricMM>, Z : SyncActuator<MetricMM>> {
+    x : X,
+    y : Y,
+    z : Z
+}
+
+pub struct Robot<A, D, S> 
+where
+    A : Actuators,
+    D : Descriptor<RobCoord = A::RobCoord>
+{
+    pub acts : A,
+    pub desc : D,
+    pub stat : S
+}
+
+// type Lin2Robot<X, Y, S> = Robot<Lin2Actuators<X, Y>, LinDesc2, S>; 
