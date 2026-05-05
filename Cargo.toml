@@ -13,8 +13,10 @@ name = "sybot"
 path = "src/lib.rs"
 
 [dependencies]
+futures = "0.3.32"
 glam = "0.32.1"
 serde = { version = "1.0.228", features = ["derive"] }
 
-syact = "0.15.0"
+syact = { git = "https://github.com/SamuelNoesslboeck/syact" }
 syunit = "0.4.0"
+tokio = { version = "1.52.2", features = ["full"] }
