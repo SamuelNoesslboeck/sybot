@@ -5,45 +5,27 @@
 
 use core::marker::PhantomData;
 
-use glam::{Vec2, Vec3};
+use syact::{ActuatorError, DefinedActuator, SyncActuator};
+use syunit::{Factor, UnitSet, Unit};
 
 /* Submodules */
     mod acts;
+
+    mod desc;
 /**/
 
-use syact::{ActuatorError, DefinedActuator, SyncActuator};
-use syunit::prelude::Millimeters;
-use syunit::{Factor, UnitSet, Unit};
-
-
-pub trait Station {
+/* CORE TRAITS */
+pub trait Actuators {
+    type RobCoord;
     type Error;
+
+    fn pos(&self) -> Self::RobCoord;
+
+    async fn move_abs(&mut self, pos : Self::RobCoord, f_gen : Factor) -> Result<(), Self::Error>;
 }
 
-pub enum RobotError<A : Actuators, D : Descriptor, S : Station> {
-    ActsError(A::Error),
-    DescError(D::Error),
-    StatError(S::Error)
-}
-
-pub fn ptp_factors<U : UnitSet, const C : usize>
-    (act : [&dyn DefinedActuator<U>; C], pos_0 : [U::Position; C], pos : [U::Position; C], f_gen : Factor) -> [Factor; C] 
-{
-    let mut f = [Factor::MIN; C];
-    let mut t = [U::Time::default(); C];
-    let mut t_max = U::Time::default();     // will be 0, so times will always be greater
-
-    for i in 0 .. C {
-        t[i] = act[i].ptp_time_for_distance(pos_0[i], pos[i]);
-
-        t_max = t[i].max(t_max);
-    }
-
-    for i in 0 .. C {
-        f[i] = Factor::new(t[i] / t_max) * f_gen;
-    }
-
-    f
+pub trait PtpActuators : Actuators {
+    async fn move_ptp(&mut self, pos : Self::RobCoord, f_gen : Factor) -> Result<(), Self::Error>;
 }
 
 pub trait Descriptor {
@@ -56,47 +38,14 @@ pub trait Descriptor {
     fn sys_to_rob(&self, sys : Self::SysCoord) -> Result<Self::RobCoord, Self::Error>;
 }
 
-pub struct LinDesc2 { }
-
-impl Descriptor for LinDesc2 {
-    type SysCoord = Vec2;
-    type RobCoord = (Millimeters, Millimeters);
-    type Error = ();    // TODO: Add error
-
-    fn rob_to_sys(&self, rob : Self::RobCoord) -> Self::SysCoord {
-        Vec2::new(rob.0.into(), rob.1.into())
-    }
-
-    fn sys_to_rob(&self, sys : Self::SysCoord) -> Result<Self::RobCoord, Self::Error> {
-        Ok((Millimeters(sys.x), Millimeters(sys.y)))
-    }
-}
-
-pub struct LinDesc3 { }
-
-impl Descriptor for LinDesc3 {
-    type SysCoord = Vec3;
-    type RobCoord = (Millimeters, Millimeters, Millimeters);
-    type Error = ();
-
-    fn rob_to_sys(&self, rob : Self::RobCoord) -> Self::SysCoord {
-        Vec3::new(rob.0.into(), rob.1.into(), rob.2.into())
-    }
-
-    fn sys_to_rob(&self, sys : Self::SysCoord) -> Result<Self::RobCoord, Self::Error> {
-        Ok((Millimeters(sys.x), Millimeters(sys.y), Millimeters(sys.z)))
-    }
-}
-
-pub trait Actuators {
-    type RobCoord;
+pub trait System {
     type Error;
-
-    fn pos(&self) -> Self::RobCoord;
 }
 
-pub trait PtpActuators : Actuators {
-    async fn move_ptp(&mut self, pos : Self::RobCoord, f_gen : Factor) -> Result<(), Self::Error>;
+pub enum RobotError<A : Actuators, D : Descriptor, S : System> {
+    ActsError(A::Error),
+    DescError(D::Error),
+    StatError(S::Error)
 }
 
 pub struct Actuators2<UA : UnitSet, UB : UnitSet, A : SyncActuator<UA>, B : SyncActuator<UB>> {
@@ -124,6 +73,19 @@ where
 
     fn pos(&self) -> Self::RobCoord {
         (self.a.pos(), self.b.pos())
+    }
+
+    async fn move_abs(&mut self, pos : Self::RobCoord, f_gen : Factor) -> Result<(), Self::Error> {
+        let (res_a, res_b) = futures::join!(
+            self.a.drive_abs(pos.0, f_gen),
+            self.b.drive_abs(pos.1, f_gen)
+        );
+
+        // Map the different errors                     
+        res_a.map_err(|err| Actuators2Error::ComponentA(err))?;
+        res_b.map_err(|err| Actuators2Error::ComponentB(err))?;
+
+        Ok(())
     }
 }
 
@@ -163,7 +125,7 @@ pub struct Robot<A, D, S>
 where
     A : Actuators,
     D : Descriptor<RobCoord = A::RobCoord>,
-    S : Station
+    S : System
 {
     pub acts : A,
     pub desc : D,
@@ -174,7 +136,7 @@ impl<A, D, S> Robot<A, D, S>
 where
     A : Actuators,
     D : Descriptor<RobCoord = A::RobCoord>,
-    S : Station
+    S : System
 {
     pub fn pos(&self) -> D::SysCoord {
         self.desc.rob_to_sys(
@@ -187,7 +149,7 @@ impl<A, D, S> Robot<A, D, S>
 where
     A : PtpActuators,
     D : Descriptor<RobCoord = A::RobCoord>,
-    S : Station
+    S : System
 {
     pub async fn move_ptp(&mut self, pos_sys : D::SysCoord, f_gen : Factor) -> Result<(), RobotError<A, D, S>> {
         self.acts.move_ptp(
